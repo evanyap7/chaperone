@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "score": "node tests/score_classifier.js",
-    "test": "node tests/run_scenarios.js",
+    "score:scenarios": "node tests/score_scenarios.js",
+    "test": "node tests/score_classifier.js && node tests/score_scenarios.js",
     "start": "node src/server.js"
   },
   "engines": {
