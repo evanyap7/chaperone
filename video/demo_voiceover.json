@@ -1,0 +1,18 @@
+{
+  "_note": "Voiceover for the live UI tour (assemble_demo.py). One line per recorded step, keyed by step id in record_demo.mjs. {placeholders} are filled from a fresh engine run (briefing.json) and reports/scenario_score.json, so no figure is typed by hand. 'min' = shortest dwell on that step in seconds; the recorder stretches each step to fit its line.",
+  "title": { "line": "This is Chaperone. It sits between Mei's AI agents and the outside world, and keeps an eye on every move they make.", "min": 3.5 },
+  "steps": [
+    { "id": "open",     "min": 1.5, "line": "Mei runs a one-person design studio, with {agents} agents helping out." },
+    { "id": "run",      "min": 2.0, "line": "Let's play out a normal day and watch what they try." },
+    { "id": "log_done", "min": 2.5, "line": "Everything lands in the log. Most of it goes straight through, but {blocked} actions got stopped, and {held} are waiting on Mei." },
+    { "id": "evidence", "min": 3.0, "line": "Open any stopped one and you see why, in plain words, down to the file and line it came from." },
+    { "id": "briefing", "min": 3.5, "line": "In the morning, this is what Mei reads. Money first, no jargon: {held_money} waiting for her yes." },
+    { "id": "queue",    "min": 2.5, "line": "Anything that needs her shows up here, once. {queue_first}" },
+    { "id": "deny",     "min": 1.8, "line": "She says no, and that's that." },
+    { "id": "facts",    "min": 3.0, "line": "The fact-check catches numbers an agent made up. What it claimed, next to what's actually on file." },
+    { "id": "lineage",  "min": 3.0, "line": "And this tracks where files go. A harmless-looking summary built from a confidential proposal keeps that label, so it can't slip out." },
+    { "id": "score",    "min": 2.5, "line": "We tested all of this against {scenarios} scenarios with known right answers." },
+    { "id": "score_grid", "min": 2.5, "line": "{score_total} out of {score_max}. Right decision, right rule, right evidence, every time." }
+  ],
+  "end": { "line": "Chaperone. Watching your agents, so you don't have to.", "min": 4.5 }
+}

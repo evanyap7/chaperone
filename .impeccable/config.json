@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "web/index.html"
+        ],
+        "createdAt": "2026-11-19T10:37:35.261Z",
+        "reason": "Agent: #conn pill has padding var(--space-sm) var(--space-md) in web/style.css:780; static HTML check can't see the stylesheet, verified in rendered screenshots"
+      }
+    ]
+  }
+}

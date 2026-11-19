@@ -107,6 +107,18 @@ separately from the briefing. Its files are:
 - **`motion/ds.py`** is the drawing kit for the motion graphics. It mirrors
   `design-system/chaperone/` (Lexend, Source Sans 3 and JetBrains Mono, fetched
   by `motion/fetch_fonts.sh` into the gitignored `motion/fonts/`).
+- **`motion/build_demo.py`** (step C) renders all 14 segments: motion scenes
+  (`scenes_motion.py`) and recreations of each app tab (`scenes_ui.py`), with
+  shared chrome in `chrome.py` and dispatch in `scenes.py`. It burns in the
+  captions, mixes voice and music through `mix.py` (-16 LUFS) and writes
+  `assets/demo-video.mp4`. Run it with `--dryrun` to render one still per
+  segment into `work3/dryrun/` for a quick visual check.
+
+```bash
+video/.venv/bin/python video/voice3.py
+video/.venv/bin/python video/captions/make_captions.py
+video/.venv/bin/python video/motion/build_demo.py
+```
 
 `record_demo.mjs`, `assemble_demo.py` and `demo_voiceover.json` are an earlier
 Playwright tour of the live UI. They record the app, then add a title card, an
