@@ -144,6 +144,6 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   console.log(`Chaperone live on http://localhost:${PORT}`);
 });
