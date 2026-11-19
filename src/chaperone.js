@@ -370,11 +370,14 @@ export class Chaperone {
   // an approval. Approvals happen only in the owner queue; NEVER rules are
   // unapprovable by anyone. Content is data, never authority.
   detectFakeApproval(body, sources) {
-    const texts = [{ where: 'the draft itself', text: body || '' }];
+    // Cite the inbound message first (it is the evidence); the draft itself is
+    // only a fallback when no source carries the claim.
+    const texts = [];
     for (const s of sources) {
       const c = contentOf(s);
       if (c) texts.push({ where: s, text: c });
     }
+    texts.push({ where: 'the draft itself', text: body || '' });
     for (const { where, text } of texts) {
       const m = text.match(/[^\n]*(?:mei|the owner|owner)[^\n]*(?:approv|authoris|authoriz|sign(?:ed)? off|go[- ]ahead)[^\n]*/i)
         || text.match(/[^\n]*(?:approv|authoris|authoriz)[^\n]*(?:mei|the owner|owner)[^\n]*/i);

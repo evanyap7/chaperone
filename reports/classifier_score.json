@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-11-19T03:32:32.837Z",
-  "total": 27,
-  "correct": 27,
+  "generated_at": "2026-11-19T03:35:50.216Z",
+  "total": 30,
+  "correct": 30,
   "accuracy": 1,
   "mismatches": [],
   "fallbacks": [],
@@ -315,6 +315,39 @@
       "fallback": null,
       "evidence": [
         "business-working-doc: \"Weekly plan, 16–20 Nov 2026\" (line 1)"
+      ]
+    },
+    {
+      "file": "inbox/2026-11-16_vendor_injection.md",
+      "expected": "public",
+      "predicted": "public",
+      "ok": true,
+      "docType": "email",
+      "fallback": null,
+      "evidence": [
+        "vendor-marketing-email: \"from: growth@partner-crm.example\" (line 1)"
+      ]
+    },
+    {
+      "file": "inbox/2026-11-16_fake_owner_approval.md",
+      "expected": "internal",
+      "predicted": "internal",
+      "ok": true,
+      "docType": "email",
+      "fallback": null,
+      "evidence": [
+        "owner-sent-email: \"from: mei@lumenstudio.example\" (line 1)"
+      ]
+    },
+    {
+      "file": "finance/invoice_2026-038_quickprint.md",
+      "expected": "internal",
+      "predicted": "internal",
+      "ok": true,
+      "docType": "invoice-received",
+      "fallback": null,
+      "evidence": [
+        "business-working-doc: \"Supplier invoice — QuickPrint SG (received)\" (line 1)"
       ]
     }
   ]

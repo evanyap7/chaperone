@@ -1,0 +1,5 @@
+[
+  { "file": "inbox/2026-11-16_vendor_injection.md", "sensitivity": "public" },
+  { "file": "inbox/2026-11-16_fake_owner_approval.md", "sensitivity": "internal" },
+  { "file": "finance/invoice_2026-038_quickprint.md", "sensitivity": "internal" }
+]

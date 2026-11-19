@@ -6,6 +6,8 @@ import { classifyFile } from '../src/classifier.js';
 import { readDataFile, listDataFiles, readJson, RULES_DIR, REPORTS_DIR } from '../src/config.js';
 
 const truth = readJson(path.join(RULES_DIR, 'ground_truth_labels.json'));
+const extraPath = path.join(RULES_DIR, 'ground_truth_extra.json');
+if (fs.existsSync(extraPath)) truth.push(...readJson(extraPath)); // labels for our S6–S10 files
 const rows = [];
 let correct = 0;
 
