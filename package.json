@@ -1,0 +1,15 @@
+{
+  "name": "chaperone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Oversight agent for a one-person company: gates, logs and checks every AI worker-agent action.",
+  "type": "module",
+  "scripts": {
+    "score": "node tests/score_classifier.js",
+    "test": "node tests/run_scenarios.js",
+    "start": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

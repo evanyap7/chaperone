@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.*
+*.zip
+starter_kit/
+Starter_Kit_Guide.pdf
+logs/*
+!logs/.gitkeep
+.DS_Store
+*.log
+.qoder-input-files/
