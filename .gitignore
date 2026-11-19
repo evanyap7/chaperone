@@ -9,3 +9,7 @@ logs/*
 .DS_Store
 *.log
 .qoder-input-files/
+.tmp_preview/
+.qwenwork-media-result-*.json
+video/work/
+video_run.jsonl

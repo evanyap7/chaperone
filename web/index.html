@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chaperone — watching your agents</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="mark">C</div>
+    <div>
+      <h1>Chaperone</h1>
+      <p class="tag">Watching your agents, so you don't have to.</p>
+    </div>
+  </div>
+  <div class="owner">
+    <span class="who">Mei Tan · Lumen Studio</span>
+    <button id="runDemo" class="run">Run the demo</button>
+    <span id="demoStatus" class="status"></span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="today" class="active">Today's briefing</button>
+  <button data-tab="log">Live log</button>
+  <button data-tab="queue">Approvals <span id="queueBadge" class="badge hidden">0</span></button>
+  <button data-tab="facts">Fact-check</button>
+  <button data-tab="lineage">Lineage</button>
+  <button data-tab="score">Scorecard</button>
+</nav>
+
+<main>
+  <!-- TODAY -->
+  <section id="tab-today" class="tab active">
+    <div id="briefEmpty" class="empty">
+      <p>Nothing has happened yet today.</p>
+      <p>Press <strong>Run the demo</strong> to watch your five agents work — and watch Chaperone catch the risky moves.</p>
+    </div>
+    <div id="briefWrap" class="hidden">
+      <div class="statrow" id="statrow"></div>
+      <div id="videoWrap" class="videowrap hidden">
+        <h2>The 60-second briefing</h2>
+        <video id="briefVideo" controls preload="metadata" src="/assets/briefing-60s.mp4"></video>
+      </div>
+      <div id="briefSections"></div>
+      <details class="rawbrief">
+        <summary>Read the whole briefing as text</summary>
+        <pre id="briefText"></pre>
+      </details>
+    </div>
+  </section>
+
+  <!-- LIVE LOG -->
+  <section id="tab-log" class="tab">
+    <p class="hint">Every action by every agent, in order. Tap a row for the evidence.</p>
+    <div id="logList" class="loglist"></div>
+    <div id="logEmpty" class="empty"><p>The log is empty. Run the demo to see it fill.</p></div>
+  </section>
+
+  <!-- APPROVALS -->
+  <section id="tab-queue" class="tab">
+    <p class="hint">Only you can release these. Each item appears once — no nagging. Stopped items never come here: some things can't be approved by anyone.</p>
+    <div id="queueList"></div>
+    <div id="queueEmpty" class="empty"><p>Nothing is waiting for you.</p></div>
+  </section>
+
+  <!-- FACT CHECK -->
+  <section id="tab-facts" class="tab">
+    <p class="hint">Every number an agent tried to tell a client, checked against your files. Claimed on the left, what's actually on file on the right.</p>
+    <div id="factList"></div>
+    <div id="factEmpty" class="empty"><p>No figures have been checked yet.</p></div>
+  </section>
+
+  <!-- LINEAGE -->
+  <section id="tab-lineage" class="tab">
+    <p class="hint">Where each output came from. An output is always as sensitive as its most sensitive source — summarising or rewording never makes it safer.</p>
+    <div id="lineageList"></div>
+    <div id="lineageEmpty" class="empty"><p>No derived files yet.</p></div>
+  </section>
+
+  <!-- SCORECARD -->
+  <section id="tab-score" class="tab">
+    <div id="scoreWrap">
+      <div class="statrow" id="scoreStats"></div>
+      <p class="hint">Ten scripted misbehaviours, three checks each: the right decision, the right rule, the evidence cited. The same checks run in the test suite and in this live demo.</p>
+      <div id="scoreGrid" class="scoregrid"></div>
+    </div>
+    <div id="scoreEmpty" class="empty"><p>Run the demo to score the oversight live.</p></div>
+  </section>
+</main>
+
+<footer>
+  <p>Chaperone · every decision traces to a file · fictional demo data (Lumen Studio)</p>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
