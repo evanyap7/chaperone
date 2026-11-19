@@ -3,9 +3,12 @@
 // Every classification carries its evidence: the exact line(s) that triggered it.
 // The `sensitivity:` header is NOT used as the answer — it is only a last-resort
 // fallback, so the classifier is genuinely scored against ground truth.
-import { LEVEL_RANK, maxLevel, parseFrontmatter, loadContactRegistries, OWNER_EMAIL } from './config.js';
+import { LEVEL_RANK, maxLevel, parseFrontmatter, loadContactRegistries, loadClients, OWNER_EMAIL } from './config.js';
 
 const { clients: CLIENT_EMAILS, suppliers: SUPPLIER_EMAILS } = loadContactRegistries();
+// Client names come from admin/client_list.csv, not from a typed-in list.
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const CLIENT_NAME_RE = new RegExp(`(${loadClients().map((c) => escapeRe(c.key)).join('|')})`, 'i');
 
 // --- helpers ---------------------------------------------------------------
 
@@ -100,7 +103,7 @@ function clientConfidentialSignals(content, meta, docType) {
   }
   out.push(...anySignal(content, CC_MARKERS));
   // A client's name next to their fundraising / financial figures.
-  if (/(ferro|greenstep|harbourbean|nimbus)/i.test(content) && /(raising|valuation|\bARR\b|revenue)/i.test(content)) {
+  if (CLIENT_NAME_RE.test(content) && /(raising|valuation|\bARR\b|revenue)/i.test(content)) {
     const m = content.match(/(raising|valuation|\bARR\b|revenue)/i);
     out.push({ id: 'client-financials', why: 'Client name next to their non-public financial figures', quote: quoteLine(content, m.index), line: lineOf(content, m.index) });
   }

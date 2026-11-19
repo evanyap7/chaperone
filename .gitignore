@@ -9,7 +9,15 @@ logs/*
 .DS_Store
 *.log
 .qoder-input-files/
+.qoder-input-images/
 .tmp_preview/
 .qwenwork-media-result-*.json
 video/work/
 video_run.jsonl
+# local neural TTS (video/setup_tts.sh)
+video/.venv/
+video/models/
+# 3-minute demo video: work dir + downloaded design-system fonts (video/motion/fetch_fonts.sh)
+video/work3/
+video/motion/fonts/
+__pycache__/

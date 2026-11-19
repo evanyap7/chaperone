@@ -29,7 +29,7 @@ export function extractClaims(text) {
     claims.push({ type: 'percent', value: parseFloat(m[1]), raw: m[0], context: around(text, m.index) });
   }
   // day counts ("moved by 5 days", "5 days")
-  for (const m of text.matchAll(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+days?/gi)) {
+  for (const m of text.matchAll(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+days?\b/gi)) {
     const v = toNumber(m[1]);
     if (v !== null) claims.push({ type: 'days', value: v, raw: m[0], context: around(text, m.index) });
   }
@@ -38,7 +38,10 @@ export function extractClaims(text) {
     claims.push({ type: 'amount', value: parseFloat(m[1].replace(/,/g, '')), raw: m[0], context: around(text, m.index) });
   }
   // bare totals ("Total stands at 5,250", "stands at 5,250")
-  for (const m of text.matchAll(/(?:total|stands|amount|invoice|settle|match|price|offer)[^.]*?\b([\d,]{3,}(?:\.\d+)?)\b/gi)) {
+  // Identifiers are not amounts: "invoice 2026-036" (hyphenated) and bare years
+  // ("in 2026") are skipped so they are never reported as fabricated figures.
+  for (const m of text.matchAll(/(?:total|stands|amount|invoice|settle|match|price|offer)[^.]*?(?<![\d-])(\d[\d,]{2,}(?:\.\d+)?)\b(?!-\d)/gi)) {
+    if (/^(19|20)\d\d$/.test(m[1])) continue;
     const v = parseFloat(m[1].replace(/,/g, ''));
     if (!claims.some((c) => c.type === 'amount' && c.value === v)) {
       claims.push({ type: 'amount', value: v, raw: m[1], context: around(text, m.index) });
@@ -111,7 +114,12 @@ export function factCheck(text, sourceFiles) {
       const contradict = sameType.find((f) => f.subtype === 'total')
         || sameType.find((f) => f.subtype === 'fee')
         || sameType[0];
-      if (contradict) {
+      // The exact figure written verbatim in a source file is traceable, even if
+      // it is not one of the typed facts above.
+      const verbatim = findVerbatim(claim.value, sourceFiles);
+      if (verbatim) {
+        results.push({ claimed: claim.raw, real: claim.value, source_file: verbatim.file, source_line: verbatim.line, source_quote: verbatim.quote, status: 'ok' });
+      } else if (contradict) {
         results.push({ claimed: claim.raw, real: contradict.value, source_file: contradict.file, source_line: contradict.line, source_quote: contradict.quote, status: 'contradicted' });
       } else {
         results.push({ claimed: claim.raw, real: null, source_file: null, source_line: null, source_quote: null, status: 'fabricated' });
@@ -129,6 +137,22 @@ export function factCheck(text, sourceFiles) {
     }
   }
   return results;
+}
+
+// Find an amount written verbatim (with or without thousands separators) in
+// one of the source files. Returns { file, line, quote } or null.
+function findVerbatim(value, files) {
+  if (!Number.isFinite(value)) return null;
+  const forms = [...new Set([value.toLocaleString('en-US'), String(value)])]
+    .map((f) => f.replace(/[.,]/g, (c) => `\\${c}`));
+  const re = new RegExp(`(?<![\\d.,-])(?:${forms.join('|')})(?![\\d]|[.,]\\d)`);
+  for (const file of files) {
+    let content;
+    try { content = readDataFile(file); } catch { continue; }
+    const m = content.match(re);
+    if (m) return { file, line: lineOf(content, m.index), quote: quoteLine(content, m.index) };
+  }
+  return null;
 }
 
 export function hasFabrication(results) {

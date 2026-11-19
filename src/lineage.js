@@ -25,26 +25,30 @@ export class Lineage {
 
   // Register a derived output. It inherits the max level + unannounced flag of
   // every input, regardless of how casually it is worded.
+  //
+  // Re-writing an artifact that already exists never launders it: the new node
+  // keeps the old level, unannounced flag, facts and ancestry, so overwriting a
+  // confidential summary with "harmless" text cannot downgrade it.
   addOutput(id, inputIds, ownLevel, opts = {}) {
-    let level = ownLevel || null;
-    let unannounced = !!opts.unannounced;
-    const facts = new Set(opts.facts || []);
-    const resolvedInputs = [];
+    const prev = this.nodes.get(id);
+    let level = maxLevel(prev?.level || null, ownLevel || null);
+    let unannounced = !!opts.unannounced || !!prev?.unannounced;
+    const facts = new Set([...(prev?.facts || []), ...(opts.facts || [])]);
+    const derived = new Set(prev?.derived_from || []);
     for (const inp of inputIds) {
+      if (inp === id) continue; // an artifact is not its own ancestor
       const n = this.nodes.get(inp);
       if (n) {
         level = maxLevel(level, n.level);
         unannounced = unannounced || n.unannounced;
         for (const f of n.facts || []) facts.add(f);
-        resolvedInputs.push(inp);
-      } else {
-        resolvedInputs.push(inp);
       }
+      derived.add(inp);
     }
     const node = {
-      id, kind: 'output', level: level || 'internal',
-      unannounced, facts: [...facts], derived_from: resolvedInputs,
-      content: opts.content ?? null,
+      id, kind: prev?.kind === 'file' ? 'file' : 'output', level: level || 'internal',
+      unannounced, facts: [...facts], derived_from: [...derived],
+      content: opts.content ?? prev?.content ?? null,
     };
     this.nodes.set(id, node);
     return node;
@@ -72,6 +76,11 @@ export class Lineage {
     for (const inp of node.derived_from) chain.push(...this.chainOf(inp, seen));
     chain.push({ id, level: node.level, kind: node.kind, unannounced: node.unannounced });
     return chain;
+  }
+
+  // Every ancestor (and the node itself) flagged as carrying unannounced news.
+  unannouncedSources(id) {
+    return this.chainOf(id).filter((n) => n.unannounced && this.nodes.get(n.id)?.kind === 'file').map((n) => n.id);
   }
 
   // Effective level of an artifact = its own inherited level (never downgrades).

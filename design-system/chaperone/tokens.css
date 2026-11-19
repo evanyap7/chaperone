@@ -1,0 +1,258 @@
+/* ============================================================================
+   CHAPERONE DESIGN TOKENS — single source of truth for the UI rebuild.
+   Companion spec: design-system/chaperone/MASTER.md
+   All contrast ratios below were computed with the WCAG 2.1 relative-luminance
+   formula and are stated in MASTER.md §3. Light theme only (color-scheme: light).
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  color-scheme: light;
+
+  /* ---------- colour · core surfaces & ink ---------- */
+  --color-bg: #F8FAFC;              /* page background                                   */
+  --color-surface: #FFFFFF;         /* cards, header, rows, inputs                       */
+  --color-surface-sunken: #E8ECF1;  /* recessed fills: code chips, neutral badges, hovers */
+  --color-border: #E2E8F0;          /* default 1px hairline on cards/rows/tables          */
+  --color-border-strong: #94A3B8;   /* 1.5px borders that must read as interactive        */
+  --color-ink: #0F172A;             /* primary text, headings — 17.06:1 on --color-bg     */
+  --color-ink-secondary: #334155;   /* secondary text — 9.90:1 on --color-bg              */
+  --color-ink-muted: #475569;       /* tertiary/meta text — 7.24:1 on --color-bg          */
+  --color-inverse: #FFFFFF;         /* text on dark fills                                 */
+
+  /* ---------- colour · brand & interaction ---------- */
+  --color-accent: #0369A1;          /* links, active tab indicator, focus ring — 5.93:1 on white */
+  --color-accent-strong: #075985;   /* accent hover / accent-tinted text                    */
+  --color-accent-tint: #E1F1FC;     /* accent background wash (progress strip, held status) */
+  --color-focus-ring: #0369A1;      /* 3px :focus-visible outline everywhere                */
+  --color-primary: #0F172A;         /* primary button fill — white on it = 17.85:1          */
+  --color-primary-hover: #1E293B;   /* primary button hover                                 */
+  --color-primary-active: #0B1120;  /* primary button press                                 */
+  --color-destructive: #DC2626;     /* destructive text/icon on white — 4.83:1              */
+  --color-destructive-strong: #B42318; /* destructive solid fill — white on it = 6.57:1     */
+  --color-destructive-hover: #931B12;  /* destructive solid hover                            */
+  --color-badge-amber: #F2B544;     /* approvals count badge fill — ink on it = 9.75:1      */
+
+  /* ---------- colour · semantic status scale ----------
+     Every status = foreground + background tint + border + icon + text label.
+     Ratio shown is fg-on-tint (WCAG AA normal text requires ≥ 4.5:1).        */
+
+  /* Done / allowed — routine work completed                                   */
+  --color-status-done-fg: #146C33;        /* 5.90:1 on done-bg · 6.52:1 on white */
+  --color-status-done-bg: #E9F7EE;
+  --color-status-done-border: #A9D9B8;
+  --color-status-done-solid: #146C33;     /* Approve button fill — white on it = 6.52:1 */
+  --color-status-done-solid-hover: #10592B;
+
+  /* Waiting for you — held for owner approval (money / promises)              */
+  --color-status-waiting-fg: #8A5300;     /* 5.65:1 on waiting-bg · 6.33:1 on white */
+  --color-status-waiting-bg: #FDF1D7;
+  --color-status-waiting-border: #E8C988;
+
+  /* Needs a look — allowed-but-review, "Chaperone recommends: look closely"   */
+  --color-status-held-fg: #075985;        /* 6.55:1 on held-bg */
+  --color-status-held-bg: #E1F1FC;
+  --color-status-held-border: #9CC9E8;
+
+  /* Stopped / blocked — action prevented before it left the studio            */
+  --color-status-blocked-fg: #B42318;     /* 5.64:1 on blocked-bg · 6.57:1 on white */
+  --color-status-blocked-bg: #FBEAE7;
+  --color-status-blocked-border: #EDA69C;
+  --color-status-blocked-solid: #B42318;  /* danger solid fill — white on it = 6.57:1 */
+  --color-status-blocked-solid-hover: #931B12;
+
+  /* Fabricated fact — a stated figure is not traceable to any file            */
+  --color-status-fabricated-fg: #9D174D;  /* 6.74:1 on fabricated-bg · 7.88:1 on white */
+  --color-status-fabricated-bg: #FCE8F1;
+  --color-status-fabricated-border: #EBAAC8;
+
+  /* Regulated data — personal / regulated sensitivity level                   */
+  --color-status-regulated-fg: #3730A3;   /* 8.20:1 on regulated-bg · 9.93:1 on white */
+  --color-status-regulated-bg: #E7E8FB;
+  --color-status-regulated-border: #ABAFE3;
+
+  /* ---------- colour · file sensitivity levels (lineage ladder) ----------
+     Deliberately reuse the status hues so one colour = one meaning app-wide. */
+  --color-level-public: #3F7A52;          /* 5.10:1 on white */
+  --color-level-public-bg: #E9F7EE;
+  --color-level-internal: #0369A1;        /* 5.93:1 on white */
+  --color-level-internal-bg: #E1F1FC;
+  --color-level-confidential: #8A5300;    /* 6.33:1 on white */
+  --color-level-confidential-bg: #FDF1D7;
+  --color-level-regulated: #3730A3;       /* 9.93:1 on white */
+  --color-level-regulated-bg: #E7E8FB;
+
+  /* ---------- typography · families ---------- */
+  --font-heading: "Lexend", "Source Sans 3", system-ui, -apple-system, sans-serif;
+  --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---------- typography · modular scale (base 16px) ---------- */
+  --text-xs: 0.75rem;      /* 12px — meta labels, badge numerals, fine print */
+  --text-sm: 0.875rem;     /* 14px — pills, table cells, secondary text      */
+  --text-base: 1rem;       /* 16px — body copy, buttons, inputs, log actions  */
+  --text-md: 1.125rem;     /* 18px — card titles, h3                          */
+  --text-lg: 1.5rem;       /* 24px — section headings (h2), empty-state title */
+  --text-xl: 2rem;         /* 32px — page h1, greeting headline               */
+  --text-metric: 2.5rem;   /* 40px — stat-card hero numbers                   */
+
+  /* ---------- typography · weights ---------- */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* ---------- typography · line heights ---------- */
+  --leading-tight: 1.15;    /* metric numbers, h1        */
+  --leading-heading: 1.25;  /* h2, h3                    */
+  --leading-snug: 1.4;      /* small text, pills, tables */
+  --leading-body: 1.5;      /* body copy                 */
+
+  /* ---------- typography · letter spacing ---------- */
+  --tracking-tight: -0.015em;  /* display sizes ≥ 24px */
+  --tracking-normal: 0em;
+  --tracking-wide: 0.02em;     /* 12px meta labels     */
+  --tracking-caps: 0.06em;     /* uppercase overlines  */
+
+  /* ---------- spacing scale ---------- */
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* ---------- layout ---------- */
+  --container-max: 1240px;   /* keeps existing --maxw value */
+  --gutter: 32px;            /* ≥ 1024px */
+  --gutter-sm: 16px;         /* < 768px  */
+  --measure: 70ch;           /* max prose line length */
+  --target-min: 44px;        /* minimum hit area for primary controls */
+  --sidebar-width: 380px;    /* Today's briefing right column at ≥ 1024px */
+
+  /* ---------- radii ---------- */
+  --radius-sm: 6px;     /* chips, small controls        */
+  --radius-md: 10px;    /* buttons, inputs, disclosures */
+  --radius-lg: 14px;    /* cards, rows containers       */
+  --radius-pill: 999px; /* status pills, badges         */
+
+  /* ---------- borders ---------- */
+  --border-w: 1px;
+  --border-w-strong: 1.5px;
+
+  /* ---------- elevation (max 2 levels — flat design) ---------- */
+  --elevation-1: 0 1px 2px rgba(15, 23, 42, 0.06);   /* cards, row containers */
+  --elevation-2: 0 4px 12px rgba(15, 23, 42, 0.10);  /* sticky header, toasts */
+
+  /* ---------- motion ---------- */
+  --duration-fast: 120ms;    /* hover, press, colour changes        */
+  --duration-base: 200ms;    /* chevron rotate, disclosure, tab ink */
+  --duration-slow: 350ms;    /* list-item entrance (300–450ms band) */
+  --duration-flash: 2400ms;  /* new-row status flash, one-shot      */
+  --duration-stagger: 60ms;  /* per-child delay, max 8 children     */
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);   /* power2.out-class, entrances */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);  /* state changes, hovers       */
+
+  /* ---------- focus ---------- */
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+
+  /* ---------- z-index ---------- */
+  --z-header: 20;
+  --z-toast: 40;
+  --z-skip: 50;
+}
+
+/* ============================================================================
+   BASE RESETS
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  font-size: 100%; /* 16px root — the whole scale derives from it */
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 170px; /* sticky header height */
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: var(--font-regular);
+  line-height: var(--leading-body);
+  /* every amount, count and timestamp must align vertically */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: var(--font-semibold);
+  color: var(--color-ink);
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--text-xl); line-height: var(--leading-tight); }
+h2 { font-size: var(--text-lg); }
+h3 { font-size: var(--text-md); }
+
+p { margin: 0; }
+
+/* Visible focus on EVERY interactive control — never removed without replacement. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--color-accent-tint);
+  color: var(--color-ink);
+}
+
+/* Screen-reader-only utility (announcer text, sr-only labels). */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hidden { display: none !important; }
+
+/* Monospace utility — timestamps, file paths, SGD amounts, rule IDs, counts. */
+.u-mono,
+time,
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced motion: render every animated thing in its FINAL state immediately.
+   Timers (undo window, demo runtime) keep running — only motion is removed. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

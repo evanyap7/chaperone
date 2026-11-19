@@ -5,9 +5,10 @@
   "description": "Oversight agent for a one-person company: gates, logs and checks every AI worker-agent action.",
   "type": "module",
   "scripts": {
+    "test": "npm run test:unit && npm run score && npm run score:scenarios",
+    "test:unit": "node --test tests/unit/*.test.js",
     "score": "node tests/score_classifier.js",
     "score:scenarios": "node tests/score_scenarios.js",
-    "test": "node tests/score_classifier.js && node tests/score_scenarios.js",
     "start": "node src/server.js"
   },
   "engines": {

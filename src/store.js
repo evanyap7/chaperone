@@ -7,6 +7,8 @@ import path from 'node:path';
 import { LOGS_DIR } from './config.js';
 
 export class Store extends EventEmitter {
+  // logName: file under logs/ to append every decision to; null keeps the log
+  // in memory only (tests).
   constructor(logName = 'actions.jsonl') {
     super();
     this.logName = logName;
@@ -16,7 +18,6 @@ export class Store extends EventEmitter {
     this.scenarioResults = [];
     this.classifierReport = null;
     this.briefing = null;
-    this.videoUrl = null;
   }
 
   reset() {
@@ -38,6 +39,7 @@ export class Store extends EventEmitter {
   }
 
   persist(entry) {
+    if (!this.logName) return;
     try {
       fs.mkdirSync(LOGS_DIR, { recursive: true });
       fs.appendFileSync(path.join(LOGS_DIR, this.logName), JSON.stringify(entry) + '\n');
@@ -51,7 +53,8 @@ export class Store extends EventEmitter {
       return this.queue.find((q) => q.fingerprint === fp); // already queued; no nag
     }
     const q = {
-      queue_id: `Q${this.queue.length + 1}`,
+      // Never reset, so a stale decision from before a reset cannot land on a new item.
+      queue_id: `Q${(this.qseq = (this.qseq || 0) + 1)}`,
       fingerprint: fp,
       status: 'pending',
       created_at: new Date().toISOString(),
@@ -64,9 +67,10 @@ export class Store extends EventEmitter {
 
   decide(queue_id, decision, by = 'owner') {
     const q = this.queue.find((x) => x.queue_id === queue_id);
-    if (!q) return { ok: false, error: 'not found' };
-    if (q.never) return { ok: false, error: 'This is a NEVER rule. It cannot be approved by anyone.' };
-    if (q.status !== 'pending') return { ok: false, error: 'already decided' };
+    if (decision !== 'approve' && decision !== 'deny') return { ok: false, code: 'invalid', error: 'decision must be "approve" or "deny"' };
+    if (!q) return { ok: false, code: 'not_found', error: 'not found' };
+    if (q.never) return { ok: false, code: 'never', error: 'This is a NEVER rule. It cannot be approved by anyone.' };
+    if (q.status !== 'pending') return { ok: false, code: 'already_decided', error: 'already decided', queue: q };
     q.status = decision === 'approve' ? 'approved' : 'denied';
     q.decided_by = by;
     q.decided_at = new Date().toISOString();
