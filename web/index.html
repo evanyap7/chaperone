@@ -53,6 +53,7 @@
       <svg class="mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><rect width="40" height="40" rx="11" fill="currentColor"/><path d="M11.5 31V19a8.5 8.5 0 0 1 17 0v12" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="22.5" r="2.8" fill="#fff"/></svg>
       <div class="brand-text">
         <span class="name">Chaperone</span>
+        <span class="tagline">Every agent action checked before it touches the world.</span>
         <span class="who">Lumen Studio · Mei Tan</span>
       </div>
     </div>
@@ -97,12 +98,12 @@
   <section id="tab-today" class="tab active" role="tabpanel" aria-labelledby="tabbtn-today" tabindex="-1">
     <div class="today-head">
       <p id="greeting" class="overline">Lumen Studio</p>
-      <h1 id="todayLead">Nothing has happened yet today.</h1>
-      <p id="todaySub" class="sub">Run the demo to replay ten real situations from the studio's own files. Chaperone decides each one and shows you the line in the file that decided it.</p>
+      <h1 id="todayLead">Your five AI agents ask Chaperone before they act.</h1>
+      <p id="todaySub" class="sub">Nothing has happened yet today. Run the demo to replay ten real situations from the studio's own files. Every decision quotes the line in your file that decided it.</p>
     </div>
 
     <div id="todayIntro" class="intro" data-testid="today-intro">
-      <p class="intro-text">Your five AI helpers ask Chaperone before they do anything. Chaperone answers in one of three ways, using your own files as the reason.</p>
+      <p class="intro-text">Chaperone answers each request in one of three ways, using your own files as the reason.</p>
       <ul class="legend">
         <li class="d-ALLOW"><span class="legend-ic" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-done"/></svg></span><span class="legend-txt"><strong>Done</strong> Routine work goes ahead without bothering you.</span></li>
         <li class="d-HOLD_FOR_APPROVAL"><span class="legend-ic" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-wait"/></svg></span><span class="legend-txt"><strong>Waiting for you</strong> Money or promises wait for your yes.</span></li>
@@ -111,7 +112,7 @@
       <button type="button" class="btn btn-secondary btn-lg" data-run data-testid="intro-run">
         <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-play"/></svg> Run the demo
       </button>
-      <p class="fine">Replays ten real situations from the studio's files. It takes about 30 seconds.</p>
+      <p class="fine">Replays ten real situations from the studio's files. It takes about 18 seconds.</p>
     </div>
 
     <div id="todayBody" class="hidden" data-testid="today-body">
@@ -152,7 +153,7 @@
         <aside class="col-side">
           <section id="videoWrap" class="block video hidden" aria-labelledby="h-video">
             <h2 id="h-video">The 60-second briefing</h2>
-            <video id="briefVideo" controls preload="none" playsinline src="/assets/briefing-60s.mp4" data-testid="brief-video"></video>
+            <video id="briefVideo" controls preload="metadata" playsinline poster="/assets/thumbnail.png" src="/assets/briefing-60s.mp4" data-testid="brief-video"></video>
             <p class="quiet small">The same briefing, read aloud with captions on each slide.</p>
           </section>
           <section class="block" aria-labelledby="h-agents">
@@ -174,7 +175,7 @@
   <section id="tab-log" class="tab" role="tabpanel" aria-labelledby="tabbtn-log" tabindex="-1">
     <div class="page-head">
       <h1>Live log</h1>
-      <p class="sub">Every action by every agent, newest first. Open a row to see the exact lines in your files that decided it. Each row is tagged with its demo-scenario id (S1 to S10), and the Scorecard tab explains what each scenario tested.</p>
+      <p class="sub">Every action by every agent, newest first. Open a row to see the exact lines in your files that decided it. Held actions wait in Approvals — several attempts on one invoice share a single decision. The log is append-only: every demo run is kept, and Today's briefing shows the latest run.</p>
     </div>
     <div class="filters" id="filters">
       <div class="filter-group">
@@ -187,6 +188,7 @@
       </div>
     </div>
     <p id="logSummary" class="log-summary" data-testid="log-summary"></p>
+    <p id="logChain" class="log-chain fine hidden" data-testid="log-chain"></p>
     <div id="logList" class="rows" data-testid="log-list"></div>
     <div id="logNone" class="empty hidden" data-testid="empty-log-none">
       <span class="empty-illus" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></span>
@@ -201,7 +203,7 @@
       <button type="button" class="btn btn-secondary" data-run data-testid="log-empty-run">
         <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-play"/></svg> Run the demo
       </button>
-      <p class="fine">Takes about 30 seconds. Nothing is sent anywhere: it replays the studio's own files.</p>
+      <p class="fine">Takes about 18 seconds. Nothing is sent anywhere: it replays the studio's own files.</p>
     </div>
   </section>
 
@@ -304,7 +306,7 @@
       <button type="button" class="btn btn-secondary" data-run data-testid="score-empty-run">
         <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-play"/></svg> Run the demo
       </button>
-      <p class="fine">Takes about 30 seconds. Nothing is sent anywhere: it replays the studio's own files.</p>
+      <p class="fine">Takes about 18 seconds. Nothing is sent anywhere: it replays the studio's own files.</p>
     </div>
   </section>
 </main>

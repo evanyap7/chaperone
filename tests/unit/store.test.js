@@ -58,3 +58,56 @@ test('queue ids are not reused after a reset', () => {
   const b = s.enqueue({ fingerprint: 'f1' });
   assert.notEqual(a.queue_id, b.queue_id);
 });
+
+// ---- Fix 9: approvals are single-use -----------------------------------------
+
+test('fix9: an APPROVED item never releases a new request — a fresh pending item is created', () => {
+  const s = new Store(null);
+  const a = s.enqueue({ fingerprint: 'f1', summary: 'one' });
+  s.decide(a.queue_id, 'approve', 'Mei');
+  const b = s.enqueue({ fingerprint: 'f1', summary: 'one again' });
+  assert.notEqual(a, b);
+  assert.notEqual(a.queue_id, b.queue_id);
+  assert.equal(b.status, 'pending');
+  assert.equal(a.status, 'approved');
+  assert.equal(s.queue.length, 2);
+});
+
+test('fix9: a denied item still stands (no re-queue), a pending item still dedupes', () => {
+  const s = new Store(null);
+  const a = s.enqueue({ fingerprint: 'f1' });
+  s.decide(a.queue_id, 'deny', 'Mei');
+  assert.equal(s.enqueue({ fingerprint: 'f1' }), a);
+  const b = s.enqueue({ fingerprint: 'f2' });
+  assert.equal(s.enqueue({ fingerprint: 'f2' }), b);
+  assert.equal(s.queue.length, 2);
+});
+
+// ---- Fix 10: the log is append-only and hash-chained -------------------------
+
+test('fix10: entries hash-chain; tampering or deletion breaks the chain at the right entry', () => {
+  const s = new Store(null);
+  s.append({ decision: 'ALLOW' });
+  s.append({ decision: 'BLOCK' });
+  s.append({ decision: 'HOLD_FOR_APPROVAL' });
+  assert.deepEqual(s.verifyChain(), { ok: true, length: 3, broken_at: null });
+  assert.equal(s.log[0].prev_hash, null);
+  assert.equal(s.log[1].prev_hash, s.log[0].hash);
+  s.log[1].decision = 'ALLOW'; // tamper
+  assert.deepEqual(s.verifyChain(), { ok: false, length: 3, broken_at: 2 });
+  s.log[1].decision = 'BLOCK'; // restore
+  s.log.splice(0, 1); // delete the first entry
+  assert.equal(s.verifyChain().ok, false);
+});
+
+test('fix10: queue_id is assigned before hashing, so it is covered by the chain', () => {
+  const { store, chaperone } = freshEngine();
+  const e = gate(chaperone, 'delete_file', { file: 'finance/invoice_2026-031_harbourbean.md' });
+  assert.ok(e.queue_id);
+  assert.equal(store.verifyChain().ok, true);
+  const entry = store.log.find((x) => x.id === e.id);
+  entry.queue_id = 'Q999';
+  const v = store.verifyChain();
+  assert.equal(v.ok, false);
+  assert.equal(v.broken_at, e.id);
+});

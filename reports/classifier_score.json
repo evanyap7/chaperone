@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-19T10:35:09.231Z",
+  "generated_at": "2026-11-19T23:23:40.645Z",
   "total": 30,
   "correct": 30,
   "accuracy": 1,
@@ -84,7 +84,8 @@
       "docType": "contract",
       "fallback": null,
       "evidence": [
-        "client-document: \"Services agreement — Nimbus Health Clinic\" (line 1)"
+        "client-document: \"Services agreement — Nimbus Health Clinic\" (line 1)",
+        "contract-terms: \"2. Fee: SGD 14,500. Milestones: 40% signing, 30% design approval, 30% launch.\" (line 9)"
       ]
     },
     {

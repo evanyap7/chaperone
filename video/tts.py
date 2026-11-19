@@ -25,7 +25,10 @@ VOICE = os.environ.get('TTS_VOICE', 'af_heart:0.8,af_bella:0.2')
 SPEED = float(os.environ.get('TTS_SPEED', '1.0'))
 SR = 24000
 
-# Spoken-only fixes; the script and slides keep the real spelling.
+# Spoken-only fixes; the script, captions and slides keep the real spelling.
+# Word-boundary regexes applied in say_as() right before synthesis, so e.g. "Mei"
+# and "Mei's" are spoken as the name "May" / "May's" while every written surface
+# (demo-script.json, captions.json, SRT, ASS) still says "Mei".
 SAY_AS = {
     r'\bMei\b': 'May',
     r'\bcashflow\b': 'cash-flow',
@@ -35,6 +38,9 @@ SAY_AS = {
 
 # Pauses (seconds) after a sentence, before the next one, by how the sentence ends.
 PAUSE = {'.': (0.26, 0.40), '?': (0.30, 0.44), '!': (0.26, 0.38)}
+# A longer beat before a verdict sentence lets the decision land (editor report §2.2).
+VERDICT_PAUSE = (0.55, 0.70)
+VERDICT_WORDS = ('blocked', 'held', 'allowed', 'stopped')
 
 POLISH = ('highpass=f=80,lowpass=f=15000,'
           'deesser=i=0.35:m=0.5:f=0.5,'
@@ -79,8 +85,9 @@ def _trim(x, thresh=0.006, keep=0.035):
         y[:f] *= np.linspace(0, 1, f); y[-f:] *= np.linspace(1, 0, f)
     return y
 
-def synth(text, seed=None):
-    """Synthesize text sentence by sentence. Returns (samples float32 @24k, [(start, end, sentence)])."""
+def synth(text, seed=None, pause_scale=1.0):
+    """Synthesize text sentence by sentence. Returns (samples float32 @24k, [(start, end, sentence)]).
+    pause_scale < 1 tightens the inter-sentence gaps (used for the urgent hook)."""
     rng = random.Random(seed if seed is not None else int(hashlib.md5(text.encode()).hexdigest()[:8], 16))
     k, voice = _engine(), _voice()
     out, marks, t = [], [], 0.0
@@ -92,8 +99,15 @@ def synth(text, seed=None):
         y = _trim(np.asarray(audio, dtype=np.float32))
         out.append(y); marks.append((t, t + len(y) / SR, s)); t += len(y) / SR
         if i < len(sents) - 1:
-            lo, hi = PAUSE.get(s[-1], (0.24, 0.34))
-            gap = np.zeros(int(rng.uniform(lo, hi) * SR), dtype=np.float32)
+            next_first = re.match(r'[A-Za-z]+', sents[i + 1])
+            cur_first = re.match(r'[A-Za-z]+', s)
+            verdict_next = next_first and next_first.group(0).lower() in VERDICT_WORDS
+            verdict_cur = cur_first and cur_first.group(0).lower() in VERDICT_WORDS and len(s.split()) <= 3
+            if verdict_next or verdict_cur:
+                lo, hi = VERDICT_PAUSE
+            else:
+                lo, hi = PAUSE.get(s[-1], (0.24, 0.34))
+            gap = np.zeros(int(rng.uniform(lo, hi) * pause_scale * SR), dtype=np.float32)
             out.append(gap); t += len(gap) / SR
     return (np.concatenate(out) if out else np.zeros(0, np.float32)), marks
 

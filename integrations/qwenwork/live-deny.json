@@ -1,0 +1,22 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "queue": {
+      "queue_id": "Q1",
+      "fingerprint": "delete:finance/invoice_2026-031_harbourbean.md",
+      "status": "denied",
+      "created_at": "2026-11-19T16:05:04.874Z",
+      "agent": "Ops (live QwenWork agent)",
+      "action": "delete_file",
+      "summary": "Delete finance/invoice_2026-031_harbourbean.md — SGD 3,000 unpaid.",
+      "recommendation": "deny",
+      "money_at_stake": 3000,
+      "log_id": 3,
+      "never": false,
+      "action_hash": "7888127e3b0ec863f90e65bc1ab1c8ce565b6f78",
+      "decided_by": "Mei",
+      "decided_at": "2026-11-19T16:09:02.213Z"
+    }
+  }
+}

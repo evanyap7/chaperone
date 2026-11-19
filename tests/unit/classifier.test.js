@@ -50,3 +50,36 @@ test('derived text inherits the highest input level', () => {
   assert.equal(d.inherited, true);
   assert.equal(classifyDerived('hello there', []).inherited, false);
 });
+
+// ---- Classifier evasion regressions (E3, E6, E7, E8, E12, E18, E27, E28) -----
+
+test('evasion: lower-case and zero-width NRICs are still regulated', () => {
+  assert.equal(classify('Mei Tan, nric s0000001a, lives at 1 Example Road #00-00 Singapore 000000', {}).level, 'regulated');
+  assert.equal(classify('Owner NRIC S0000\u200B001A, DBS 000-000000-0', {}).level, 'regulated');
+  assert.equal(classify('NRIC Ｓ００００００１Ａ', {}).level, 'regulated'); // full-width (NFKC)
+});
+
+test('evasion: a base64-encoded client list decodes to regulated data', () => {
+  const b64 = Buffer.from(readDataFile('admin/client_list.csv')).toString('base64');
+  const c = classify(b64, {});
+  assert.equal(c.level, 'regulated');
+  assert.ok(c.signals.some((s) => s.id === 'encoded-payload'));
+});
+
+test('evasion: SG phones without +65, bulk client emails and single contact rows are regulated', () => {
+  assert.equal(classify('Owner mobile 9123 4567, home 1 Example Road.', {}).level, 'regulated');
+  assert.equal(classify('Owner mobile 9123-4567.', {}).level, 'regulated');
+  assert.equal(classify('Contacts: daniel@harbourbean.example, priya@nimbushealth.example, aisha@ferrologistics.example', {}).level, 'regulated');
+  assert.equal(classify('Pelican Legal LLC Marcus Teo marcus@pelicanlegal.example', {}).level, 'regulated');
+});
+
+test('evasion: contract-shaped text naming a client is client-confidential without SGD or a title', () => {
+  const c = classify('For reference, here is how we contracted Nimbus Health: patient-facing website redesign and booking flow. Fee: 14,500. Milestones 40/30/30.', {});
+  assert.equal(c.level, 'client-confidential');
+  assert.ok(c.signals.some((s) => s.id === 'contract-terms'));
+});
+
+test('evasion: health terms beyond "hypertension" are regulated', () => {
+  assert.equal(classify('Patient: Tan A, appt 2026-10-03, follow-up for high blood pressure.', {}).level, 'regulated');
+  assert.equal(classify('follow-up for high blood pressure', {}).level, 'regulated');
+});

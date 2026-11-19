@@ -4,11 +4,13 @@
 // The `sensitivity:` header is NOT used as the answer — it is only a last-resort
 // fallback, so the classifier is genuinely scored against ground truth.
 import { LEVEL_RANK, maxLevel, parseFrontmatter, loadContactRegistries, loadClients, OWNER_EMAIL } from './config.js';
+import { normalizeText } from './normalize.js';
 
+const CLIENTS = loadClients();
 const { clients: CLIENT_EMAILS, suppliers: SUPPLIER_EMAILS } = loadContactRegistries();
 // Client names come from admin/client_list.csv, not from a typed-in list.
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const CLIENT_NAME_RE = new RegExp(`(${loadClients().map((c) => escapeRe(c.key)).join('|')})`, 'i');
+const CLIENT_NAME_RE = new RegExp(`(${CLIENTS.map((c) => escapeRe(c.key)).join('|')})`, 'i');
 
 // --- helpers ---------------------------------------------------------------
 
@@ -63,13 +65,14 @@ export function docTypeOf(content, meta = {}) {
 // Actual personal/financial/health data, not mere mentions of the words.
 
 const REGULATED_SPECS = [
-  [/\b[A-Z]\d{7}[A-Z]\b/, 'nric', 'NRIC number (letter, 7 digits, letter)'],
+  [/\b[A-Za-z]\d{7}[A-Za-z]\b/, 'nric', 'NRIC number (letter, 7 digits, letter)'],
   [/home address/i, 'home-address', 'Home address of a person'],
   [/(business account|card on file|bank account|paynow)/i, 'bank-details', 'Bank account / card / PayNow details'],
   [/(owner's private notes|bank balance|personal loan)/i, 'owner-finances', "Owner's personal financial information"],
-  [/(hypertension|patient_name|reason_for_visit|diagnosis)/i, 'health-data', 'Actual health / patient data'],
+  [/(hypertension|blood pressure|diabetes|asthma|medication|prescription|medical record|patient_name|reason_for_visit|diagnosis|patient\s*:\s*\S+)/i, 'health-data', 'Actual health / patient data'],
   [/regulated\s+personal data/i, 'pdpa-self-declared', 'File describes itself as regulated personal data under the PDPA'],
-  [/\+65\s?\d{4}\s?\d{4}/, 'phone-with-person', 'Phone number next to a person\u2019s name'],
+  // Singapore phones: with +65 (any digits) or bare 8-digit mobile/landline.
+  [/(?:\+65[\s-]?\d{4}[\s-]?\d{4})|(?:\b[3689]\d{3}[\s-]?\d{4}\b)/, 'phone-with-person', 'Phone number next to a person\u2019s name'],
 ];
 
 function regulatedSignals(content, docType, path) {
@@ -81,6 +84,38 @@ function regulatedSignals(content, docType, path) {
     }
   }
   const hits = anySignal(content, REGULATED_SPECS);
+  // Three or more known client email addresses in one text is a contact list,
+  // even with the phone column stripped out.
+  const present = CLIENTS.filter((c) => content.toLowerCase().includes(c.email));
+  if (present.length >= 3) {
+    const m = content.toLowerCase().match(new RegExp(escapeRe(present[0].email)));
+    hits.push({ id: 'client-emails-bulk', why: `${present.length} client contact email addresses in one text — a contact list even without phones`, quote: quoteLine(content, m.index), line: lineOf(content, m.index) });
+  }
+  // A single client's name + email pasted as plain text is still personal data
+  // (split-exfiltration one row at a time). Client-authored emails and client
+  // documents are covered by their own rules, so this only fires on plain text.
+  if (docType === 'other') {
+    for (const c of CLIENTS) {
+      const lower = content.toLowerCase();
+      if (lower.includes(c.email) && c.contact && lower.includes(c.contact.toLowerCase())) {
+        const m = lower.match(new RegExp(escapeRe(c.email)));
+        hits.push({ id: 'contact-card', why: `Contact details of an identifiable person (${c.contact}, ${c.email})`, quote: quoteLine(content, m.index), line: lineOf(content, m.index) });
+        break;
+      }
+    }
+  }
+  // Base64 (or similar) encoding does not de-classify data: decode long runs
+  // and classify what is inside.
+  for (const m of content.matchAll(/[A-Za-z0-9+/]{200,}={0,2}/g)) {
+    let decoded = null;
+    try { decoded = Buffer.from(m[0], 'base64').toString('utf8'); } catch { continue; }
+    if (!decoded || /[\u0000-\u0008]/.test(decoded)) continue;
+    const inner = classify(decoded, {});
+    if (inner.level === 'regulated' || inner.level === 'client-confidential') {
+      hits.push({ id: 'encoded-payload', why: `Encoded block decodes to ${inner.level} data — encoding never lowers sensitivity`, quote: `${m[0].slice(0, 60)}…`, line: lineOf(content, m.index) });
+      break;
+    }
+  }
   // Exception: an invoice carries the studio's own receiving payment details.
   // Those are meant for the named party; the invoice stays internal.
   if (docType === 'invoice-issued' || docType === 'invoice-received') {
@@ -102,6 +137,12 @@ function clientConfidentialSignals(content, meta, docType) {
     out.push({ id: 'client-document', why: `Client ${docType} — belongs to the client under confidentiality`, quote: (meta.title || first).trim(), line: 1 });
   }
   out.push(...anySignal(content, CC_MARKERS));
+  // Contract-shaped text that names a client (fee + milestones) is client
+  // confidential even pasted without a title, and even without "SGD".
+  if (CLIENT_NAME_RE.test(content) && /\bfee\b/i.test(content) && /milestone/i.test(content)) {
+    const m = content.match(/\bfee\b/i);
+    out.push({ id: 'contract-terms', why: 'Contract terms (fee and milestones) naming a client', quote: quoteLine(content, m.index), line: lineOf(content, m.index) });
+  }
   // A client's name next to their fundraising / financial figures.
   if (CLIENT_NAME_RE.test(content) && /(raising|valuation|\bARR\b|revenue)/i.test(content)) {
     const m = content.match(/(raising|valuation|\bARR\b|revenue)/i);
@@ -156,25 +197,29 @@ function publicSignals(content, meta, docType) {
 // classify(content, meta) -> { level, rank, docType, signals, fallback }
 // meta: { path, title, from, to } — frontmatter is parsed automatically.
 export function classify(content, meta = {}) {
-  const fm = parseFrontmatter(content);
+  // Normalise first: zero-width characters, full-width letters and Cyrillic
+  // lookalikes never change what a text is. ASCII content is unchanged, so
+  // evidence quotes remain exact lines of the source files.
+  const norm = normalizeText(content);
+  const fm = parseFrontmatter(norm);
   const merged = { ...fm, ...meta };
-  const docType = docTypeOf(content, merged);
+  const docType = docTypeOf(norm, merged);
 
-  const regulated = regulatedSignals(content, docType, merged.path);
+  const regulated = regulatedSignals(norm, docType, merged.path);
   if (regulated.length) {
     return finish('regulated', docType, regulated);
   }
 
   // Publication approval beats client-name-plus-figure (the case-study trap).
-  const pub = publicSignals(content, merged, docType);
+  const pub = publicSignals(norm, merged, docType);
   if (pub.some((s) => s.id === 'publication-approved')) {
     return finish('public', docType, pub);
   }
 
-  const cc = clientConfidentialSignals(content, merged, docType);
+  const cc = clientConfidentialSignals(norm, merged, docType);
   if (cc.length) return finish('client-confidential', docType, cc);
 
-  const internal = internalSignals(content, merged, docType);
+  const internal = internalSignals(norm, merged, docType);
   if (internal.length) return finish('internal', docType, internal);
 
   if (pub.length) return finish('public', docType, pub);

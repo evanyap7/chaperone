@@ -21,3 +21,11 @@ video/models/
 video/work3/
 video/motion/fonts/
 __pycache__/
+
+# QwenWork demo build intermediates + local YouTube master (too big for git)
+video/work_final/
+video/work_motion/
+video/work_voice/
+video/work_footage/
+video/work_qwen/
+assets/demo-video-master.mp4

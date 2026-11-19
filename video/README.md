@@ -6,7 +6,7 @@ by hand. Each pipeline lives in its own files:
 | Video | Length | Pipeline | Output |
 |---|---|---|---|
 | Morning briefing | 60 s | `dump_briefing.mjs` → `render.py` → `assemble.py` | `assets/briefing-60s.mp4` |
-| Product demo | 180 s | `voice3.py` + `captions/` + `motion/` (driven by `script/demo-script.json`) | see below |
+| Product demo | 175 s | `record/` → `voice3.py` → `captions/` → `motion/scenes_final.py` → `assemble_final.py` | `assets/demo-video.mp4` |
 
 Both use the same local voice (`tts.py`), so they sound like the same person.
 
@@ -23,9 +23,10 @@ Both use the same local voice (`tts.py`), so they sound like the same person.
 - **Pronunciation fixes, speech only:** Mei → "May", cashflow → "cash-flow",
   QuickPrint → "Quick Print". On-screen text is not changed.
 - **Polish (ffmpeg):** 80 Hz high-pass, a gentle de-esser and light compression.
-- **Final mix (`mix.py`):** the music is ducked under the voice with
-  `sidechaincompress`, then the mix is loudness-normalized in two passes to
-  -16 LUFS, with true peak at or below -1.5 dBTP after AAC encoding.
+- **Final mix (`mix.py`):** the music is ducked under the voice
+  (`MUSIC_GAIN 0.16`, sidechain ratio 4, release 1100 ms), limited at −3 dBFS,
+  loudness-normalized to −16 LUFS, AAC 320k. **The build fails if true peak is
+  above −1 dBTP.**
 
 ### One-time setup
 
@@ -89,40 +90,61 @@ ffprobe -v error -show_entries format=duration -of csv=p=0 assets/briefing-60s.m
 ffmpeg -nostats -i assets/briefing-60s.mp4 -af ebur128=peak=true -f null - 2>&1 | tail -12
 ```
 
-## The 3-minute demo: a separate pipeline
+## The 175-second demo: real footage + motion graphics
 
-The 180-second product demo is built by a separate pipeline, owned and run
-separately from the briefing. Its files are:
+The product demo is built from **real Playwright screen recordings of the
+running app**, composited with motion graphics, neural narration and
+word-by-word captions. Its files:
 
-- **`script/demo-script.json`** (the human-readable twin is `demo-script.md`):
-  14 timed segments adding up to 180.0 s, with narration, captions and the
-  source of every figure.
-- **`voice3.py`** (step A) synthesizes each segment's narration with the shared
-  `tts.py`. It checks that every line fits its slot; if one overruns, it raises
-  the speed slightly rather than cutting words. It writes
-  `work3/narration.wav` and `work3/timing.json`.
-- **`captions/make_captions.py`** (step B) re-times the script's caption cues
-  against the measured audio. It writes `captions.ass`, `captions.srt` and
-  per-cue PNG overlays that get burned in.
-- **`motion/ds.py`** is the drawing kit for the motion graphics. It mirrors
-  `design-system/chaperone/` (Lexend, Source Sans 3 and JetBrains Mono, fetched
-  by `motion/fetch_fonts.sh` into the gitignored `motion/fonts/`).
-- **`motion/build_demo.py`** (step C) renders all 14 segments: motion scenes
-  (`scenes_motion.py`) and recreations of each app tab (`scenes_ui.py`), with
-  shared chrome in `chrome.py` and dispatch in `scenes.py`. It burns in the
-  captions, mixes voice and music through `mix.py` (-16 LUFS) and writes
-  `assets/demo-video.mp4`. Run it with `--dryrun` to render one still per
-  segment into `work3/dryrun/` for a quick visual check.
+- **`record/record_footage.mjs`** records the app (1920×1080, true 60 fps via
+  CDP screencast) — one clip per beat: run-demo, briefing, S1, S4, S5, S7, S8,
+  S9, S10, S3 "Say no", scorecard. Clips + `manifest.json` land in
+  `work_footage/`. Re-run all beats or a subset: `node record_footage.mjs s8 s9`.
+- **`script/demo-script.json`** (twin: `demo-script.md`): schema_version 2,
+  timed segments adding up to 175.0 s, with narration, on-screen specs and the
+  source of every figure (~415 words).
+- **`voice3.py`** synthesizes each segment with the shared `tts.py` (Mei is
+  spoken as "May"; captions keep "Mei"), measures durations and writes
+  `work_voice/narration.wav` + `timing.json`.
+- **`captions/make_captions.py`** aligns words with faster-whisper timestamps
+  (drift < 0.15 s) and writes `captions.json`, `captions.ass` (word-by-word
+  highlight, ≤38-char lines, Source Sans 3 58 px at y≈950, decision colours
+  BLOCK `#EDA69C` / HOLD `#E8C988` / ALLOW `#A9D9B8`), `captions.srt` and the
+  per-word PNGs. `assets/demo-video.srt` is the exported subtitle file.
+- **`motion/ds.py` + `motion/footage.py`** are the drawing kit: decision stamps,
+  highlight boxes, the rounded-frame footage compositor with slow push-in,
+  agent→gate→world flow lines, the animated S8 maths (750 + 750 = 1,500 > 1,000),
+  counters and the chapter progress bar. **`motion/scenes_final.py`** dispatches
+  every segment (hook, problem kinetic type, footage beats, proof, business,
+  QwenWork, CTA).
+- **`work_qwen/`** holds the QwenWork-segment recordings: live agents BLOCKED
+  and HELD in the app, plus the real terminal output of the PreToolUse hook
+  adapter (see `integrations/qwenwork/`).
+- **`assemble_final.py`** composites everything: frames → H.264 CRF 18
+  (8–12 Mbps) → mix via `mix.py` → burn captions → `assets/demo-video.mp4`.
+  `--dryrun` renders one still per segment. It also regenerates the contact
+  sheet (one frame every 10 s) in `work_final/`.
 
 ```bash
-video/.venv/bin/python video/voice3.py
+cd video/record && node record_footage.mjs        # real app footage
+video/.venv/bin/python video/voice3.py            # narration + timing
 video/.venv/bin/python video/captions/make_captions.py
-video/.venv/bin/python video/motion/build_demo.py
+video/.venv/bin/python video/assemble_final.py    # -> assets/demo-video.mp4
 ```
 
-`record_demo.mjs`, `assemble_demo.py` and `demo_voiceover.json` are an earlier
-Playwright tour of the live UI. They record the app, then add a title card, an
-end card and a voiceover.
+Checks used on the current render:
+
+```bash
+ffprobe -v error -show_entries format=duration -of csv=p=0 assets/demo-video.mp4   # 175.0
+ffmpeg -nostats -i assets/demo-video.mp4 -af ebur128=peak=true -f null - 2>&1 | tail -12
+# I: -16.0 LUFS, true peak: -3.0 dBFS (build fails above -1 dBTP)
+```
+
+`youtube.md` is the upload kit (title, chaptered description, tags). The
+thumbnail is `assets/thumbnail.png` (1280×720, red BLOCKED stamp over a real UI
+frame). `motion/build_demo.py`, `record_demo.mjs`, `assemble_demo.py` and
+`demo_voiceover.json` are the earlier 180 s motion-graphics-only cut, kept for
+reference.
 
 ## Assets
 

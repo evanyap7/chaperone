@@ -17,13 +17,17 @@ try {
 } catch { store.classifierReport = null; }
 
 const chaperone = new Chaperone(store);
-const { server } = createApp({ store, chaperone });
+const app = createApp({ store, chaperone });
+const { server } = app;
 
 // A stray rejection is logged, never allowed to take the live service down.
 process.on('unhandledRejection', (e) => console.error('unhandled rejection:', e));
 
 server.listen(PORT, HOST, () => {
   console.log(`Chaperone live on http://localhost:${PORT}`);
+  console.log(`Owner token: ${app.ownerToken}`);
+  console.log('The UI receives this token automatically as an httpOnly cookie.');
+  console.log('Owner API calls: Authorization: Bearer <token>. Worker agents never get it.');
 });
 
 function shutdown(signal) {

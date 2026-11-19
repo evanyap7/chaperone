@@ -1,0 +1,10 @@
+{
+  "name": "chaperone-footage-recorder",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "V1 FOOTAGE: real Playwright screen captures of the Chaperone app, one clip per demo beat.",
+  "dependencies": {
+    "playwright-core": "^1.65.1"
+  }
+}

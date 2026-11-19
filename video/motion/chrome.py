@@ -234,7 +234,7 @@ def _flat_cursor(base, xy, press=0.0, alpha=1.0):
 cursor = _flat_cursor  # public alias
 
 
-def app_window(base, t, active_tab, t0=0.0, url='localhost:8081', live=True):
+def app_window(base, t, active_tab, t0=0.0, url='uq2xhx6u.qwenwork.page', live=True):
     """Draw the Chaperone app shell (title bar + tab strip). Returns the content box.
 
     Content box is (x0, y0, x1, y1) in frame pixels, inset from the window edges.

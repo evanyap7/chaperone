@@ -7,7 +7,9 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { GateInputError } from './chaperone.js';
+import { createHookHandler } from '../integrations/qwenwork/hook-handler.js';
 import { runScenarioLive } from './runner.js';
 import { loadScenarioDefs } from './scenarios.js';
 import { buildBriefing } from './briefing.js';
@@ -38,9 +40,37 @@ export function createApp({
   webDir = path.join(ROOT, 'web'),
   assetsDir = path.join(ROOT, 'assets'),
   log = console,
+  ownerToken = process.env.OWNER_TOKEN || crypto.randomBytes(24).toString('hex'),
 } = {}) {
   let demoRunning = false;
   let demoPromise = null;
+  let demoSeq = 0;
+  const hook = createHookHandler({ chaperone, store });
+
+  // ---- owner authentication -------------------------------------------------
+  // Only the owner decides. The token is generated at startup (or set via
+  // OWNER_TOKEN), printed to the console by src/server.js, and handed to the
+  // UI as an httpOnly same-site cookie. Worker agents never get it.
+  const tokenBuf = Buffer.from(ownerToken);
+  function tokenFrom(req) {
+    const auth = String(req.headers.authorization || '');
+    if (auth.startsWith('Bearer ')) return auth.slice(7).trim();
+    const m = String(req.headers.cookie || '').match(/(?:^|;\s*)chaperone_owner=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function isOwner(req) {
+    const t = tokenFrom(req);
+    if (!t) return false;
+    const b = Buffer.from(t);
+    return b.length === tokenBuf.length && crypto.timingSafeEqual(b, tokenBuf);
+  }
+  function requireOwner(req) {
+    if (!isOwner(req)) throw new HttpError(401, 'owner authentication required');
+  }
+  function ownerCookie(req) {
+    const secure = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https' ? '; Secure' : '';
+    return `chaperone_owner=${ownerToken}; Path=/; HttpOnly; SameSite=Strict${secure}`;
+  }
 
   // ---- SSE ----------------------------------------------------------------
   const sseClients = new Set();
@@ -65,16 +95,20 @@ export function createApp({
   heartbeat.unref();
 
   // ---- demo replay --------------------------------------------------------
+  // The audit log is append-only: a demo run APPENDS its scripted actions to
+  // the log and never wipes real entries, the queue or the payment ledger.
+  // Each run is a self-contained simulation (its payments aggregate within
+  // the run); the briefing and scorecard reflect the latest run.
   async function runDemo() {
-    store.reset();
-    chaperone.reset();
-    broadcast('demo', { running: true });
+    const runId = `run-${++demoSeq}-${Date.now()}`;
+    store.lastRunId = runId;
+    broadcast('demo', { running: true, run_id: runId });
     const results = [];
     let error = null;
     try {
       for (const def of loadScenarioDefs()) {
         broadcast('scenario', { id: def.id, name: def.name, status: 'running' });
-        const entries = await runScenarioLive(chaperone, def.id, { delayMs: demoDelayMs });
+        const entries = await runScenarioLive(chaperone, def.id, { delayMs: demoDelayMs, runId });
         const result = scoreRun(def, entries, store.queue);
         results.push(result);
         store.setScenarioResults([...results]);
@@ -176,7 +210,7 @@ export function createApp({
     return { start, end };
   }
 
-  function serveStatic(req, res, base, urlPath) {
+  function serveStatic(req, res, base, urlPath, extraHeaders = {}) {
     let rel;
     try { rel = decodeURIComponent(urlPath); } catch { throw new HttpError(400, 'malformed URL'); }
     if (rel.includes('\0')) throw new HttpError(400, 'malformed URL');
@@ -194,6 +228,7 @@ export function createApp({
         'Cache-Control': REVALIDATE.has(ext) ? 'no-cache' : 'public, max-age=300',
         ETag: etag, 'Last-Modified': st.mtime.toUTCString(),
         'Accept-Ranges': 'bytes', 'X-Content-Type-Options': 'nosniff',
+        ...extraHeaders,
       };
       const inm = req.headers['if-none-match'];
       const ims = req.headers['if-modified-since'];
@@ -225,6 +260,7 @@ export function createApp({
   }
 
   function openEvents(req, res) {
+    requireOwner(req);
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store',
       Connection: 'keep-alive', 'X-Accel-Buffering': 'no',
@@ -239,14 +275,20 @@ export function createApp({
   }
 
   // ---- routes -------------------------------------------------------------
+  // Owner-only routes require the owner token (cookie or Bearer). The gate
+  // itself is the worker channel: agents call it without the owner token.
   const routes = {
     '/api/events': { GET: openEvents },
     '/api/state': {
-      GET: (req, res) => json(res, 200, {
-        log: store.log, queue: store.queue, scenarioResults: store.scenarioResults,
-        classifierReport: store.classifierReport, briefing: store.briefing,
-        lineage: lineageSnapshot(), demoRunning,
-      }),
+      GET: (req, res) => {
+        requireOwner(req);
+        return json(res, 200, {
+          log: store.log, queue: store.queue, scenarioResults: store.scenarioResults,
+          classifierReport: store.classifierReport, briefing: store.briefing,
+          lineage: lineageSnapshot(), demoRunning,
+          log_chain: store.verifyChain(),
+        });
+      },
     },
     '/api/gate': {
       POST: async (req, res) => {
@@ -261,6 +303,7 @@ export function createApp({
     },
     '/api/demo/run': {
       POST: (req, res) => {
+        requireOwner(req);
         if (!startDemo()) return json(res, 409, { error: 'demo already running' });
         return json(res, 202, { ok: true, scenarios: loadScenarioDefs().map((d) => d.id) });
       },
@@ -268,13 +311,22 @@ export function createApp({
     '/api/queue/decide': {
       POST: async (req, res) => {
         const { queue_id, decision } = await readJsonBody(req);
+        requireOwner(req);
         if (typeof queue_id !== 'string' || !queue_id) return json(res, 400, { ok: false, code: 'invalid', error: 'queue_id is required' });
         const out = store.decide(queue_id, decision, OWNER_FIRST_NAME || 'owner');
         return json(res, out.ok ? 200 : (DECIDE_STATUS[out.code] || 400), out);
       },
     },
-    '/api/briefing': { GET: (req, res) => json(res, 200, store.briefing || buildBriefing(store)) },
-    '/api/lineage': { GET: (req, res) => json(res, 200, lineageSnapshot()) },
+    '/api/hook': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req);
+        requireOwner(req);
+        return json(res, 200, await hook(body));
+      },
+    },
+    '/api/briefing': { GET: (req, res) => { requireOwner(req); return json(res, 200, store.briefing || buildBriefing(store)); } },
+    '/api/lineage': { GET: (req, res) => { requireOwner(req); return json(res, 200, lineageSnapshot()); } },
+    // '/api/hook' (QwenWork PreToolUse adapter, TASK 2) mounts here.
     '/api/health': {
       GET: (req, res) => json(res, 200, {
         ok: true, demoRunning, actions: store.log.length, queue: store.queue.length,
@@ -300,7 +352,7 @@ export function createApp({
     if (p === '/api' || p.startsWith('/api/')) throw new HttpError(404, 'unknown API endpoint');
     if (method !== 'GET') throw new HttpError(405, `method ${req.method} not allowed`, { Allow: 'GET, HEAD' });
     if (p.startsWith('/assets/')) return serveStatic(req, res, assetsDir, p.slice('/assets/'.length));
-    if (p === '/' || p === '/index.html') return serveStatic(req, res, webDir, 'index.html');
+    if (p === '/' || p === '/index.html') return serveStatic(req, res, webDir, 'index.html', { 'Set-Cookie': ownerCookie(req) });
     return serveStatic(req, res, webDir, p);
   }
 
@@ -344,6 +396,7 @@ export function createApp({
   return {
     server, broadcast,
     startDemo,
+    ownerToken,
     get demoRunning() { return demoRunning; },
     get demoPromise() { return demoPromise; },
     get sseClientCount() { return sseClients.size; },

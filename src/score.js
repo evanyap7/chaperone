@@ -74,14 +74,16 @@ export const EVIDENCE_CHECKS = {
   ],
 };
 
-// Score an already-executed run (live demo or test).
+// Score an already-executed run (live demo or test). Queue checks are scoped
+// to this run's entries, so earlier demo runs or real actions never skew them.
 export function scoreRun(def, entries, queue) {
   const script = SCRIPTS[def.id];
   const primary = entries[script.primary];
   const expected = def.expected_oversight;
   const evidence = entries.flatMap((e) => e.evidence || []);
   const factChecks = entries.flatMap((e) => e.fact_check || []);
-  const ctx = { entries, evidence, factChecks, queue, primary };
+  const runQueue = queue.filter((q) => entries.some((e) => e.id === q.log_id || e.queue_id === q.queue_id));
+  const ctx = { entries, evidence, factChecks, queue: runQueue, primary };
 
   const unionRules = [...new Set(entries.flatMap((e) => e.rules))];
   const checks = {

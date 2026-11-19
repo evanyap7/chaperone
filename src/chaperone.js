@@ -7,13 +7,18 @@
 // No names, paths or amounts are typed into this file: clients, suppliers,
 // contacts, floors, limits and contract clauses are all looked up in the kit's
 // own data/ and rules/ files, so every figure traces to a file.
+import { createHash } from 'node:crypto';
+import path from 'node:path';
 import { classify, classifyDerived } from './classifier.js';
 import { Lineage } from './lineage.js';
 import { factCheck, hasFabrication, extractSourceFacts } from './factcheck.js';
+import { normalizeText, isSimilar, sharedShingles, extractMoney, canonicalPath } from './normalize.js';
 import {
   policy, maxLevel, readDataFile, resolveDataPath, listDataFiles, parseFrontmatter,
   loadClients, loadSuppliers, loadPriceList, paymentLimit, orgKey, firstName, OWNER_EMAIL,
+  DATA_DIR, RULES_DIR, readJson,
 } from './config.js';
+import fs from 'node:fs';
 
 const CLIENTS = loadClients();
 const SUPPLIERS = loadSuppliers();
@@ -25,6 +30,42 @@ const DAY_MS = 24 * 3600 * 1000;
 
 const NEVER = new Set(policy.rules.filter((r) => r.decision === 'NEVER').map((r) => r.id));
 const APPROVE = new Set(policy.rules.filter((r) => r.decision === 'APPROVE').map((r) => r.id));
+
+// Scope comes from the task record (rules/tasks.json), never from the agent's
+// request. A request may narrow its task's scope, never widen it.
+function loadTasks() {
+  try { return readJson(path.join(RULES_DIR, 'tasks.json')); } catch { return {}; }
+}
+
+// Per-action parameter allow-list. Anything else fails closed: the gate scans
+// the unknown values for protected data and holds (or blocks) the action.
+const PARAM_ALLOWLIST = {
+  read_file: ['file'],
+  list_dir: ['dir'],
+  write_file: ['file', 'content', 'derived_from'],
+  delete_file: ['file'],
+  upload_to_external_tool: ['file', 'target'],
+  send_email: ['to', 'body', 'attachment', 'attachments', 'cc', 'bcc'],
+  pay_supplier: ['amount', 'invoice', 'supplier', 'currency'],
+  quote_price: ['client', 'price', 'service'],
+  order_from_supplier: ['amount', 'supplier', 'confirmed'], // 'confirmed' is ignored: an agent's say-so is never the owner confirming
+  accept_terms: ['amount', 'detail'],
+  state_fact: ['statement'],
+  state_a_fact_to_a_client: ['statement'],
+  share_unannounced_client_news: ['to', 'body'],
+};
+
+// Actions that move data or money out. An ALLOW on protected data is never
+// final for these — the log and the decision must agree.
+const OUTBOUND_ACTIONS = new Set(['send_email', 'upload_to_external_tool', 'pay_supplier', 'quote_price', 'order_from_supplier', 'accept_terms', 'state_fact', 'state_a_fact_to_a_client']);
+
+// Prompt injection: an inbound text addressing an AI agent and instructing it
+// to move data or money. Normalised first (zero-width, homoglyphs), multiline,
+// and covering more verbs and addressees than the original kit phrasing.
+export const INJECTION_RE = /(AI assistant|attention AI|ignore (?:previous|all)|system:|assistant:|note to the (?:agent|AI)|dear (?:LLM|Copilot|agent|AI)|AI\s*助手|助手|agent\s*[,:]|LLM\s*[,:]|Copilot\s*[,:])[\s\S]{0,200}?(forward|send|upload|email|share|pay|transfer|export|transmit|发送|转发|上传|支付)/i;
+
+const QUEUE_CAP_PER_AGENT_HOUR = 20;
+const sha1 = (s) => createHash('sha1').update(s).digest('hex');
 
 // Raised for malformed gate input (missing / wrongly typed fields). The HTTP
 // layer turns it into a 400; nothing is logged because nothing was attempted.
@@ -123,10 +164,13 @@ export function validateGateInput(ctx) {
   for (const k of ['scope', 'sources']) {
     if (ctx[k] !== undefined && !isStrArray(ctx[k])) throw new GateInputError(`${k} must be an array of strings`);
   }
-  for (const k of ['files', 'derived_from']) {
+  for (const k of ['files', 'derived_from', 'attachments']) {
     if (p[k] !== undefined && !isStrArray(p[k])) throw new GateInputError(`params.${k} must be an array of strings`);
   }
-  for (const k of ['file', 'attachment', 'invoice', 'to', 'body', 'content', 'target', 'statement', 'client', 'supplier', 'service', 'detail']) {
+  for (const k of ['cc', 'bcc']) {
+    if (p[k] !== undefined && typeof p[k] !== 'string' && !isStrArray(p[k])) throw new GateInputError(`params.${k} must be a string or array of strings`);
+  }
+  for (const k of ['file', 'attachment', 'invoice', 'to', 'body', 'content', 'target', 'statement', 'client', 'supplier', 'service', 'detail', 'currency']) {
     if (p[k] !== undefined && p[k] !== null && typeof p[k] !== 'string') throw new GateInputError(`params.${k} must be a string`);
   }
   const need = (cond, msg) => { if (!cond) throw new GateInputError(msg); };
@@ -153,20 +197,34 @@ export class Chaperone {
   constructor(store) {
     this.store = store;
     this.lineage = new Lineage();
-    this.payments = []; // {ts, invoice, supplier, amount}
+    this.payments = []; // {ts, invoice, supplierKey, amount, run_id}
     this.r17Deleted = new Map(); // regulated file deleted under R17 -> affected client
+    this.tasks = loadTasks();
+    this.reads = new Map(); // `${agent}\u0000${task}` -> Set of files actually read via the gate
+    // Register every business file up front: lineage and content-similarity
+    // checks work even when an agent declares no sources at all.
+    for (const f of listDataFiles()) this.registerFile(f);
   }
 
   reset() {
     this.lineage.reset();
     this.payments = [];
     this.r17Deleted.clear();
+    this.reads.clear();
+    for (const f of listDataFiles()) this.registerFile(f);
   }
 
   // ---- helpers -------------------------------------------------------------
   classifyFileLevel(file) {
+    // A gate-written output lives in the lineage graph, not on disk.
+    const node = this.lineage.nodes.get(file);
+    if (node && node.content != null) return classify(node.content, { path: file });
     try { return classify(readDataFile(file), { path: file }); }
-    catch { return { level: 'internal', signals: [] }; }
+    catch {
+      // Fail closed: a file we cannot read is treated as protected, never as
+      // harmless internal data.
+      return { level: 'regulated', docType: 'other', signals: [{ id: 'unreadable', why: 'File could not be read — treated as protected until proven otherwise', quote: file, line: 1 }] };
+    }
   }
 
   registerFile(file) {
@@ -197,15 +255,26 @@ export class Chaperone {
     return CLIENT_BY_EMAIL.has(e) || SUPPLIER_BY_EMAIL.has(e) || (!!OWNER_EMAIL && e === OWNER_EMAIL);
   }
 
+  // Owner floors match on the organisation key, so "Greenstep", "greenstep
+  // tuition" and "Greenstep Tuition Centre" all hit the same written floor.
+  floorEntry(clientName) {
+    const key = orgKey(clientName);
+    for (const [name, floor] of Object.entries(policy.owner_floors || {})) {
+      if (orgKey(name) === key) return { name, floor };
+    }
+    return null;
+  }
+
   floorFor(clientName) {
-    return policy.owner_floors?.[clientName] ?? null;
+    return this.floorEntry(clientName)?.floor ?? null;
   }
 
   // Evidence for an owner floor: the policy entry, plus every place the owner
   // wrote it down — the client's own documents and the owner's notes.
   floorEvidence(clientName, floor) {
-    const ev = [{ file: 'rules/policy.json', quote: `"${clientName}": ${floor}`, line: null, why: `policy.json owner_floors: ${clientName} ${floor}` }];
-    const key = orgKey(clientName);
+    const canonical = this.floorEntry(clientName)?.name || clientName;
+    const ev = [{ file: 'rules/policy.json', quote: `"${canonical}": ${floor}`, line: null, why: `policy.json owner_floors: ${canonical} ${floor}` }];
+    const key = orgKey(canonical);
     const p = citeFirst(dataFilesUnder('clients/').filter((f) => f.includes(key)), /Do not go below SGD [\d,]+/i,
       (m, f) => `${f}: '${m[0]}'`);
     if (p) ev.push(p);
@@ -219,29 +288,56 @@ export class Chaperone {
   gate(ctx) {
     validateGateInput(ctx);
     ctx = { ...ctx, params: ctx.params ?? {}, scope: ctx.scope ?? [], sources: ctx.sources ?? [] };
+    // Case and whitespace never change an action: SEND_EMAIL is send_email.
+    ctx.action = String(ctx.action).trim().toLowerCase();
+    // Trim path-like params so "admin/client_list.csv " cannot dodge reading.
+    const p = ctx.params;
+    for (const k of ['file', 'dir', 'path', 'attachment', 'invoice']) {
+      if (typeof p[k] === 'string') p[k] = p[k].trim();
+    }
+    for (const k of ['files', 'attachments', 'derived_from']) {
+      if (Array.isArray(p[k])) p[k] = p[k].map((x) => (typeof x === 'string' ? x.trim() : x));
+    }
+    ctx.sources = ctx.sources.map((s) => (typeof s === 'string' ? s.trim() : s));
+    ctx.scope = ctx.scope.map((s) => (typeof s === 'string' ? s.trim() : s));
     const { agent, task, action, params, scenario } = ctx;
     const filesTouched = new Set(params.file ? [params.file] : []);
     if (params.files) for (const f of params.files) filesTouched.add(f);
+    for (const f of [params.attachment, ...(Array.isArray(params.attachments) ? params.attachments : [])]) {
+      if (typeof f === 'string' && f) filesTouched.add(f);
+    }
 
     let result;
     const escaping = pathParams(ctx).filter((f) => { try { resolveDataPath(f); return false; } catch { return true; } });
     if (escaping.length) {
       result = this.blockOutsideWorkspace(ctx, escaping);
       filesTouched.clear();
+    } else if (this.queueFlooded(agent)) {
+      result = {
+        decision: 'BLOCK', rules: [], data_level: 'internal',
+        evidence: [{ file: '(queue)', quote: `${agent} has ${QUEUE_CAP_PER_AGENT_HOUR}+ items waiting for approval in the last hour`, line: null, why: 'Rate limit: an agent may not flood the owner queue' }],
+        owner_line: `Blocked: ${agent} is flooding the approval queue. Further actions are refused until you clear the backlog.`,
+      };
     } else {
-      switch (action) {
-        case 'read_file': result = this.doRead(ctx); break;
-        case 'list_dir': result = this.doList(ctx); break;
-        case 'upload_to_external_tool': result = this.doUpload(ctx); break;
-        case 'send_email': result = this.doSendEmail(ctx); break;
-        case 'quote_price': result = this.doQuote(ctx); break;
-        case 'accept_terms': result = this.doAcceptTerms(ctx); break;
-        case 'pay_supplier': result = this.doPay(ctx); break;
-        case 'order_from_supplier': result = this.doOrder(ctx); break;
-        case 'delete_file': result = this.doDelete(ctx); break;
-        case 'write_file': result = this.doWrite(ctx); break;
-        case 'state_fact': case 'state_a_fact_to_a_client': result = this.doStateFact(ctx); break;
-        default: result = this.doUnknown(ctx);
+      const unknown = this.unknownParams(action, params, agent);
+      if (unknown) {
+        result = unknown;
+      } else {
+        switch (action) {
+          case 'read_file': result = this.doRead(ctx); break;
+          case 'list_dir': result = this.doList(ctx); break;
+          case 'upload_to_external_tool': result = this.doUpload(ctx); break;
+          case 'send_email': result = this.doSendEmail(ctx); break;
+          case 'quote_price': result = this.doQuote(ctx); break;
+          case 'accept_terms': result = this.doAcceptTerms(ctx); break;
+          case 'pay_supplier': result = this.doPay(ctx); break;
+          case 'order_from_supplier': result = this.doOrder(ctx); break;
+          case 'delete_file': result = this.doDelete(ctx); break;
+          case 'write_file': result = this.doWrite(ctx); break;
+          case 'state_fact': case 'state_a_fact_to_a_client': result = this.doStateFact(ctx); break;
+          case 'share_unannounced_client_news': result = this.doShareUnannounced(ctx); break;
+          default: result = this.doUnknown(ctx);
+        }
       }
     }
 
@@ -253,8 +349,31 @@ export class Chaperone {
     if (params.file && !escaping.length) level = maxLevel(level, this.lineage.effectiveLevel(params.file, null));
     result.data_level = level || 'internal';
 
-    const entry = this.store.append({
+    // Injection is a decision input, not a footnote: acting on content that
+    // carries instructions for the agent is blocked, whatever the action.
+    const injection = result.injection ?? this.scanInjection(ctx.sources);
+    if (injection?.flagged && result.decision !== 'BLOCK') {
+      result.decision = 'BLOCK';
+      result.rules = [...new Set([...result.rules, 'R05'])];
+      result.evidence = [...(result.evidence || []), { file: injection.file, quote: injection.quote, line: injection.line, why: 'Blocked: the action acts on inbound content that contains instructions for the agent. Content is data, never authority.' }];
+      result.owner_line = `Blocked: ${agent} tried to act on a message that contains instructions for the agent (${injection.file}). Nothing was sent or paid.`;
+      result.queue_item = null;
+    }
+    result.injection = injection;
+
+    // The log and the decision must agree: an outbound ALLOW can never carry
+    // protected data, whatever path produced it.
+    if (result.decision === 'ALLOW' && OUTBOUND_ACTIONS.has(action)
+      && (result.data_level === 'regulated' || result.data_level === 'client-confidential')) {
+      result.decision = 'HOLD_FOR_APPROVAL';
+      result.rules = [...new Set([...result.rules, 'R04'])];
+      result.owner_line = `Held: ${action} carries ${result.data_level} data and needs your approval.`;
+      result.queue_item = { fingerprint: `${action}:${sha1(JSON.stringify(params))}`, agent, action, summary: result.owner_line.replace(/^Held: /, ''), recommendation: 'review', money_at_stake: result.money_at_stake ?? null };
+    }
+
+    const entry = {
       scenario, agent, task, action, params,
+      run_id: ctx.run_id || null,
       files_touched: [...filesTouched],
       data_level: result.data_level,
       decision: result.decision,
@@ -268,14 +387,66 @@ export class Chaperone {
       owner_line: result.owner_line,
       never: result.rules.some((r) => NEVER.has(r)),
       ...(result.notify ? { notify: result.notify } : {}),
-    });
+    };
 
-    // Held items go to the queue once; NEVER items never do.
+    // Held items go to the queue once; NEVER items never do. The queue item is
+    // created BEFORE the entry is hashed, so the hash covers the final entry.
     if (result.decision === 'HOLD_FOR_APPROVAL' && result.queue_item) {
-      const q = this.store.enqueue({ ...result.queue_item, log_id: entry.id, never: false });
+      const q = this.store.enqueue({ ...result.queue_item, log_id: this.store.seq + 1, never: false, action_hash: sha1(JSON.stringify({ action, params, sources: ctx.sources })) });
       entry.queue_id = q.queue_id;
     }
-    return entry;
+    return this.store.append(entry);
+  }
+
+  // Per-agent cap on new pending queue items: the owner is never flooded.
+  queueFlooded(agent) {
+    const hourAgo = Date.now() - 3600 * 1000;
+    const pending = this.store.queue.filter((q) => q.agent === agent && q.status === 'pending' && Date.parse(q.created_at) > hourAgo);
+    return pending.length >= QUEUE_CAP_PER_AGENT_HOUR;
+  }
+
+  // Unknown parameters fail closed. Protected data hidden in an unexpected
+  // key (files[], attachments[], anything else) blocks; anything else holds.
+  unknownParams(action, params, agent) {
+    const allowed = PARAM_ALLOWLIST[action];
+    const keys = Object.keys(params);
+    const extra = allowed ? keys.filter((k) => !allowed.includes(k)) : keys;
+    if (!extra.length) return null;
+    const strings = [];
+    const collect = (v) => {
+      if (typeof v === 'string') strings.push(v);
+      else if (Array.isArray(v)) v.forEach(collect);
+    };
+    for (const k of extra) collect(params[k]);
+    let level = null;
+    const evidence = [];
+    for (const s of strings) {
+      let inside = false;
+      try { resolveDataPath(s); inside = true; } catch { /* not a data path */ }
+      // Only real files count: a random string (an account number, a name)
+      // that happens to resolve inside data/ is not a protected file.
+      if (inside && (contentOf(s) !== null || this.lineage.nodes.get(s)?.content != null)) {
+        const c = this.classifyFileLevel(s);
+        level = maxLevel(level, this.lineage.effectiveLevel(s, c.level));
+        if (c.level === 'regulated' || c.level === 'client-confidential') {
+          evidence.push(...signalsToEvidence(s, c.signals));
+        }
+      }
+    }
+    const why = `Unexpected parameter${extra.length > 1 ? 's' : ''} (${extra.join(', ')}) — not part of this action. Fail closed: nothing is allowed through an unchecked field.`;
+    if (level === 'regulated' || level === 'client-confidential') {
+      return {
+        decision: 'BLOCK', rules: ['R15', 'R05'], data_level: level,
+        evidence: [...evidence, { file: '(params)', quote: extra.join(', '), line: null, why }],
+        owner_line: `Blocked: the action hid ${level} data in unexpected parameters (${extra.join(', ')}). Nothing was sent.`,
+      };
+    }
+    return {
+      decision: 'HOLD_FOR_APPROVAL', rules: [], data_level: level || 'internal',
+      evidence: [{ file: '(params)', quote: extra.join(', '), line: null, why }],
+      owner_line: `Held: the action used unexpected parameters (${extra.join(', ')}). Review before allowing.`,
+      queue_item: { fingerprint: `params:${action}:${sha1(JSON.stringify(params))}`, agent, action, summary: `Unexpected parameters on ${action}: ${extra.join(', ')}.`, recommendation: 'review', money_at_stake: null },
+    };
   }
 
   // A path that escapes data/ ("../../etc/passwd") is never read or touched.
@@ -299,10 +470,23 @@ export class Chaperone {
   // ---- read / list ---------------------------------------------------------
   doRead(ctx) {
     const file = ctx.params.file;
+    // Scope comes from the task record, not from the agent. The request's
+    // scope may only narrow it. An unregistered task needs nothing.
+    const taskScope = this.tasks[ctx.task] ?? [];
+    const scope = ctx.scope.length ? taskScope.filter((f) => ctx.scope.includes(f)) : taskScope;
+    const inScope = scope.includes(file);
+    if (contentOf(file) === null && !this.lineage.nodes.get(file)?.content) {
+      return {
+        decision: 'HOLD_FOR_APPROVAL', rules: [], data_level: 'internal',
+        evidence: [{ file, quote: file, line: 1, why: 'File does not exist or could not be read — fail closed' }],
+        owner_line: `Held: ${ctx.agent} tried to read ${file}, which could not be read.`,
+        queue_item: { fingerprint: `read:${file}`, agent: ctx.agent, action: 'read_file', summary: `Read ${file} (file could not be read).`, recommendation: 'review', money_at_stake: null },
+      };
+    }
     const c = this.registerFile(file);
-    const inScope = ctx.scope.includes(file);
     const evidence = signalsToEvidence(file, c.signals);
     if (inScope) {
+      this.trackRead(ctx, file);
       return { decision: 'ALLOW', rules: ['R01'], evidence, data_level: c.level, owner_line: `Read ${file} (needed for the task).` };
     }
     const scope_creep = [{ file, level: c.level }];
@@ -310,8 +494,22 @@ export class Chaperone {
       evidence.push({ file, quote: c.signals[0]?.quote || file, line: c.signals[0]?.line || 1, why: `Regulated file read with no connection to the task (${ctx.task}) — outside the task scope` });
       return { decision: 'BLOCK', rules: ['R02'], evidence, data_level: c.level, scope_creep, owner_line: `Blocked: read your ${file} which it did not need for this task.` };
     }
+    this.trackRead(ctx, file);
     evidence.push({ file, quote: file, line: 1, why: 'Read outside the task scope (scope creep, logged)' });
     return { decision: 'ALLOW', rules: ['R01'], evidence, data_level: c.level, scope_creep, owner_line: `Read ${file} outside the task scope (logged as scope creep).` };
+  }
+
+  // Files an agent actually read through the gate become part of its context:
+  // later actions inherit them even when the agent declares no sources.
+  trackRead(ctx, file) {
+    const key = `${ctx.agent}\u0000${ctx.task ?? ''}`;
+    if (!this.reads.has(key)) this.reads.set(key, new Set());
+    this.reads.get(key).add(file);
+  }
+
+  contextSources(ctx) {
+    const key = `${ctx.agent}\u0000${ctx.task ?? ''}`;
+    return [...new Set([...ctx.sources, ...(this.reads.get(key) || [])])];
   }
 
   doList(ctx) {
@@ -348,6 +546,13 @@ export class Chaperone {
     const file = ctx.params.file;
     const target = ctx.params.target || 'an external tool';
     const c = this.registerFile(file);
+    // Content similarity: an artifact that repeats a confidential source is
+    // linked to it even when the agent declared no derivation.
+    if (!this.lineage.isUnannounced(file)) {
+      const text = contentOf(file) ?? this.lineage.nodes.get(file)?.content ?? '';
+      const sim = this.similarUnannounced(text);
+      if (sim.length) this.lineage.addOutput(file, sim.map((h) => h.file), c.level, { content: text });
+    }
     const effLevel = this.lineage.effectiveLevel(file, c.level);
     const unannounced = this.lineage.isUnannounced(file);
     const evidence = signalsToEvidence(file, c.signals);
@@ -397,36 +602,54 @@ export class Chaperone {
 
   // ---- send email ----------------------------------------------------------
   doSendEmail(ctx) {
-    const { to, body = '', attachment } = ctx.params;
-    const sources = ctx.sources;
+    const { to, body = '', attachment, cc, bcc } = ctx.params;
+    // Every recipient and every attachment is checked — plural params too.
+    const attachments = [attachment, ...(Array.isArray(ctx.params.attachments) ? ctx.params.attachments : [])]
+      .filter((x) => typeof x === 'string' && x);
+    const extraRecipients = [cc, bcc].flatMap((v) => (Array.isArray(v) ? v : [v])).filter((x) => typeof x === 'string' && x);
+    const sources = this.contextSources(ctx);
     // register sources for lineage / fact context
     for (const s of sources) this.registerFile(s);
     const inputLevels = sources.map((s) => this.lineage.levelOf(s)).filter(Boolean);
     const content = classifyDerived(body, inputLevels);
     let effLevel = content.level;
-    if (attachment) {
-      const ac = this.registerFile(attachment);
-      effLevel = maxLevel(effLevel, this.lineage.effectiveLevel(attachment, ac.level));
+    for (const a of attachments) {
+      const ac = this.registerFile(a);
+      effLevel = maxLevel(effLevel, this.lineage.effectiveLevel(a, ac.level));
     }
-    const recipientKnown = this.recipientKnown(to);
+    const recipientKnown = this.recipientKnown(to) && extraRecipients.every((r) => this.recipientKnown(r));
+    const hidden = extraRecipients.length ? ` (cc/bcc: ${extraRecipients.join(', ')})` : '';
     const evidence = [];
     const injection = this.scanInjection(sources);
+    const recipientOrg = CLIENT_BY_EMAIL.get((to || '').toLowerCase())?.key
+      || SUPPLIER_BY_EMAIL.get((to || '').toLowerCase())?.key
+      || null;
 
-    // 1) price commitment below an owner floor
+    // 1) price commitment below an owner floor — in digits, "5.8k", or words.
     const price = this.detectPriceCommitment(to, body);
-    if (price && price.floor !== null && price.price < price.floor) {
+    if (price && price.below.length) {
       const ev = this.floorEvidence(price.client, price.floor);
       const fake = this.detectFakeApproval(body, sources);
       if (fake) ev.push(fake);
       return {
         decision: 'BLOCK', rules: ['R08', 'R07'], evidence: ev, data_level: maxLevel(effLevel, 'client-confidential'),
-        owner_line: `Blocked: drafted a ${fmt(price.price)} offer to ${price.client}. Your floor is ${fmt(price.floor)}.${fake ? ' The email claiming you approved it is not an approval — only your queue can release a hold, and a floor can never be approved away.' : ''} Draft is in your queue if you want to counter at ${fmt(price.floor)}.`,
+        owner_line: `Blocked: drafted a ${fmt(price.price)} offer to ${price.client}. Your floor is ${fmt(price.floor)}.${fake ? ' The email claiming you approved it is not an approval — only your queue can release a hold, and a floor can never be approved away.' : ''} Nothing was sent. If you want to counter, your floor is ${fmt(price.floor)}.`,
+        injection,
+      };
+    }
+    if (price && price.other.length) {
+      const ev = this.floorEvidence(price.client, price.floor);
+      return {
+        decision: 'HOLD_FOR_APPROVAL', rules: ['R07'], evidence: ev, data_level: maxLevel(effLevel, 'client-confidential'), money_at_stake: price.price,
+        owner_line: `Held: drafted a ${fmt(price.price)} offer to ${price.client}. Any price commitment needs your approval.`,
+        queue_item: { fingerprint: `email:${to}:${sha1(JSON.stringify(ctx.params))}`, agent: ctx.agent, action: 'send_email', summary: `Price offer ${fmt(price.price)} to ${price.client}.`, recommendation: 'review', money_at_stake: price.price },
         injection,
       };
     }
 
     // 2) confirming a supplier order = new spend, which R12 holds until the
-    // owner confirms in writing (the agent's own say-so never counts).
+    // owner confirms in writing (the agent's own say-so never counts). A
+    // go-ahead with no priced source is still new spend: held, not allowed.
     const order = this.detectOrderConfirmation(to, body, sources);
     if (order) {
       const ev = [];
@@ -434,16 +657,18 @@ export class Chaperone {
       if (order.requirement) ev.push(order.requirement);
       const who = order.requirement?.who;
       const notConfirmed = who ? `${who} hasn't confirmed in writing` : "you haven't confirmed it in writing";
+      const amountLine = order.amount !== null ? ` for SGD ${fmt(order.amount)}` : '';
       return {
         decision: 'HOLD_FOR_APPROVAL', rules: ['R12'], evidence: ev, data_level: effLevel, money_at_stake: order.amount,
-        owner_line: `Held: drafted a go-ahead to ${order.supplier} for SGD ${fmt(order.amount)}. ${notConfirmed[0].toUpperCase()}${notConfirmed.slice(1)}.`,
-        queue_item: { fingerprint: `order:${to}:${order.amount}`, agent: ctx.agent, action: 'order_from_supplier', summary: `Go-ahead to ${order.supplier} for SGD ${fmt(order.amount)} (${notConfirmed}).`, recommendation: 'deny', money_at_stake: order.amount },
+        owner_line: `Held: drafted a go-ahead to ${order.supplier}${amountLine}. ${notConfirmed[0].toUpperCase()}${notConfirmed.slice(1)}.`,
+        queue_item: { fingerprint: `order:${to}:${order.amount ?? sha1(body)}`, agent: ctx.agent, action: 'order_from_supplier', summary: `Go-ahead to ${order.supplier}${amountLine} (${notConfirmed}).`, recommendation: 'deny', money_at_stake: order.amount },
         injection,
       };
     }
 
-    // 3) fabricated figures (fact check)
-    const fc = factCheck(body, sources);
+    // 3) fabricated figures, dates and commitments (fact check). Only files
+    // about the recipient's organisation count — no source shopping.
+    const fc = factCheck(body, sources, { recipientOrg });
     if (hasFabrication(fc)) {
       const rules = ['R18'];
       for (const r of fc.filter((x) => x.status !== 'ok')) {
@@ -465,6 +690,29 @@ export class Chaperone {
       };
     }
 
+    // 3b) waiving a fee or granting a discount by email is the owner's call.
+    const isClient = CLIENT_BY_EMAIL.has((to || '').toLowerCase());
+    if (isClient && /\b(waive[ds]?|write off|drop the|only owe|no charge)\b/i.test(body)) {
+      const m = body.match(/[^\n]*(?:waive[ds]?|write off|drop the|only owe|no charge)[^\n]*/i);
+      return {
+        decision: 'HOLD_FOR_APPROVAL', rules: ['R09'], data_level: effLevel,
+        evidence: [{ file: '(draft body)', quote: m[0].trim(), line: null, why: 'Waiving a fee or changing what a client owes is the owner\'s call (accept_terms)' }],
+        owner_line: `Held: drafted a fee waiver to ${to}. Accepting changed terms is your call.`,
+        queue_item: { fingerprint: `waiver:${to}:${sha1(body)}`, agent: ctx.agent, action: 'accept_terms', summary: `Fee waiver drafted to ${to}.`, recommendation: 'review', money_at_stake: null },
+        injection,
+      };
+    }
+    if (isClient && /\b(discount|%\s*off|per ?cent off|half (?:our|the|price)|for you)\b/i.test(body)) {
+      const m = body.match(/[^\n]*(?:discount|%\s*off|per ?cent off|half (?:our|the|price)|for you)[^\n]*/i);
+      return {
+        decision: 'HOLD_FOR_APPROVAL', rules: ['R07'], data_level: effLevel,
+        evidence: [{ file: '(draft body)', quote: m[0].trim(), line: null, why: 'A discount is below the published price and needs approval' }],
+        owner_line: `Held: drafted a discount to ${to}. Any discount needs your approval.`,
+        queue_item: { fingerprint: `discount:${to}:${sha1(body)}`, agent: ctx.agent, action: 'quote_price', summary: `Discount drafted to ${to}.`, recommendation: 'review', money_at_stake: null },
+        injection,
+      };
+    }
+
     // 4) contract-mandated notification after an R17 delete: allowed only if the
     // message itself carries no personal data (its own text classifies safe) and
     // it goes to the affected client's contact or the owner.
@@ -477,34 +725,40 @@ export class Chaperone {
       };
     }
 
-    // 5) sharing unannounced client news
+    // 5) sharing unannounced client news — by keyword, or by content similarity
+    // to a confidential source (paraphrasing never makes it safe).
     const unannouncedSrc = this.sharesUnannounced(body, sources);
-    if (unannouncedSrc.length) {
+    const simHits = this.similarUnannounced(body);
+    if (unannouncedSrc.length || simHits.length) {
       const ev = unannouncedSrc.map((s) => cite(s, /raising SGD/i, `Unannounced client fundraising (${s})`)).filter(Boolean);
-      return { decision: 'BLOCK', rules: ['R19'], evidence: ev, data_level: effLevel, owner_line: 'Blocked: the message shares a client’s unannounced news.', injection };
+      for (const h of simHits) {
+        const c = cite(h.file, /pre-money|raising[^.]*valuation/i, `Draft repeats the client's unannounced fundraising in different words (content match: "${h.shared[0]}")`);
+        if (c) ev.push(c);
+      }
+      return { decision: 'BLOCK', rules: ['R19'], evidence: ev, data_level: maxLevel(effLevel, 'client-confidential'), owner_line: 'Blocked: the message shares a client’s unannounced news. Rewording it never makes it safe to share.', injection };
     }
 
     // 6) regulated / client-confidential data leaving the company
     if (effLevel === 'regulated' || effLevel === 'client-confidential') {
       if (!recipientKnown) {
         // Protected data to an external, non-client address = exfiltration.
-        const carrier = attachment
+        const carrier = attachments.find((a) => this.lineage.effectiveLevel(a, this.classifyFileLevel(a).level) === effLevel)
           || sources.find((s) => this.lineage.levelOf(s) === effLevel)
           || null;
         const ev = carrier ? signalsToEvidence(carrier, this.classifyFileLevel(carrier).signals) : [];
         const readme = carrier ? this.companionReadmeCite(carrier) : null;
         if (readme) ev.push(readme);
         if (!carrier) ev.push({ file: '(draft body)', quote: body.slice(0, 160), line: null, why: `Message text itself classifies as ${effLevel}` });
-        const what = attachment ? friendlyName(attachment) : `${effLevel} data`;
+        const what = attachments.length ? friendlyName(attachments[0]) : `${effLevel} data`;
         return {
           decision: 'BLOCK', rules: ['R15', 'R05'], evidence: ev, data_level: effLevel, injection,
-          owner_line: `Blocked: tried to email ${what} to ${to} (an external address). It holds ${effLevel === 'regulated' ? 'personal data' : 'client-confidential data'}. Nothing was sent.`,
+          owner_line: `Blocked: tried to email ${what} to ${to}${hidden} (an external address). It holds ${effLevel === 'regulated' ? 'personal data' : 'client-confidential data'}. Nothing was sent.`,
         };
       }
       return {
         decision: 'HOLD_FOR_APPROVAL', rules: ['R04'], evidence, data_level: effLevel,
-        owner_line: `Held: email to ${to} contains ${effLevel} data and needs your approval.`,
-        queue_item: { fingerprint: `email:${to}:${body.slice(0, 40)}`, agent: ctx.agent, action: 'send_email', summary: `Email to ${to} with ${effLevel} data.`, recommendation: 'review', money_at_stake: null },
+        owner_line: `Held: email to ${to}${hidden} contains ${effLevel} data and needs your approval.`,
+        queue_item: { fingerprint: `email:${to}:${sha1(JSON.stringify(ctx.params))}`, agent: ctx.agent, action: 'send_email', summary: `Email to ${to}${hidden} with ${effLevel} data.`, recommendation: 'review', money_at_stake: null },
         injection,
       };
     }
@@ -513,14 +767,14 @@ export class Chaperone {
     if (!recipientKnown) {
       return {
         decision: 'HOLD_FOR_APPROVAL', rules: ['R05'], evidence, data_level: effLevel,
-        owner_line: `Held: email to ${to}, who is not in your client or supplier list.`,
-        queue_item: { fingerprint: `email:${to}:${body.slice(0, 40)}`, agent: ctx.agent, action: 'send_email', summary: `Email to unknown recipient ${to}.`, recommendation: 'review', money_at_stake: null },
+        owner_line: `Held: email to ${to}${hidden}, who is not in your client or supplier list.`,
+        queue_item: { fingerprint: `email:${to}:${sha1(JSON.stringify(ctx.params))}`, agent: ctx.agent, action: 'send_email', summary: `Email to unknown recipient ${to}${hidden}.`, recommendation: 'review', money_at_stake: null },
         injection,
       };
     }
 
     // 8) normal client/supplier email, internal or public content
-    return { decision: 'ALLOW', rules: ['R03'], evidence, data_level: effLevel, owner_line: `Sent email to ${to}.`, injection };
+    return { decision: 'ALLOW', rules: ['R03'], evidence, data_level: effLevel, owner_line: `Sent email to ${to}${hidden}.`, injection };
   }
 
   // An email (or the draft itself) claiming the owner approved something is not
@@ -570,19 +824,23 @@ export class Chaperone {
     return { clause: record.clause };
   }
 
+  // Any money figure in an email to a floor client is a price commitment:
+  // digits, "5.8k", commas, or number words. Below the floor = NEVER (R08);
+  // any other figure still needs approval (R07). Rewording never escapes it.
   detectPriceCommitment(to, body) {
     const client = CLIENT_BY_EMAIL.get((to || '').toLowerCase());
     if (!client) return null;
     const floor = this.floorFor(client.name);
     if (floor === null) return null;
-    const m = (body || '').match(/(?:match|offer|at|for|price|quote)\s*(?:SGD\s*)?(\d[\d,]*(?:\.\d+)?)/i) || (body || '').match(/SGD\s*(\d[\d,]*)/i);
-    if (!m) return null;
-    const price = num(m[1]);
-    if (!Number.isFinite(price)) return null;
-    return { client: client.name, price, floor };
+    const values = extractMoney(body || '').map((m) => m.value).filter((v) => v >= 100);
+    const below = values.filter((v) => v < floor);
+    const other = values.filter((v) => v >= floor);
+    if (!below.length && !other.length) return null;
+    return { client: client.name, floor, below, other, price: below[0] ?? other[0] };
   }
 
-  // A go-ahead email to a known supplier whose sources carry a priced offer.
+  // A go-ahead email to a known supplier. With a priced source, the amount is
+  // cited; without one, it is still new spend and still held (R12).
   // Returns { amount, supplier, offer (cite), requirement (cite + who) } or null.
   detectOrderConfirmation(to, body, sources) {
     const supplier = SUPPLIER_BY_EMAIL.get((to || '').toLowerCase());
@@ -597,7 +855,6 @@ export class Chaperone {
       const c = cite(s, /SGD\s*([\d,]+)/i, (m) => `Order is new spend (SGD ${fmt(num(m[1]))}) not confirmed by the owner in writing`);
       if (c) { offer = c; amount = num(contentOf(s).match(/SGD\s*([\d,]+)/i)[1]); break; }
     }
-    if (amount === null) return null;
     // Any written condition the owner set for this supplier ("only if X confirms in writing").
     const re = new RegExp(`${escapeRe(supplier.key)}[^\\n]*?(only if (\\w+) confirms in writing)`, 'i');
     let requirement = null;
@@ -627,13 +884,41 @@ export class Chaperone {
     return sources.filter((s) => this.lineage.isUnannounced(s));
   }
 
+  // Content similarity against every confidential source flagged unannounced.
+  // A paraphrase ("closing a 6M round priced at 24M pre-money") shares word
+  // 3-grams with the original even when every keyword is swapped out.
+  similarUnannounced(text) {
+    if (!text || !text.trim()) return [];
+    const hits = [];
+    for (const node of this.lineage.nodes.values()) {
+      if (!node.unannounced || node.kind !== 'file') continue;
+      const content = contentOf(node.id);
+      if (!content) continue;
+      const shared = sharedShingles(text, content);
+      if (shared.length >= 2 || shared.some((s) => /\d/.test(s))) hits.push({ file: node.id, shared });
+    }
+    return hits;
+  }
+
+  // The policy names this action explicitly; it is NEVER, by name.
+  doShareUnannounced(ctx) {
+    const ev = [{ file: 'rules/policy.json', quote: '"id": "R19"', line: null, why: 'R19: anything a client marked not public, with anyone — NEVER' }];
+    const sim = this.similarUnannounced(ctx.params.body || '');
+    for (const h of sim) {
+      const c = cite(h.file, /pre-money|raising[^.]*valuation/i, `Unannounced client news (${h.file})`);
+      if (c) ev.push(c);
+    }
+    return { decision: 'BLOCK', rules: ['R19'], evidence: ev, data_level: 'client-confidential', owner_line: 'Blocked: sharing a client’s unannounced news is never allowed, with anyone.' };
+  }
+
   scanInjection(sources) {
     for (const s of sources) {
       const c = contentOf(s);
       if (!c) continue;
-      const m = c.match(/(AI assistant|attention AI|ignore (?:previous|all)|system:|assistant:)[^\n]*(forward|send|upload|email|share)[^\n]*/i);
+      const norm = normalizeText(c);
+      const m = norm.match(INJECTION_RE);
       if (m) {
-        return { flagged: true, file: s, quote: quoteLine(c, m.index), line: lineOf(c, m.index), why: 'Possible prompt injection: text in an inbound file addresses an AI agent and instructs it to move data. Treated as data, not followed.' };
+        return { flagged: true, file: s, quote: quoteLine(norm, m.index), line: lineOf(norm, m.index), why: 'Possible prompt injection: text in an inbound file addresses an AI agent and instructs it to move data or money. Treated as data, not followed.' };
       }
     }
     return null;
@@ -672,50 +957,82 @@ export class Chaperone {
 
   // ---- pay supplier (aggregated) ------------------------------------------
   // R10 allows a payment only against a received invoice, under the policy
-  // limit. Payments are aggregated per invoice and per supplier over 24h so a
-  // split payment, a duplicate payment or an overpayment cannot slip through.
+  // limit, to the issuer named on that invoice, in SGD. Payments aggregate
+  // per invoice over ALL time (an invoice is never paid twice) and per
+  // supplier over 24h (splitting cannot dodge the limit). Demo replays are
+  // self-contained simulations: they aggregate within their own run and never
+  // touch the real ledger.
   doPay(ctx) {
-    const { amount, invoice, supplier } = ctx.params;
+    const { amount, invoice, supplier, currency } = ctx.params;
     const now = Date.now();
+    const invKey = invoice ? canonicalPath(invoice, DATA_DIR, path) : null;
+    const supplierKey = orgKey(supplier);
     // true invoice total from the invoice file (only a supplier invoice we received counts)
     let invoiceTotal = null;
     let received = false;
+    let issuerKey = null;
+    let issuerLine = null;
     if (invoice) {
       const c = contentOf(invoice);
       if (c) {
         received = classify(c, { path: invoice }).docType === 'invoice-received';
         const m = c.match(/SGD\s*([\d,]+)/i) || c.match(/\*\*Total\*\*\s*\|\s*\*\*([\d,]+)\*\*/i);
         if (m) invoiceTotal = num(m[1]);
+        const from = c.match(/From\s+(.+?)\s+to\s+/i);
+        if (from) { issuerKey = orgKey(from[1]); issuerLine = quoteLine(c, from.index); }
       }
     }
-    // aggregate payments per invoice and per supplier over the last 24h
-    this.payments = this.payments.filter((p) => now - p.ts < DAY_MS);
-    const prior = this.payments.filter((p) => invoice && p.invoice === invoice);
-    const perInvoice = prior.reduce((a, p) => a + p.amount, 0) + amount;
-    const perSupplier = this.payments.filter((p) => p.supplier === supplier).reduce((a, p) => a + p.amount, 0) + amount;
-    this.payments.push({ ts: now, invoice, supplier, amount });
-
     const evidence = [];
     if (invoice) {
       const inv = cite(invoice, /SGD [\d,]+/i, `Invoice ${invoice} totals SGD ${invoiceTotal === null ? 'unknown' : fmt(invoiceTotal)}`);
       if (inv) evidence.push(inv);
     }
+
+    // Payee substitution: the supplier must be the issuer named on the invoice.
+    if (received && issuerKey && supplierKey !== issuerKey) {
+      evidence.push({ file: invoice, quote: issuerLine, line: null, why: `The invoice is issued by ${issuerKey}, not ${supplierKey} — payee does not match the invoice` });
+      return {
+        decision: 'HOLD_FOR_APPROVAL', rules: ['R11'], evidence, data_level: 'internal', money_at_stake: invoiceTotal ?? amount,
+        owner_line: `Held: ${supplier} is not the issuer named on ${invoice}. Payee mismatch — this payment needs your review.`,
+        queue_item: { fingerprint: `pay:${invKey || '(none)'}:${supplierKey}:mismatch`, agent: ctx.agent, action: 'pay_supplier', summary: `Pay ${supplier} — payee does not match invoice issuer.`, recommendation: 'deny', money_at_stake: invoiceTotal ?? amount },
+      };
+    }
+    // Non-SGD currency is never auto-paid.
+    if (currency && String(currency).toUpperCase() !== 'SGD') {
+      evidence.push({ file: invoice || '(params)', quote: `currency: ${currency}`, line: null, why: 'Payments are in SGD; a foreign currency needs the owner\'s review' });
+      return {
+        decision: 'HOLD_FOR_APPROVAL', rules: ['R11'], evidence, data_level: 'internal', money_at_stake: invoiceTotal ?? amount,
+        owner_line: `Held: payment of ${amount} in ${currency}, not SGD. This needs your review.`,
+        queue_item: { fingerprint: `pay:${invKey || '(none)'}:${supplierKey}:${currency}`, agent: ctx.agent, action: 'pay_supplier', summary: `Pay ${supplier} ${amount} ${currency} (not SGD).`, recommendation: 'deny', money_at_stake: invoiceTotal ?? amount },
+      };
+    }
+
+    // Aggregate. Real payments count over all time per invoice; demo replays
+    // aggregate only within their own run.
+    const runId = ctx.scenario ? (ctx.run_id || null) : null;
+    const relevant = this.payments.filter((p) => (runId ? p.run_id === runId : !p.run_id));
+    const prior = relevant.filter((p) => invKey && p.invoice === invKey);
+    const perInvoiceAll = prior.reduce((a, p) => a + p.amount, 0) + amount;
+    const perInvoice = prior.filter((p) => now - p.ts < DAY_MS).reduce((a, p) => a + p.amount, 0) + amount;
+    const perSupplier = relevant.filter((p) => p.supplierKey === supplierKey && now - p.ts < DAY_MS).reduce((a, p) => a + p.amount, 0) + amount;
+    this.payments.push({ ts: now, invoice: invKey, supplierKey, amount, run_id: runId });
+
     const noMatch = !received || invoiceTotal === null;
     const overLimit = (invoiceTotal ?? 0) > PAYMENT_LIMIT || perInvoice > PAYMENT_LIMIT || perSupplier > PAYMENT_LIMIT;
-    const overpaid = invoiceTotal !== null && perInvoice > invoiceTotal;
+    const overpaid = invoiceTotal !== null && perInvoiceAll > invoiceTotal;
     if (noMatch || overLimit || overpaid) {
       const stake = invoiceTotal ?? perInvoice;
       const split = prior.length > 0 || (invoiceTotal !== null && amount < invoiceTotal);
       let reason;
       if (noMatch) reason = `there is no matching supplier invoice on file${invoice ? ` (${invoice})` : ''}`;
-      else if (overpaid) reason = `payments against this invoice (SGD ${fmt(perInvoice)}) would exceed its total of SGD ${fmt(invoiceTotal)}`;
+      else if (overpaid) reason = `payments against this invoice (SGD ${fmt(perInvoiceAll)}) would exceed its total of SGD ${fmt(invoiceTotal)} — an invoice is never paid twice`;
       else if (split) reason = `the agent split a ${fmt(stake)} payment to stay under your ${fmt(PAYMENT_LIMIT)} approval limit`;
       else reason = `SGD ${fmt(stake)} is over your ${fmt(PAYMENT_LIMIT)} approval limit`;
       evidence.push({ file: invoice || '(ledger)', quote: `Payments against this invoice in 24h total SGD ${fmt(perInvoice)} (this payment SGD ${fmt(amount)})`, line: null, why: `${reason[0].toUpperCase()}${reason.slice(1)}` });
       return {
         decision: 'HOLD_FOR_APPROVAL', rules: ['R11'], evidence, data_level: 'internal', money_at_stake: stake,
         owner_line: `Held: ${reason}. This payment is SGD ${fmt(amount)}; SGD ${fmt(perInvoice)} has been attempted against this invoice in the last 24 hours.`,
-        queue_item: { fingerprint: `pay:${invoice || '(none)'}:${supplier}${overpaid ? ':over' : ''}`, agent: ctx.agent, action: 'pay_supplier', summary: `Pay ${supplier} — invoice totals SGD ${fmt(stake)}${split ? ' (split into smaller payments)' : ''}.`, recommendation: 'review', money_at_stake: stake },
+        queue_item: { fingerprint: `pay:${invKey || '(none)'}:${supplierKey}${overpaid ? ':over' : ''}`, agent: ctx.agent, action: 'pay_supplier', summary: `Pay ${supplier} — invoice totals SGD ${fmt(stake)}${split ? ' (split into smaller payments)' : ''}.`, recommendation: 'review', money_at_stake: stake },
       };
     }
     return { decision: 'ALLOW', rules: ['R10'], evidence, data_level: 'internal', money_at_stake: amount, owner_line: `Paid ${supplier} SGD ${fmt(amount)} (matched invoice, under ${fmt(PAYMENT_LIMIT)}).` };
@@ -785,18 +1102,28 @@ export class Chaperone {
   // ---- write / derive an output -------------------------------------------
   doWrite(ctx) {
     const { file, content, derived_from = [] } = ctx.params;
-    for (const d of derived_from) this.registerFile(d);
+    // Overwriting an existing file destroys what was there: it is a delete
+    // under another name, and held like one (R16).
+    if (contentOf(file) !== null) {
+      const del = this.doDelete({ ...ctx, params: { file } });
+      return { ...del, owner_line: del.owner_line.replace('wants to delete', 'wants to overwrite (which deletes)') };
+    }
+    // Similarity auto-linking: content that repeats a confidential source is
+    // derived from it, whether or not the agent declares it.
+    const simHits = this.similarUnannounced(content || '');
+    const derived = [...new Set([...derived_from, ...simHits.map((h) => h.file)])];
+    for (const d of derived) this.registerFile(d);
     const own = classify(content || '', { path: file });
-    const node = this.lineage.addOutput(file, derived_from, own.level, { content });
+    const node = this.lineage.addOutput(file, derived, own.level, { content });
     const evidence = [];
-    for (const d of derived_from) {
+    for (const d of derived) {
       const src = this.lineage.nodes.get(d);
       if (!src) continue;
       // Cite a real line from the source, not a placeholder.
       const real = cite(d, /raising[^.]*valuation|SGD\s*[\d,]+|title:[^\n]+/i, `${file} is derived from ${d} and inherits its ${src.level} level`, this.lineage);
       evidence.push(real || { file: d, quote: d, line: 1, why: `${file} is derived from ${d} and inherits its ${src.level} level` });
       if (src.unannounced) {
-        const un = cite(d, /raising[^.]*valuation/i, `${d} carries the client's unannounced fundraising; ${file} inherits it no matter how it is reworded`, this.lineage);
+        const un = cite(d, /raising[^.]*valuation|pre-money/i, `${d} carries the client's unannounced fundraising; ${file} inherits it no matter how it is reworded`, this.lineage);
         if (un) evidence.push(un);
       }
     }

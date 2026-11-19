@@ -1,7 +1,10 @@
-// Append-only action log + approval queue. The queue shows each held item once
-// (dedup by fingerprint) so the owner is never nagged twice. NEVER-rule decisions
-// are never enqueued and can never be approved by anyone.
+// Append-only action log + approval queue. Every entry is hash-chained to the
+// previous one, so tampering or deletion is detectable. The queue shows each
+// held item once (dedup by fingerprint) so the owner is never nagged twice.
+// Approvals are single-use: an approved item never releases a new request.
+// NEVER-rule decisions are never enqueued and can never be approved by anyone.
 import { EventEmitter } from 'node:events';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { LOGS_DIR } from './config.js';
@@ -15,15 +18,20 @@ export class Store extends EventEmitter {
     this.log = [];
     this.queue = [];
     this.seq = 0;
+    this.lastHash = null;
+    this.lastRunId = null;
     this.scenarioResults = [];
     this.classifierReport = null;
     this.briefing = null;
   }
 
+  // In-process test isolation only. No HTTP route ever calls this: the audit
+  // log is append-only from the outside.
   reset() {
     this.log = [];
     this.queue = [];
     this.seq = 0;
+    this.lastHash = null;
     this.scenarioResults = [];
     this.briefing = null;
     this.emit('reset');
@@ -32,10 +40,28 @@ export class Store extends EventEmitter {
   append(entry) {
     entry.id = ++this.seq;
     entry.ts = entry.ts || new Date().toISOString();
+    entry.prev_hash = this.lastHash;
+    const { hash, ...core } = entry;
+    entry.hash = createHash('sha256').update((entry.prev_hash || 'GENESIS') + JSON.stringify(core)).digest('hex');
+    this.lastHash = entry.hash;
     this.log.push(entry);
     this.emit('action', entry);
     this.persist(entry);
     return entry;
+  }
+
+  // Recompute the chain: every entry must hash to its recorded value and link
+  // to the previous entry. Returns { ok, length, broken_at }.
+  verifyChain() {
+    let prev = null;
+    for (let i = 0; i < this.log.length; i++) {
+      const e = this.log[i];
+      const { hash, ...core } = e;
+      const expect = createHash('sha256').update((prev || 'GENESIS') + JSON.stringify(core)).digest('hex');
+      if (e.prev_hash !== prev || e.hash !== expect) return { ok: false, length: this.log.length, broken_at: i + 1 };
+      prev = e.hash;
+    }
+    return { ok: true, length: this.log.length, broken_at: null };
   }
 
   persist(entry) {
@@ -47,10 +73,14 @@ export class Store extends EventEmitter {
   }
 
   // Enqueue a held item once. Fingerprint = agent + action + canonical target.
+  // Pending and denied items dedupe (no nagging; a denial stands). An APPROVED
+  // item is single-use: a new request with the same fingerprint gets a fresh
+  // pending item — the old approval never releases it.
   enqueue(item) {
     const fp = item.fingerprint;
-    if (this.queue.some((q) => q.fingerprint === fp)) {
-      return this.queue.find((q) => q.fingerprint === fp); // already queued; no nag
+    const existing = this.queue.find((q) => q.fingerprint === fp);
+    if (existing && existing.status !== 'approved') {
+      return existing; // already queued or already denied; no nag
     }
     const q = {
       // Never reset, so a stale decision from before a reset cannot land on a new item.

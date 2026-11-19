@@ -1,12 +1,16 @@
 /* Chaperone web app. Vanilla JS, no dependencies, works offline.
    Talks to the server in src/app.js:
-     GET  /api/state         full snapshot
+     GET  /api/state         full snapshot (incl. log_chain verification)
      POST /api/demo/run      202 {ok, scenarios} | 409 already running
      POST /api/queue/decide  {queue_id, decision: approve|deny}
                              200 {ok, queue} | {ok:false, code, error}
                              codes: invalid 400, not_found 404, never 403, already_decided 409
      GET  /api/events        SSE: hello, action, queue, scorecard, briefing, reset, demo, scenario
-   Every number on screen is computed from that data; nothing is invented here. */
+   Owner auth is automatic: GET / sets an httpOnly SameSite=Strict cookie, so
+   same-origin fetch and EventSource carry it with no token UI.
+   Demo runs APPEND to the log (never wipe it); the briefing and scorecard
+   reflect the latest run. Every number on screen is computed from server
+   data; nothing is invented here. */
 (function () {
   'use strict';
 
@@ -15,7 +19,7 @@
   const AGENTS = ['Marketing', 'Sales', 'Ops', 'Finance', 'Support'];
   const DEC = {
     ALLOW: { cls: 'done', label: 'Done', icon: 'i-done', filter: 'Done' },
-    HOLD_FOR_APPROVAL: { cls: 'waiting', label: 'Waiting for you', icon: 'i-wait', filter: 'Waiting for you' },
+    HOLD_FOR_APPROVAL: { cls: 'waiting', label: 'Held', icon: 'i-wait', filter: 'Held' },
     BLOCK: { cls: 'blocked', label: 'Stopped', icon: 'i-stop', filter: 'Stopped' },
   };
   const LEVELS = {
@@ -31,12 +35,12 @@
     upload_to_external_tool: 'upload to an outside tool', pay_supplier: 'pay a supplier',
     order_from_supplier: 'place a supplier order',
   };
-  const UNDO_MS = 5000;
+  const UNDO_MS = 8000;
 
   // ---------------------------------------------------------------------- state
   const S = {
     log: [], byId: new Map(), queue: new Map(), results: [], classifier: null,
-    briefing: null, lineage: [], demoRunning: false,
+    briefing: null, lineage: [], demoRunning: false, logChain: null,
     scenarioIds: [], scen: new Map(), // id -> {name, status, points}
     filters: { dec: 'all', agent: 'all' },
     pending: new Map(), // queue_id -> {decision, until, timer, tick}
@@ -67,6 +71,66 @@
   const agentPill = (a) => `<span class="pill pill-agent">${esc(a)}</span>`;
   const meter = () => '<span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
 
+  // Plain words in the reading path: file paths become the file's plain name
+  // ("Ferro Logistics invoice #036"); the raw path stays in Technical details.
+  const tc = (s) => String(s).replace(/\b\w/g, (c) => c.toUpperCase());
+  function plainFile(file) {
+    const f = String(file || '');
+    const base = f.split('/').pop() || f;
+    let m;
+    if ((m = base.match(/^invoice_\d{4}-(\d+)_(.+)\.md$/i))) return `${tc(m[2].replace(/[_-]+/g, ' '))} invoice #${m[1]}`;
+    if ((m = base.match(/^proposal_(.+)\.md$/i))) return `${tc(m[1].replace(/[_-]+/g, ' '))} proposal`;
+    if ((m = base.match(/^contract_(.+?)(?:_\d{4})?\.md$/i))) return `${tc(m[1].replace(/[_-]+/g, ' '))} contract`;
+    if (base === 'client_list.csv') return 'client list';
+    if (base === 'bank_details.md') return 'bank details';
+    if (base === 'owner_records.md') return 'personal records';
+    if (/^cashflow_notes/.test(base)) return 'cashflow notes';
+    if (f.startsWith('inbox/')) return 'an inbox email';
+    return tc(base.replace(/\.[^.]+$/, '').replace(/^\d{4}-\d{2}-\d{2}_/, '').replace(/[_-]+/g, ' '));
+  }
+  const PATH_RE = /(?:admin|clients|finance|inbox|marketing|notes|rules)\/[A-Za-z0-9_.\-]+/g;
+  const plainFiles = (t) => String(t == null ? '' : t).replace(PATH_RE, (m) => plainFile(m));
+  // Break paths at folder boundaries, never mid-word.
+  const pathHtml = (file) => esc(file).replace(/\//g, '/<wbr>');
+  function plainWhy(w) {
+    const s = String(w || '');
+    let m = s.match(/^policy\.json owner_floors: (.+?) ([\d,]+)$/);
+    if (m) return `Your price floor for ${m[1]}: SGD ${m[2]}`;
+    m = s.match(/^Invoice (\S+) totals (SGD [\d,]+.*)$/);
+    if (m) return `${plainFile(m[1])} totals ${m[2]}`;
+    return plainFiles(s);
+  }
+  // The split-payment catch, derived from the entry's own evidence:
+  // "Payments against this invoice in 24h total SGD 1,500 (this payment SGD 750)"
+  // plus the limit named in the reason. Renders "750 + 750 = 1,500 > 1,000".
+  function splitMath(e) {
+    if (!e || e.action !== 'pay_supplier') return '';
+    const ev = (e.evidence || []).find((x) => /total SGD [\d,]+ \(this payment SGD [\d,]+\)/.test(x.quote || ''));
+    if (!ev) return '';
+    const m = ev.quote.match(/total SGD ([\d,]+) \(this payment SGD ([\d,]+)\)/);
+    const total = Number(m[1].replace(/,/g, ''));
+    const amount = Number(m[2].replace(/,/g, ''));
+    if (!(total > 0 && amount > 0 && total > amount)) return '';
+    const prior = total - amount;
+    const lm = String(ev.why || e.owner_line || '').match(/your ([\d,]+) approval limit/);
+    const limit = lm ? Number(lm[1].replace(/,/g, '')) : null;
+    if (limit != null && !(total > limit)) return '';
+    const f = (n) => n.toLocaleString('en-SG');
+    const maths = `${f(prior)} + ${f(amount)} = ${f(total)}${limit != null ? ` &gt; ${f(limit)}` : ''}`;
+    const sentence = `Earlier payments of ${money(prior)} plus this ${money(amount)} make ${money(total)}${limit != null ? `, over your ${money(limit)} approval limit` : ''}. Splitting a payment never dodges the limit.`;
+    return `<div class="split-math"><p class="maths" aria-hidden="true">${maths}</p><p class="maths-txt">${icon('i-know')}<span>${esc(sentence)}</span></p></div>`;
+  }
+  // Today's briefing and the scorecard cover the latest demo run plus any real
+  // (non-demo) actions — the same filter the server applies to the briefing.
+  function latestRunId() {
+    for (let i = S.log.length - 1; i >= 0; i--) if (S.log[i].run_id) return S.log[i].run_id;
+    return null;
+  }
+  function todayLog() {
+    const rid = latestRunId();
+    return S.log.filter((e) => !e.scenario || e.run_id === rid);
+  }
+
   function dedupeEvidence(list) {
     const seen = new Set();
     const out = [];
@@ -81,12 +145,12 @@
     return out;
   }
   function fileref(file, line) {
-    return `<span class="fileref">${icon('i-file')}<code class="path">${esc(file)}</code>${line != null ? `<span class="ln">line ${esc(line)}</span>` : ''}</span>`;
+    return `<span class="fileref">${icon('i-file')}<code class="path">${pathHtml(file)}</code>${line != null ? `<span class="ln">line ${esc(line)}</span>` : ''}</span>`;
   }
   // Quotes are shown verbatim apart from markdown table/bold syntax, which reads as noise to a non-technical owner.
   const cleanQuote = (q) => String(q || '').replace(/\*\*/g, '').replace(/^\s*\|\s*|\s*\|\s*$/g, '').replace(/\s*\|\s*/g, ' — ');
   function quoteFig(ev, extraCls) {
-    const whys = ev.whys && ev.whys.length ? `<ul class="why">${ev.whys.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : '';
+    const whys = ev.whys && ev.whys.length ? `<ul class="why">${ev.whys.map((w) => `<li>${esc(plainWhy(w))}</li>`).join('')}</ul>` : '';
     return `<figure class="quote${extraCls ? ' ' + extraCls : ''}">${whys}<blockquote><p>${esc(cleanQuote(ev.quote))}</p></blockquote><figcaption>${fileref(ev.file, ev.line)}</figcaption></figure>`;
   }
   function techDetails(e, extra) {
@@ -94,9 +158,12 @@
       ['Rules', (e.rules || []).join(', ') || 'none'],
       ['Action', e.action],
       ['Log entry', '#' + e.id],
-      ['Scenario', e.scenario],
+      ['Scenario', e.scenario || '—'],
+      ['Run', e.run_id || 'live action'],
       ['File level', e.data_level],
+      ['Files', (e.files_touched || []).join(', ') || 'none'],
     ];
+    if (e.hash) rows.push(['Entry hash', e.hash.slice(0, 16) + '…']);
     if (extra) rows.push(...extra);
     return `<details class="tech"><summary>${icon('i-chev')}Technical details</summary><dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>`;
   }
@@ -127,7 +194,7 @@
       if (total) {
         const bits = [];
         if (c.BLOCK) bits.push(`${c.BLOCK} stopped`);
-        if (c.HOLD_FOR_APPROVAL) bits.push(`${c.HOLD_FOR_APPROVAL} waiting for you`);
+        if (c.HOLD_FOR_APPROVAL) bits.push(`${c.HOLD_FOR_APPROVAL} held`);
         if (c.ALLOW) bits.push(`${c.ALLOW} done`);
         parts.push(`${plural(total, 'new action')}: ${bits.join(', ')}.`);
       }
@@ -155,15 +222,24 @@
   }
 
   // -------------------------------------------------------------- derived data
-  function counts() {
-    const c = { total: S.log.length, ALLOW: 0, HOLD_FOR_APPROVAL: 0, BLOCK: 0, stopped: 0, scope: 0 };
-    for (const e of S.log) {
+  // One queue source for every "waiting" number: the pending items in the
+  // server's queue (S.queue, kept in sync by /api/state and SSE 'queue' events).
+  // Log-entry counts (Stopped / Held / Done) are log facts and are labelled as
+  // such; two held payments on one invoice share a single approval.
+  function counts(log) {
+    const entries = log || S.log;
+    const c = { total: entries.length, ALLOW: 0, HOLD_FOR_APPROVAL: 0, BLOCK: 0, stopped: 0, reads: 0, scope: 0 };
+    for (const e of entries) {
       c[e.decision] = (c[e.decision] || 0) + 1;
-      if (e.decision === 'BLOCK') { if (e.scope_creep && e.scope_creep.length) c.scope++; else c.stopped++; }
+      if (e.decision === 'BLOCK') {
+        if (e.action === 'read_file') c.reads++; else c.stopped++;
+        if ((e.scope_creep || []).length) c.scope++;
+      }
     }
     const pend = [...S.queue.values()].filter((q) => q.status === 'pending' && !S.pending.has(q.queue_id));
     c.pending = pend.length;
     c.pendingMoney = pend.reduce((a, q) => a + (Number(q.money_at_stake) || 0), 0);
+    c.decided = [...S.queue.values()].filter((q) => q.status !== 'pending').length;
     return c;
   }
   const pendingQueue = () => [...S.queue.values()].filter((q) => q.status === 'pending').sort((a, b) => a.created_at < b.created_at ? -1 : 1);
@@ -194,14 +270,14 @@
     return decPill(e.decision) + flagPill(e);
   }
   function rowFiles(e) {
-    const files = e.files_touched || [];
-    const lv = levelOf(e.data_level).label;
-    if (!files.length) return `<span class="row-files">${esc(lv)}</span>`;
-    return `<span class="row-files"><code>${files.map(esc).join(', ')}</code> · ${esc(lv)}</span>`;
+    // Plain level only in the reading path; raw paths live in Technical details.
+    return `<span class="row-files">${esc(levelOf(e.data_level).label)}</span>`;
   }
   function rowBody(e) {
     const parts = [];
     parts.push(`<p class="rb-task"><strong>${esc(e.agent)}</strong> was asked to ${esc(e.task)} and wanted to ${esc(ACTION_WORDS[e.action] || e.action)}.</p>`);
+    const sm = splitMath(e);
+    if (sm) parts.push(`<div class="rb-sec"><h4 class="rb-h">The maths</h4>${sm}</div>`);
     const ev = dedupeEvidence(e.evidence);
     if (ev.length) parts.push(`<div class="rb-sec"><h4 class="rb-h">The lines in your files that decided it</h4>${ev.map((x) => quoteFig(x)).join('')}</div>`);
     const fc = e.fact_check || [];
@@ -236,7 +312,7 @@
     d.dataset.agent = e.agent;
     d.dataset.lid = e.id;
     if (S.open.has(id)) d.open = true;
-    d.innerHTML = `<summary><time class="row-time" datetime="${esc(e.ts)}">${esc(timeOf(e.ts))}</time>${agentPill(e.agent)}<span class="row-action"><span class="row-text">${esc(stripPrefix(e.owner_line))}</span>${rowFiles(e)}</span><span class="row-status">${statusPills(e)}</span><span class="pill pill-scenario" title="Demo scenario">${esc(e.scenario)}</span>${icon('i-chev', 'chev')}</summary><div class="row-body">${rowBody(e)}</div>`;
+    d.innerHTML = `<summary><time class="row-time" datetime="${esc(e.ts)}">${esc(timeOf(e.ts))}</time>${agentPill(e.agent)}<span class="row-action"><span class="row-text">${esc(plainFiles(stripPrefix(e.owner_line)))}</span>${rowFiles(e)}</span><span class="row-status">${statusPills(e)}</span>${icon('i-chev', 'chev')}</summary><div class="row-body">${rowBody(e)}</div>`;
     return d;
   }
   function refreshRowStatus(qid) {
@@ -253,7 +329,7 @@
   // ------------------------------------------------------------------ log tab
   function renderFilters() {
     const c = counts();
-    const decs = [['all', 'Everything', null, c.total], ['BLOCK', 'Stopped', 'i-stop', c.BLOCK], ['HOLD_FOR_APPROVAL', 'Waiting for you', 'i-wait', c.HOLD_FOR_APPROVAL], ['ALLOW', 'Done', 'i-done', c.ALLOW]];
+    const decs = [['all', 'Everything', null, c.total], ['BLOCK', 'Stopped', 'i-stop', c.BLOCK], ['HOLD_FOR_APPROVAL', 'Held', 'i-wait', c.HOLD_FOR_APPROVAL], ['ALLOW', 'Done', 'i-done', c.ALLOW]];
     const df = $('#decFilter');
     df.innerHTML = decs.map(([k, l, ic, n]) => `<button type="button" data-dec="${k}" aria-pressed="${S.filters.dec === k}">${ic ? icon(ic) : ''}${esc(l)} <span class="u-mono">${n}</span></button>`).join('');
     const per = {};
@@ -279,12 +355,30 @@
     if (empty) { sum.textContent = ''; sum.classList.add('hidden'); return; }
     sum.classList.remove('hidden');
     const filtered = S.filters.dec !== 'all' || S.filters.agent !== 'all';
+    let tail = '';
+    if (c.HOLD_FOR_APPROVAL) {
+      // Log-side held actions map to queue decisions (two halves of a split
+      // payment are one decision). The queue is the single source of "waiting".
+      tail = c.pending
+        ? ` ${c.HOLD_FOR_APPROVAL} held actions → ${plural(c.pending, 'decision')} for you${c.decided ? `, ${c.decided} already decided` : ''}.`
+        : ` All ${plural(c.decided, 'decision')} decided.`;
+    }
     sum.textContent = filtered
       ? `Showing ${shown} of ${plural(c.total, 'action')}.`
-      : `${plural(c.total, 'action')} so far: ${c.BLOCK} stopped, ${c.HOLD_FOR_APPROVAL} waiting for your yes, ${c.ALLOW} done.`;
+      : `${plural(c.total, 'action')} so far: ${c.BLOCK} stopped (${c.stopped} actions, ${c.reads} file reads), ${c.HOLD_FOR_APPROVAL} held, ${c.ALLOW} done.${tail}`;
     const lc = $('#logCount');
     lc.textContent = String(c.total);
     lc.classList.toggle('hidden', !c.total);
+    // Append-only hash chain, verified server-side at the last state sync.
+    const chainEl = $('#logChain');
+    const ch = S.logChain;
+    if (ch && !S.demoRunning && c.total) {
+      chainEl.classList.remove('hidden');
+      chainEl.classList.toggle('bad', !ch.ok);
+      chainEl.innerHTML = ch.ok
+        ? `${icon('i-done')}Append-only log · ${plural(ch.length, 'entry', 'entries')} · hash chain verified`
+        : `${icon('i-stop')}Log chain broken at entry ${esc(ch.broken_at)}. Treat this log as untrusted.`;
+    } else chainEl.classList.add('hidden');
   }
   function rebuildLog() {
     const list = $('#logList');
@@ -306,8 +400,13 @@
   function logFor(q) { return S.byId.get(q.log_id); }
   function recText(q) {
     const e = logFor(q);
-    const why = e ? stripPrefix(e.owner_line).replace(/\s*Recommend:.*$/i, '') : '';
-    if (q.recommendation === 'deny') return { cls: 'rec-deny', ic: 'i-stop', head: 'Chaperone recommends: no.', why };
+    let why = e ? plainFiles(stripPrefix(e.owner_line)).replace(/\s*Recommend:.*$/i, '').trim() : '';
+    // Drop the reason when it just repeats the card title in other words.
+    const words = (t) => String(t).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(Boolean);
+    const sumWords = new Set(words(plainFiles(q.summary)));
+    const whyWords = words(why);
+    if (whyWords.length && whyWords.filter((w) => sumWords.has(w)).length / whyWords.length > 0.6) why = '';
+    if (q.recommendation === 'deny') return { cls: 'rec-deny', ic: 'i-cross-circle', head: 'Chaperone recommends: no.', why };
     return { cls: 'rec-review', ic: 'i-eye', head: 'Chaperone recommends: look closely.', why };
   }
   function cardHtml(q, where) {
@@ -320,27 +419,35 @@
     const whyId = `why-${k}`;
     const ev = e ? dedupeEvidence(e.evidence) : [];
     const related = S.log.filter((x) => x.queue_id === q.queue_id);
+    // The latest attempt carries the current aggregate (e.g. the 2nd split payment).
+    const latest = related.length ? related[related.length - 1] : e;
+    const maths = splitMath(latest);
     const stake = q.money_at_stake != null ? `<p class="stake"><span class="amt">${esc(money(q.money_at_stake))}</span><span class="lbl">at stake</span></p>` : '';
     let actions;
     if (pend) {
-      const left = Math.max(0, Math.ceil((pend.until - Date.now()) / 1000));
+      const ms = pend.paused ? pend.remaining : Math.max(0, pend.until - Date.now());
+      const left = Math.max(0, Math.ceil(ms / 1000));
       const verb = pend.decision === 'approve' ? 'You approved this.' : 'You said no.';
-      actions = `<div class="undo u-${pend.decision}" data-undo="${q.queue_id}"><p class="undo-text"><strong>${verb}</strong> Recording it in <span class="n" data-count="${q.queue_id}">${left}</span>s.</p><button type="button" class="btn btn-secondary btn-undo" data-act="undo" data-q="${q.queue_id}" data-key="undo-${k}">${icon('i-undo')}Undo</button><span class="undo-bar" aria-hidden="true"><i style="animation-duration:${Math.max(0, pend.until - Date.now())}ms"></i></span></div>`;
+      actions = `<div class="undo u-${pend.decision}${pend.paused ? ' is-paused' : ''}" data-undo="${q.queue_id}"><p class="undo-text"><strong>${verb}</strong> Recording it in <span class="n" data-count="${q.queue_id}">${left}</span>s.</p><button type="button" class="btn btn-secondary btn-undo" data-act="undo" data-q="${q.queue_id}" data-key="undo-${k}">${icon('i-undo')}Undo</button><p class="undo-paused"${pend.paused ? '' : ' hidden'}>${icon('i-wait')}Paused — press Undo to change your mind, or move focus away to resume.</p><span class="undo-bar" aria-hidden="true"><i style="animation-duration:${Math.max(0, ms)}ms${pend.paused ? ';animation-play-state:paused' : ''}"></i></span></div>`;
     } else {
-      const denyCls = where === 'queue' ? 'btn btn-danger btn-deny' : 'btn btn-danger';
+      // The recommended choice is the primary button. Destructive fill is used
+      // for "Say no" only when saying no is the recommendation.
+      const denyPrimary = q.recommendation === 'deny';
       const approve = q.never
-        ? `<button type="button" class="btn btn-approve" disabled>Approve</button>`
-        : `<button type="button" class="btn btn-approve" data-act="approve" data-q="${q.queue_id}" data-key="approve-${k}" aria-describedby="qt-${k}">${icon('i-done')}Approve</button>`;
-      actions = `<div class="card-actions">${approve}<button type="button" class="${denyCls}" data-act="deny" data-q="${q.queue_id}" data-key="deny-${k}" aria-describedby="qt-${k}">${icon('i-cross')}Say no</button></div>`;
+        ? `<button type="button" class="btn btn-secondary" disabled>Approve</button>`
+        : `<button type="button" class="btn ${denyPrimary ? 'btn-secondary' : 'btn-approve'}" data-act="approve" data-q="${q.queue_id}" data-key="approve-${k}" aria-describedby="qt-${k}">${icon('i-done')}Approve</button>`;
+      const deny = `<button type="button" class="btn ${denyPrimary ? 'btn-danger-solid' : 'btn-danger'}" data-act="deny" data-q="${q.queue_id}" data-key="deny-${k}" aria-describedby="qt-${k}">${icon('i-cross')}Say no</button>`;
+      actions = `<div class="card-actions">${denyPrimary ? deny + approve : approve + deny}</div>`;
     }
-    const extra = related.length > 1 ? `<p class="card-note">${esc(plural(related.length, 'payment'))} were attempted against this one invoice. Approving releases the whole amount.</p>` : '';
+    const extra = !maths && related.length > 1 ? `<p class="card-note">${esc(plural(related.length, 'payment'))} were attempted against this one invoice. Approving releases the whole amount.</p>` : '';
     const whyBody = ev.length || e
-      ? `<details class="why-held" id="${whyId}"${S.open.has(whyId) ? ' open' : ''}><summary>${icon('i-chev', 'chev')}Why it was held</summary><div class="why-body">${ev.map((x) => quoteFig(x)).join('')}${e ? techDetails(e, [['Approval', q.queue_id]]) : ''}</div></details>`
+      ? `<details class="why-held" id="${whyId}"${S.open.has(whyId) ? ' open' : ''}><summary>${icon('i-chev', 'chev')}Why it was held</summary><div class="why-body">${ev.map((x) => quoteFig(x)).join('')}${e ? techDetails(e, [['Approval', q.queue_id], ['Action hash', q.action_hash || '—']]) : ''}</div></details>`
       : '';
     return `<article class="card card-pending${compact ? ' compact' : ''}${q.never ? ' card-never' : ''}${pend ? ' is-pending' : ''}" id="card-${k}" data-qid="${q.queue_id}" aria-labelledby="qt-${k}">
-      <div class="card-top"><div class="card-who">${agentPill(q.agent)}<span class="card-when"><time datetime="${esc(q.created_at)}">${esc(timeOf(q.created_at))}</time></span>${e ? `<span class="pill pill-scenario card-scen">${esc(e.scenario)}</span>` : ''}</div>${stake}</div>
-      <h3 class="card-title" id="qt-${k}">${esc(q.summary)}</h3>
-      <p class="rec ${rec.cls}">${icon(rec.ic)}<span><strong>${rec.head}</strong>${rec.why && !compact ? ' ' + esc(rec.why) : ''}</span></p>
+      <div class="card-top"><div class="card-who">${agentPill(q.agent)}<span class="card-when"><time datetime="${esc(q.created_at)}">${esc(timeOf(q.created_at))}</time></span></div>${stake}</div>
+      <h3 class="card-title" id="qt-${k}">${esc(plainFiles(q.summary))}</h3>
+      <p class="rec ${rec.cls}">${icon(rec.ic)}<span><strong>${rec.head}</strong>${rec.why && !compact && !maths ? ' ' + esc(rec.why) : ''}</span></p>
+      ${maths}
       ${compact ? '' : extra}
       ${compact ? '' : whyBody}
       ${actions}
@@ -374,7 +481,7 @@
     $('#decidedWrap').classList.toggle('hidden', dec.length === 0);
     $('#decidedList').innerHTML = dec.map((q) => {
       const ok = q.status === 'approved';
-      return `<li class="dec-${esc(q.status)}">${icon(ok ? 'i-done' : 'i-cross-circle')}<span class="what">${esc(q.summary)}</span><span class="pill ${ok ? 'pill-status-done' : 'pill-status-blocked'}">${ok ? 'You approved this' : 'You said no'}</span>${q.decided_at ? `<time datetime="${esc(q.decided_at)}">${esc(timeOf(q.decided_at))}</time>` : ''}</li>`;
+      return `<li class="dec-${esc(q.status)}">${icon(ok ? 'i-done' : 'i-cross-circle')}<span class="what">${esc(plainFiles(q.summary))}</span><span class="pill ${ok ? 'pill-status-done' : 'pill-status-blocked'}">${ok ? 'You approved this' : 'You said no'}</span>${q.decided_at ? `<time datetime="${esc(q.decided_at)}">${esc(timeOf(q.decided_at))}</time>` : ''}</li>`;
     }).join('');
     const c = counts();
     const b = $('#queueBadge');
@@ -390,9 +497,10 @@
     const q = S.queue.get(qid);
     if (!q || q.status !== 'pending') return;
     S.errors.delete(qid);
-    const p = { decision, until: Date.now() + UNDO_MS };
+    const p = { decision, until: Date.now() + UNDO_MS, paused: false, remaining: UNDO_MS };
     p.timer = setTimeout(() => commitDecision(qid), UNDO_MS);
     p.tick = setInterval(() => {
+      if (p.paused) return;
       for (const el of $$(`[data-count="${qid}"]`)) el.textContent = String(Math.max(0, Math.ceil((p.until - Date.now()) / 1000)));
     }, 250);
     S.pending.set(qid, p);
@@ -400,6 +508,36 @@
     const undo = $(`#tab-${S.tab} [data-act="undo"][data-q="${qid}"]`);
     if (undo) undo.focus();
     announce(`${decision === 'approve' ? 'Approved' : 'Said no to'}: ${q.summary} Recording it in ${UNDO_MS / 1000} seconds. Press Undo to change your mind.`);
+  }
+  // The countdown pauses ONLY while the Undo button has keyboard focus, so a
+  // resting mouse never freezes a decision. The paused state is always visible
+  // on the card (hint + frozen bar) and announced.
+  function setPausedUI(qid, paused) {
+    for (const box of $$(`[data-undo="${qid}"]`)) {
+      box.classList.toggle('is-paused', paused);
+      const hint = box.querySelector('.undo-paused');
+      if (hint) hint.hidden = !paused;
+      const bar = box.querySelector('.undo-bar i');
+      if (bar) bar.style.animationPlayState = paused ? 'paused' : '';
+    }
+  }
+  function pausePending(qid) {
+    const p = S.pending.get(qid);
+    if (!p || p.paused) return;
+    p.paused = true;
+    clearTimeout(p.timer);
+    p.remaining = Math.max(0, p.until - Date.now());
+    setPausedUI(qid, true);
+    announce('Paused. Press Undo to change your mind, or move focus away to resume.');
+  }
+  function resumePending(qid) {
+    const p = S.pending.get(qid);
+    if (!p || !p.paused) return;
+    p.paused = false;
+    p.until = Date.now() + p.remaining;
+    p.timer = setTimeout(() => commitDecision(qid), p.remaining);
+    setPausedUI(qid, false);
+    announce('Countdown resumed.');
   }
   function clearPending(qid) {
     const p = S.pending.get(qid);
@@ -472,8 +610,9 @@
 
   // ---------------------------------------------------------------- Today tab
   function renderToday() {
-    const c = counts();
-    const has = S.log.length > 0;
+    const tl = todayLog();
+    const c = counts(tl);
+    const has = tl.length > 0;
     $('#todayIntro').classList.toggle('hidden', has);
     $('#todayBody').classList.toggle('hidden', !has);
     const last = S.log.length ? new Date(S.log[S.log.length - 1].ts) : new Date();
@@ -482,23 +621,27 @@
     const lead = $('#todayLead');
     const sub = $('#todaySub');
     if (!has) {
-      lead.textContent = S.demoRunning ? 'Your agents are starting work…' : 'Nothing has happened yet today.';
-      sub.textContent = "Run the demo to replay ten real situations from the studio's own files. Chaperone decides each one and shows you the line in the file that decided it.";
+      lead.textContent = S.demoRunning ? 'Your agents are starting work…' : 'Your five AI agents ask Chaperone before they act.';
+      sub.textContent = S.demoRunning
+        ? 'The demo is replaying ten real situations from the studio’s own files. Decisions appear here the moment they are made.'
+        : 'Nothing has happened yet today. Run the demo to replay ten real situations from the studio’s own files. Every decision quotes the line in your file that decided it.';
     } else if (c.pending > 0) {
-      lead.innerHTML = `${esc(plural(c.pending, 'thing needs', 'things need'))} your yes${c.pendingMoney ? ` — <span class="money">${esc(money(c.pendingMoney))}</span> in all` : ''}.`;
-      sub.textContent = `Chaperone also stopped ${plural(c.stopped, 'risky action')} before anything left the studio${c.scope ? `, and blocked ${plural(c.scope, 'file read')} an agent did not need` : ''}. ${plural(c.ALLOW, 'routine action')} went ahead without bothering you.`;
+      lead.innerHTML = `${esc(plural(c.pending, 'thing needs', 'things need'))} your yes${c.pendingMoney ? `: <span class="money">${esc(money(c.pendingMoney))}</span> in total` : ''}.`;
+      sub.textContent = `Chaperone also stopped ${plural(c.stopped, 'risky action')} and ${plural(c.reads, 'file read')} before anything left the studio. ${plural(c.ALLOW, 'routine action')} went ahead without bothering you.`;
     } else {
       lead.textContent = 'Nothing needs you right now.';
-      sub.textContent = `Chaperone stopped ${plural(c.stopped, 'risky action')}${c.scope ? ` and ${plural(c.scope, 'unneeded file read')}` : ''}, and let ${plural(c.ALLOW, 'routine action')} through.${S.demoRunning ? ' Your agents are still working.' : ''}`;
+      sub.textContent = `Chaperone stopped ${plural(c.stopped, 'risky action')} and ${plural(c.reads, 'file read')}, and let ${plural(c.ALLOW, 'routine action')} through.${S.demoRunning ? ' Your agents are still working.' : ''}`;
     }
     if (!has) return;
 
-    // stat cards — waiting first: it is the only one that needs her
+    // stat cards — waiting first: it is the only one that needs her.
+    // While the demo runs, a card with no value yet shows "—" instead of 0.
+    const showN = (n) => (S.demoRunning && n === 0 ? '—' : n);
     const stats = [
-      ['waiting', 'i-wait', c.pending, c.pending ? `waiting for your yes · <span class="money">${esc(money(c.pendingMoney))}</span>` : 'waiting for your yes'],
-      ['blocked', 'i-stop', c.stopped, 'stopped before anything went out'],
-      ['held', 'i-eye', c.scope, 'file reads stopped, not needed for the task'],
-      ['done', 'i-done', c.ALLOW, 'done without asking'],
+      ['waiting', 'i-wait', showN(c.pending), c.pending ? `waiting for your yes · <span class="money">${esc(money(c.pendingMoney))}</span>` : 'waiting for your yes'],
+      ['blocked', 'i-stop', showN(c.stopped), 'stopped before anything went out'],
+      ['held', 'i-eye', showN(c.reads), 'file reads stopped (not needed or unsafe)'],
+      ['done', 'i-done', showN(c.ALLOW), 'done without asking'],
     ];
     $('#statrow').innerHTML = stats.map(([k, ic, n, l]) => `<div class="stat stat-${k}"><span class="stat-ic" aria-hidden="true">${icon(ic)}</span><span class="stat-n">${n}</span><span class="stat-l">${l}</span></div>`).join('');
 
@@ -509,7 +652,7 @@
     $('#todayQueueEmpty').classList.toggle('hidden', pend.length > 0);
 
     // stopped rows (scope reads go under "You should know")
-    const stopped = S.log.filter((e) => e.decision === 'BLOCK' && !(e.scope_creep && e.scope_creep.length)).reverse();
+    const stopped = tl.filter((e) => e.decision === 'BLOCK' && e.action !== 'read_file').reverse();
     const ts = $('#todayStopped');
     const have = new Set($$('details.row', ts).map((r) => r.dataset.lid));
     const want = stopped.map((e) => String(e.id));
@@ -521,7 +664,7 @@
 
     // You should know: unneeded reads + inbound instructions
     const secs = [];
-    const scope = S.log.filter((e) => (e.scope_creep || []).length);
+    const scope = tl.filter((e) => (e.scope_creep || []).length);
     if (scope.length) {
       const groups = new Map();
       for (const e of scope) {
@@ -529,19 +672,19 @@
         if (!groups.has(k)) groups.set(k, { agent: e.agent, task: e.task, files: [] });
         for (const s of e.scope_creep) groups.get(k).files.push(s);
       }
-      secs.push(`<section class="briefsec" aria-labelledby="h-know"><h2 id="h-know">${icon('i-know')}You should know</h2>${[...groups.values()].map((g) => `<div class="briefitem"><p class="text">${esc(g.agent)} opened ${esc(plural(g.files.length, 'file'))} it did not need while asked to ${esc(g.task)}. Chaperone stopped each read.</p><ul class="files">${g.files.map((f) => `<li>${icon('i-lock')}<code>${esc(f.file)}</code>${levelPill(f.level)}</li>`).join('')}</ul></div>`).join('')}</section>`);
+      secs.push(`<section class="briefsec" aria-labelledby="h-know"><h2 id="h-know">${icon('i-know')}You should know</h2>${[...groups.values()].map((g) => `<div class="briefitem"><p class="text">${esc(g.agent)} opened ${esc(plural(g.files.length, 'file'))} it did not need while asked to ${esc(g.task)}. Chaperone stopped each read.</p><ul class="files">${g.files.map((f) => `<li>${icon('i-lock')}<span class="plain-file" title="${esc(f.file)}">${esc(plainFile(f.file))}</span>${levelPill(f.level)}</li>`).join('')}</ul></div>`).join('')}</section>`);
     }
-    const inj = S.log.filter((e) => e.injection && e.injection.flagged);
+    const inj = tl.filter((e) => e.injection && e.injection.flagged);
     if (inj.length) {
-      secs.push(`<section class="briefsec inj" aria-labelledby="h-inj"><h2 id="h-inj">${icon('i-mail')}An inbound message tried to give instructions</h2>${inj.map((e) => `<div class="briefitem"><p class="text">${esc(stripPrefix(e.owner_line))}</p>${quoteFig({ file: e.injection.file, line: e.injection.line, quote: e.injection.quote, whys: [] }, 'as-data')}<p class="data-note">${icon('i-done')}<span>Treated as information, not as an instruction. Nothing in that message was followed.</span></p></div>`).join('')}</section>`);
+      secs.push(`<section class="briefsec inj" aria-labelledby="h-inj"><h2 id="h-inj">${icon('i-mail')}An inbound message tried to give instructions</h2>${inj.map((e) => `<div class="briefitem"><p class="text">${esc(plainFiles(stripPrefix(e.owner_line)))}</p>${quoteFig({ file: e.injection.file, line: e.injection.line, quote: e.injection.quote, whys: [] }, 'as-data')}<p class="data-note">${icon('i-done')}<span>Treated as information, not as an instruction. Nothing in that message was followed.</span></p></div>`).join('')}</section>`);
     }
     const bs = $('#briefSections');
     const html = secs.join('');
     if (bs.dataset.sig !== html) { bs.innerHTML = html; bs.dataset.sig = html; }
 
-    const done = S.log.filter((e) => e.decision === 'ALLOW');
+    const done = tl.filter((e) => e.decision === 'ALLOW');
     $('#doneSummary').textContent = `Done without asking (${done.length})`;
-    $('#doneList').innerHTML = done.map((e) => `<li>${esc(stripPrefix(e.owner_line))}</li>`).join('');
+    $('#doneList').innerHTML = done.map((e) => `<li>${esc(plainFiles(stripPrefix(e.owner_line)))}</li>`).join('');
     $('#doneMore').classList.toggle('hidden', done.length === 0);
 
     const bt = S.briefing && S.briefing.text;
@@ -549,15 +692,16 @@
     if (bt) $('#briefText').textContent = bt;
     $('#videoWrap').classList.toggle('hidden', !S.videoOk);
 
-    renderLanes();
+    renderLanes(tl);
   }
-  function renderLanes() {
+  function renderLanes(entries) {
+    const log = entries || todayLog();
     const lanes = $('#lanes');
     const html = AGENTS.map((a) => {
-      const es = S.log.filter((e) => e.agent === a);
+      const es = log.filter((e) => e.agent === a);
       const n = { ALLOW: 0, HOLD_FOR_APPROVAL: 0, BLOCK: 0 };
       for (const e of es) n[e.decision]++;
-      const sr = es.length ? `${plural(es.length, 'action')}: ${n.ALLOW} done, ${n.HOLD_FOR_APPROVAL} waiting, ${n.BLOCK} stopped` : 'no actions yet';
+      const sr = es.length ? `${plural(es.length, 'action')}: ${n.ALLOW} done, ${n.HOLD_FOR_APPROVAL} held, ${n.BLOCK} stopped` : 'no actions yet';
       return `<li class="lane" data-agent="${esc(a)}"><div class="lane-head"><span class="lane-name">${esc(a)}</span><span class="lane-n" aria-hidden="true">${es.length}</span></div><span class="sr-only">${esc(sr)}</span><span class="lane-pips" aria-hidden="true">${es.length ? es.map((e) => `<svg class="ic d-${e.decision}" data-lid="${e.id}" focusable="false"><title>${esc(DEC[e.decision].label)}</title><use href="#${DEC[e.decision].icon}"/></svg>`).join('') : '<span class="lane-none">Nothing yet</span>'}</span></li>`;
     }).join('');
     if (lanes.dataset.sig === html) return;
@@ -580,7 +724,7 @@
     return out + esc(rest);
   }
   function renderFacts() {
-    const items = S.log.filter((e) => (e.fact_check || []).length);
+    const items = todayLog().filter((e) => (e.fact_check || []).length);
     const fl = $('#factList');
     $('#factEmpty').classList.toggle('hidden', items.length > 0);
     $('#factEmptyRun').classList.toggle('hidden', S.log.length > 0);
@@ -600,10 +744,10 @@
         return `<div class="fact-row ${ok ? 'ok' : 'bad'}"><div class="claimed"><span class="sr-only">The agent wrote</span><span class="val">${esc(f.claimed)}</span><span class="state">${state}</span></div><div class="vs" aria-hidden="true">${icon('i-arrow')}</div><div class="real"><span class="sr-only">Your file says</span>${realCell}</div></div>`;
       }).join('');
       return `<article class="fact" id="fact-${e.id}">
-        <div class="fact-head"><div><div class="card-who">${agentPill(e.agent)}${decPill(e.decision, e.decision === 'BLOCK' ? 'Stopped, not sent' : null)}<span class="pill pill-scenario">${esc(e.scenario)}</span></div><h3 class="fact-title">${esc(cap(e.task))}</h3></div>${bad ? `<span class="pill pill-status-fabricated">${esc(plural(bad, 'figure'))} wrong</span>` : `<span class="pill pill-status-done">${icon('i-done')}All figures match</span>`}</div>
+        <div class="fact-head"><div><div class="card-who">${agentPill(e.agent)}${decPill(e.decision, e.decision === 'BLOCK' ? 'Stopped, not sent' : null)}</div><h3 class="fact-title">${esc(cap(e.task))}</h3></div>${bad ? `<span class="pill pill-status-fabricated">${esc(plural(bad, 'figure'))} wrong</span>` : `<span class="pill pill-status-done">${icon('i-done')}All figures match</span>`}</div>
         ${body ? `<figure class="draft"><figcaption>The draft the agent wrote</figcaption>${to ? `<p class="to">To <code>${esc(to)}</code></p>` : ''}<blockquote><p>${markBody(body, fc)}</p></blockquote></figure>` : ''}
         <div class="fact-table"><div class="fact-hdr" aria-hidden="true"><span>The agent wrote</span><span></span><span>Your file says</span></div>${rows}</div>
-        ${bad ? `<p class="fact-verdict">${icon('i-stop')}<span>${esc(stripPrefix(e.owner_line))}</span></p>` : ''}
+        ${bad ? `<p class="fact-verdict">${icon('i-stop')}<span>${esc(plainFiles(stripPrefix(e.owner_line)))}</span></p>` : ''}
         ${techDetails(e)}
       </article>`;
     }).join('');
@@ -613,7 +757,7 @@
   // ------------------------------------------------------------- Lineage tab
   function renderLineage() {
     const outputs = new Map(); // output id -> {chain, write, acts[]}
-    for (const e of S.log) {
+    for (const e of todayLog()) {
       const ch = e.lineage_chain || [];
       if (ch.length < 2) continue;
       const out = ch[ch.length - 1];
@@ -626,17 +770,17 @@
     const html = [...outputs.values()].map((g) => {
       const who = (g.write || g.acts[0] || {}).agent || '';
       const task = (g.write || g.acts[0] || {}).task || '';
-      const srcNodes = g.sources.map((n) => `<li class="node ${lv(n.level)}"><div class="node-head"><span class="node-k">Your file</span>${meter()}</div><code class="node-id">${esc(n.id)}</code><div class="node-lv">${levelPill(n.level)}</div>${n.unannounced ? `<span class="flag">${icon('i-lock')}Holds unannounced news</span>` : ''}</li>`).join('');
+      const srcNodes = g.sources.map((n) => `<li class="node ${lv(n.level)}"><div class="node-head"><span class="node-k">Your file</span>${meter()}</div><code class="node-id">${pathHtml(n.id)}</code><div class="node-lv">${levelPill(n.level)}</div>${n.unannounced ? `<span class="flag">${icon('i-lock')}Holds unannounced news</span>` : ''}</li>`).join('');
       const outL = levelOf(g.out.level).label;
       const srcL = g.sources.map((n) => levelOf(n.level).label);
-      const outNode = `<li class="node ${lv(g.out.level)}"><div class="node-head"><span class="node-k">New file ${esc(who)} wrote</span>${meter()}</div><code class="node-id">${esc(g.out.id)}</code><div class="node-lv">${levelPill(g.out.level)}</div><p class="inherit">Inherits ${esc(outL)} from ${g.sources.length === 1 ? 'the file it was made from' : 'the most private file it was made from'}${srcL.length ? '' : ''}.</p>${g.out.unannounced ? `<span class="flag">${icon('i-lock')}Still holds the unannounced news</span>` : ''}</li>`;
+      const outNode = `<li class="node ${lv(g.out.level)}"><div class="node-head"><span class="node-k">New file ${esc(who)} wrote</span>${meter()}</div><code class="node-id">${pathHtml(g.out.id)}</code><div class="node-lv">${levelPill(g.out.level)}</div><p class="inherit">Inherits ${esc(outL)} from ${g.sources.length === 1 ? 'the file it was made from' : 'the most private file it was made from'}${srcL.length ? '' : ''}.</p>${g.out.unannounced ? `<span class="flag">${icon('i-lock')}Still holds the unannounced news</span>` : ''}</li>`;
       const acts = g.acts.map((a) => {
         const target = a.params && (a.params.target || a.params.to);
         const D = DEC[a.decision];
-        return `<li class="link-step" aria-hidden="true">${icon('i-arrow', 'h')}${icon('i-down', 'v')}<span class="link-lbl">then tried to</span></li><li class="node act d-${a.decision}"><span class="node-k">${esc(ACTION_WORDS[a.action] || a.action)}</span><p class="node-text">${target ? `Send it to <strong>${esc(target)}</strong>` : esc(stripPrefix(a.owner_line))}</p><div class="node-lv">${decPill(a.decision, a.decision === 'BLOCK' ? 'Stopped' : D && D.label)}</div><p class="inherit">${esc(stripPrefix(a.owner_line))}</p></li>`;
+        return `<li class="link-step" aria-hidden="true">${icon('i-arrow', 'h')}${icon('i-down', 'v')}<span class="link-lbl">then tried to</span></li><li class="node act d-${a.decision}"><span class="node-k">${esc(ACTION_WORDS[a.action] || a.action)}</span><p class="node-text">${target ? `Send it to <strong>${esc(target)}</strong>` : esc(plainFiles(stripPrefix(a.owner_line)))}</p><div class="node-lv">${decPill(a.decision, a.decision === 'BLOCK' ? 'Stopped' : D && D.label)}</div><p class="inherit">${esc(plainFiles(stripPrefix(a.owner_line)))}</p></li>`;
       }).join('');
       const srcBlock = g.sources.length === 1 ? srcNodes : `<li class="node-group"><ol class="chain-steps">${srcNodes}</ol></li>`;
-      return `<article class="chain"><h3 class="chain-title">${esc(cap(task || 'A new file'))}</h3><p class="chain-sub">${esc(who)} made <code>${esc(g.out.id)}</code> from ${esc(plural(g.sources.length, 'of your files', 'of your files'))}. It stays as private as its source.</p><ol class="chain-steps">${srcBlock}<li class="link-step" aria-hidden="true">${icon('i-arrow', 'h')}${icon('i-down', 'v')}<span class="link-lbl">summarised into</span></li>${outNode}${acts}</ol></article>`;
+      return `<article class="chain"><h3 class="chain-title">${esc(cap(task || 'A new file'))}</h3><p class="chain-sub">${esc(who)} made <span class="made-file">${esc(plainFile(g.out.id))}</span> from ${esc(plural(g.sources.length, 'of your files', 'of your files'))}. It stays as private as its source.</p><ol class="chain-steps">${srcBlock}<li class="link-step" aria-hidden="true">${icon('i-arrow', 'h')}${icon('i-down', 'v')}<span class="link-lbl">summarised into</span></li>${outNode}${acts}</ol></article>`;
     }).join('');
     const ll = $('#lineageList');
     if (ll.dataset.sig !== html) { ll.innerHTML = html; ll.dataset.sig = html; }
@@ -647,13 +791,13 @@
     // every file opened, by level
     const lm = levelMap();
     const files = new Set();
-    for (const e of S.log) for (const f of e.files_touched || []) files.add(f);
+    for (const e of todayLog()) for (const f of e.files_touched || []) files.add(f);
     const by = {};
     for (const f of files) { const l = lm.get(f) || 'internal'; (by[l] = by[l] || []).push(f); }
     $('#filesWrap').classList.toggle('hidden', files.size === 0);
     const fhtml = LEVEL_ORDER.map((l) => {
       const list = (by[l] || []).sort();
-      return `<div class="level lv-${l}"><h3><span class="lv-name">${meter()}${esc(levelOf(l).label)}</span><span class="n">${list.length}</span></h3>${list.length ? `<ul>${list.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : '<p class="quiet small">None today.</p>'}</div>`;
+      return `<div class="level lv-${l}"><h3><span class="lv-name">${meter()}${esc(levelOf(l).label)}</span><span class="n">${list.length}</span></h3>${list.length ? `<ul>${list.map((f) => `<li>${pathHtml(f)}</li>`).join('')}</ul>` : '<p class="quiet small">None today.</p>'}</div>`;
     }).join('');
     const fb = $('#filesByLevel');
     if (fb.dataset.sig !== fhtml) { fb.innerHTML = fhtml; fb.dataset.sig = fhtml; }
@@ -727,12 +871,20 @@
   function renderRunButton() {
     const b = $('#runDemo');
     const busy = S.demoRunning;
+    const ran = S.log.length > 0;
+    b.disabled = busy;
     b.setAttribute('aria-disabled', busy ? 'true' : 'false');
+    // After the first run the header CTA demotes to secondary: the approval
+    // cards' recommended action becomes the primary choice on the screen.
+    b.classList.toggle('btn-primary', !ran);
+    b.classList.toggle('btn-secondary', ran);
+    const ids = S.scenarioIds;
+    const doneN = ids.filter((id) => (S.scen.get(id) || {}).status === 'done').length;
     b.innerHTML = busy
-      ? `${icon('i-spin', 'spin')}<span class="run-label">Running…</span>`
-      : `${icon('i-play')}<span class="run-label">${S.log.length ? 'Run it again' : 'Run the demo'}</span>`;
+      ? `${icon('i-spin', 'spin')}<span class="run-label">Running…${ids.length ? ` ${doneN}/${ids.length}` : ''}</span>`
+      : `${icon('i-play')}<span class="run-label">${ran ? 'Run it again' : 'Run the demo'}</span>`;
     $('#demoStatus').textContent = busy ? 'The demo is running.' : '';
-    for (const x of $$('[data-run]')) x.setAttribute('aria-disabled', busy ? 'true' : 'false');
+    for (const x of $$('[data-run]')) { x.disabled = busy; x.setAttribute('aria-disabled', busy ? 'true' : 'false'); }
   }
 
   // ----------------------------------------------------------------- render
@@ -771,6 +923,7 @@
     S.briefing = st.briefing || null;
     S.lineage = st.lineage || [];
     S.demoRunning = !!st.demoRunning;
+    S.logChain = st.log_chain || null;
     if (!S.demoRunning && !S.scenarioIds.length) S.scen.clear();
     renderAll();
   }
@@ -804,13 +957,34 @@
     c.dataset.state = state;
     $('#connLbl').textContent = state === 'live' ? 'Live' : state === 'lost' ? 'Reconnecting' : 'Connecting';
   }
+  let es = null;
+  let retryTimer = null;
+  let retryDelay = 2000;
   function connect() {
     if (!('EventSource' in window)) { setConn('lost'); return; }
-    const es = new EventSource('/api/events');
-    const on = (ev, fn) => es.addEventListener(ev, (m) => { let d = {}; try { d = JSON.parse(m.data || '{}'); } catch (_) { return; } fn(d); });
-    es.onopen = () => setConn('live');
-    es.onerror = () => setConn(es.readyState === EventSource.CLOSED ? 'lost' : 'lost');
-    on('hello', () => { setConn('live'); fetchState(); });
+    if (es) { es.close(); es = null; }
+    clearTimeout(retryTimer);
+    es = new EventSource('/api/events');
+    // Any successful message means the stream is live again — the chip never
+    // sticks on "Reconnecting" once data is flowing.
+    const on = (ev, fn) => es.addEventListener(ev, (m) => {
+      setConn('live');
+      retryDelay = 2000;
+      let d = {}; try { d = JSON.parse(m.data || '{}'); } catch (_) { return; }
+      fn(d);
+    });
+    es.onopen = () => { setConn('live'); retryDelay = 2000; };
+    es.onerror = () => {
+      setConn('lost');
+      if (es && es.readyState === EventSource.CLOSED) {
+        // The browser gave up: reconnect ourselves with backoff and resync.
+        es.close(); es = null;
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 15000);
+      }
+    };
+    on('hello', () => { fetchState(); });
     on('action', addEntry);
     on('queue', (q) => {
       const isNew = !S.queue.has(q.queue_id);
@@ -830,16 +1004,26 @@
     on('demo', (d) => {
       S.demoRunning = !!d.running;
       if (d.running) { clearTimeout(prog.hideTimer); announce('The demo has started.'); }
-      schedule('run', 'progress', 'today', 'score');
-      if (!d.running) requestAnimationFrame(() => finishProgress(d.error));
+      schedule('run', 'progress', 'today', 'score', 'filters');
+      if (!d.running) {
+        requestAnimationFrame(() => finishProgress(d.error));
+        // Resync once the run is over: fresh hash-chain verification and a
+        // single authoritative snapshot of log, queue and scorecard.
+        fetchState();
+      }
     });
     on('scenario', (s) => {
       if (!S.scenarioIds.includes(s.id)) S.scenarioIds.push(s.id);
       const prev = S.scen.get(s.id) || {};
       S.scen.set(s.id, Object.assign(prev, { name: s.name, status: s.status, points: s.points != null ? s.points : prev.points }));
-      schedule('progress');
+      schedule('progress', 'run');
     });
   }
+  // A laptop that slept or a tab that was hidden may hold a dead stream:
+  // reconnect as soon as the page is looked at again.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && (!es || es.readyState === EventSource.CLOSED)) connect();
+  });
 
   // ----------------------------------------------------------------- actions
   async function runDemo() {
@@ -875,8 +1059,12 @@
       $('#tab-' + t).classList.toggle('active', on);
     }
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+    // Every tab change starts at the top of the new view — never land mid-page
+    // at the previous tab's scroll position. Scroll containers reset too.
+    window.scrollTo(0, 0);
+    for (const sc of [$('#tabs'), $('#scoreGrid')]) if (sc) sc.scrollLeft = 0;
     if (opts && opts.focusTab) $('#tabbtn-' + name).focus();
-    if (opts && opts.focusPanel) { $('#tab-' + name).focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
+    if (opts && opts.focusPanel) $('#tab-' + name).focus({ preventScroll: true });
   }
   function wire() {
     const tl = $('#tabs');
@@ -911,6 +1099,18 @@
       if (ag) { S.filters.agent = ag.dataset.agent; renderFilters(); applyFilters(); $(`#agentFilter [data-agent="${CSS.escape(S.filters.agent)}"]`).focus(); return; }
     });
     $('#clearFilters').addEventListener('click', () => { S.filters = { dec: 'all', agent: 'all' }; renderFilters(); applyFilters(); $('#decFilter button').focus(); });
+    // Pause the undo countdown only for keyboard focus on the Undo button.
+    // A resting mouse must never freeze a decision; keyboard users get a
+    // visible "Paused" hint on the card while they read.
+    document.addEventListener('focusin', (ev) => {
+      const btn = ev.target.closest && ev.target.closest('[data-act="undo"]');
+      if (btn && btn.matches(':focus-visible')) pausePending(btn.dataset.q);
+    });
+    document.addEventListener('focusout', (ev) => {
+      const btn = ev.target.closest && ev.target.closest('[data-act="undo"]');
+      if (!btn || !document.contains(btn)) return; // detached by a re-render: keep state
+      resumePending(btn.dataset.q);
+    });
     // remember which disclosures are open so live re-renders never collapse them
     document.addEventListener('toggle', (ev) => {
       const d = ev.target;

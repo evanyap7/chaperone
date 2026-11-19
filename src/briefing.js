@@ -8,7 +8,9 @@ import { buildNarration } from './narration.js';
 function money(n) { return `SGD ${Number(n).toLocaleString('en-US')}`; }
 
 export function buildBriefing(store) {
-  const log = store.log;
+  // The briefing covers real agent actions plus the latest demo run. The log
+  // itself is append-only and keeps every earlier run.
+  const log = store.log.filter((e) => !e.scenario || e.run_id === store.lastRunId);
   const blocks = log.filter((e) => e.decision === 'BLOCK' && e.action !== 'read_file');
   const scopeReads = log.filter((e) => e.action === 'read_file' && (e.scope_creep?.length || e.decision === 'BLOCK'));
   const holds = store.queue.filter((q) => q.status === 'pending');
