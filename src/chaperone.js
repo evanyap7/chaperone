@@ -154,8 +154,15 @@ const shortName = (org) => String(org?.name || '').split(/\s+/)[0];
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Read a data file, or null if it does not exist / is outside data/.
+// Paths match case-insensitively on every OS (macOS already does; Linux CI
+// does not), so "FINANCE/X.md" reads the same file as the ledger key it maps to.
 function contentOf(file) {
-  try { return readDataFile(file); } catch { return null; }
+  try { return readDataFile(file); } catch { /* fall through */ }
+  if (typeof file !== 'string' || !file) return null;
+  const key = canonicalPath(file, DATA_DIR, path);
+  const real = listDataFiles().find((f) => f.toLowerCase() === key);
+  if (!real) return null;
+  try { return readDataFile(real); } catch { return null; }
 }
 function dataFilesUnder(prefix) {
   return listDataFiles().filter((f) => f.startsWith(prefix));
