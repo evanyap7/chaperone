@@ -76,6 +76,69 @@ test('fix2: money extraction understands k/m, commas and number words; years are
   assert.deepEqual(extractMoney('in 2026 we grew').map((m) => m.value), []);
 });
 
+// ---- Fix 4: client-name variants hit the written floor; others never do -----
+
+test('fix4: floor client name variants all hit the written floor (NEVER R08)', () => {
+  const { chaperone } = freshEngine();
+  for (const client of [
+    'The Greenstep Center',
+    'GREENSTEP TUITION CENTRE',
+    'greenstep   tuition',
+    'Ｇｒｅｅｎｓｔｅｐ Ｔｕｉｔｉｏｎ', // fullwidth
+    'Gre\u0435nstep Tuition', // Cyrillic е
+    'Greenstep Tution', // one-letter typo
+  ]) {
+    const e = gate(chaperone, 'quote_price', { client, price: 5800 });
+    assert.equal(e.decision, 'BLOCK', client);
+    assert.ok(e.rules.includes('R08'), client);
+    assert.equal(e.never, true, client);
+  }
+});
+
+test('fix4: other clients and unknown names never cross-match the floor (HOLD R07)', () => {
+  const { chaperone } = freshEngine();
+  for (const client of ['Oakline Interiors', 'Ferro Logistics', 'Random Co']) {
+    const e = gate(chaperone, 'quote_price', { client, price: 100 });
+    assert.equal(e.decision, 'HOLD_FOR_APPROVAL', client);
+    assert.ok(e.rules.includes('R07'), client);
+    assert.ok(!e.rules.includes('R08'), client);
+  }
+});
+
+// ---- Fix 5: Unicode digits, k8 shorthand, mixed digit+word numbers ----------
+
+test('fix5: any Unicode decimal digit parses (Arabic-Indic, Devanagari, fullwidth)', () => {
+  assert.deepEqual(extractMoney('٥٨٠٠').map((m) => m.value), [5800]);
+  assert.deepEqual(extractMoney('५८००').map((m) => m.value), [5800]);
+  assert.deepEqual(extractMoney('５８００').map((m) => m.value), [5800]);
+  assert.deepEqual(extractMoney('٢٠٢٦').map((m) => m.value), [], 'a year in Arabic-Indic digits is still a year');
+});
+
+test('fix5: "5k8" shorthand and mixed digit+word numbers yield ONE value', () => {
+  assert.deepEqual(extractMoney('5k8').map((m) => m.value), [5800]);
+  assert.deepEqual(extractMoney('5k80').map((m) => m.value), [5800]);
+  assert.deepEqual(extractMoney('5k800').map((m) => m.value), [5800]);
+  assert.deepEqual(extractMoney('5 thousand 8 hundred').map((m) => m.value), [5800]);
+  assert.deepEqual(extractMoney('5 thousand 8 hundred dollars').map((m) => m.value), [5800]);
+  assert.equal(wordsToNumber('5 thousand 8 hundred'), 5800);
+});
+
+test('fix5: single number words and sub-100 amounts parse; identifiers do not', () => {
+  assert.deepEqual(extractMoney('eighty').map((m) => m.value), [80]);
+  assert.equal(wordsToNumber('eighty'), 80);
+  assert.deepEqual(extractMoney('invoice 2026-036').map((m) => m.value), []);
+  assert.deepEqual(extractMoney('2026-036').map((m) => m.value), []);
+});
+
+test('fix5: a floor commitment in Unicode digits or k8 shorthand is still BLOCK R08', () => {
+  const { chaperone } = freshEngine();
+  for (const body of ['Good news, ٥٨٠٠ works for us.', 'We can do it for 5k8.']) {
+    const e = gate(chaperone, 'send_email', { to: LIM, body });
+    assert.equal(e.decision, 'BLOCK', body);
+    assert.ok(e.rules.includes('R08'), body);
+  }
+});
+
 // ---- Fix 3: paraphrasing never escapes lineage (E9, E10, E19, E20) ----------
 
 test('fix3 E9: paraphrased Ferro round with NO sources is BLOCK R19', () => {
@@ -262,7 +325,10 @@ test('fix8 I2: an injection source blocks a payment that would otherwise be ALLO
   const { chaperone } = freshEngine();
   const clean = gate(chaperone, 'pay_supplier', { amount: 720, invoice: INV37, supplier: 'QuickPrint SG' });
   assert.equal(clean.decision, 'ALLOW');
-  const e = gate(chaperone, 'pay_supplier', { amount: 720, invoice: INV37, supplier: 'QuickPrint SG' }, { sources: [INJ] });
+  // Fresh engine: with the global ledger the paid invoice would duplicate-BLOCK
+  // first, so prove the injection escalation on a payment that is otherwise ALLOW.
+  const { chaperone: fresh } = freshEngine();
+  const e = gate(fresh, 'pay_supplier', { amount: 720, invoice: INV37, supplier: 'QuickPrint SG' }, { sources: [INJ] });
   assert.equal(e.decision, 'BLOCK');
   assert.ok(e.rules.includes('R05'));
   assert.ok(e.evidence.some((ev) => ev.file === INJ && /instructions for the agent/i.test(ev.why)));

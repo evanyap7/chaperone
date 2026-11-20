@@ -12,7 +12,7 @@ import path from 'node:path';
 import { classify, classifyDerived } from './classifier.js';
 import { Lineage } from './lineage.js';
 import { factCheck, hasFabrication, extractSourceFacts } from './factcheck.js';
-import { normalizeText, isSimilar, sharedShingles, extractMoney, canonicalPath } from './normalize.js';
+import { normalizeText, normalizeName, isSimilar, sharedShingles, extractMoney, canonicalPath } from './normalize.js';
 import {
   policy, maxLevel, readDataFile, resolveDataPath, listDataFiles, parseFrontmatter,
   loadClients, loadSuppliers, loadPriceList, paymentLimit, orgKey, firstName, OWNER_EMAIL,
@@ -61,8 +61,71 @@ const OUTBOUND_ACTIONS = new Set(['send_email', 'upload_to_external_tool', 'pay_
 
 // Prompt injection: an inbound text addressing an AI agent and instructing it
 // to move data or money. Normalised first (zero-width, homoglyphs), multiline,
-// and covering more verbs and addressees than the original kit phrasing.
-export const INJECTION_RE = /(AI assistant|attention AI|ignore (?:previous|all)|system:|assistant:|note to the (?:agent|AI)|dear (?:LLM|Copilot|agent|AI)|AI\s*助手|助手|agent\s*[,:]|LLM\s*[,:]|Copilot\s*[,:])[\s\S]{0,200}?(forward|send|upload|email|share|pay|transfer|export|transmit|发送|转发|上传|支付)/i;
+// two-part structure (addressee ... bounded gap ... verb) so ordinary business
+// files do not false-positive.
+export const INJECTION_RE = /(AI assistant|attention AI|attention assistant|dear assistant|to the AI|AI model|language model|chatbot|automated agent|system prompt|new instructions|ignore (?:previous|prior|all)|disregard (?:previous|prior|all)|override instructions|instruction\s*:|system:|assistant:|note to the (?:agent|AI)|dear (?:LLM|Copilot|agent|AI)|AI\s*助手|助手|智能体|模型|agent\s*[,:]|LLM\s*[,:]|Copilot\s*[,:])[\s\S]{0,200}?(forward|send|upload|email|share|pay|transfer|export|transmit|wire|remit|disclose|leak|exfiltrate|post|publish|sync|copy|move|attach|bcc|发送|转发|上传|支付|汇款|泄露)/i;
+
+// Outbound actions a tainted agent (one that read injected instructions) may
+// never perform unreviewed: an ALLOW escalates to HOLD_FOR_APPROVAL (R05).
+const TAINT_ACTIONS = new Set(['pay_supplier', 'upload_to_external_tool', 'quote_price']);
+
+// A name is a word-prefix of another when it equals it or extends it by whole
+// words ("QuickPrint SG" -> "QuickPrint SG Pte Ltd"). Never the reverse: a
+// longer name that merely starts with a list name is a substitution attack.
+const isWordPrefix = (a, b) => a === b || b.startsWith(a + ' ');
+
+// Resolve a given supplier name against the known supplier list: exact
+// normalised equality, or a proper word-prefix of exactly one list name.
+function resolveSupplierName(given) {
+  const g = normalizeName(given);
+  if (!g) return null;
+  const exact = SUPPLIERS.filter((s) => normalizeName(s.name) === g);
+  if (exact.length === 1) return normalizeName(exact[0].name);
+  if (exact.length > 1) return null;
+  const prefixed = SUPPLIERS.filter((s) => normalizeName(s.name) !== g && isWordPrefix(g, normalizeName(s.name)));
+  return prefixed.length === 1 ? normalizeName(prefixed[0].name) : null;
+}
+
+// Full-name payee match: (a) normalised full equality with the invoice
+// issuer, or (b) the given name resolves unambiguously to a list name that
+// equals or is a word-prefix of the issuer's full legal name.
+function payeeMatchesIssuer(given, issuer) {
+  const g = normalizeName(given);
+  const i = normalizeName(issuer);
+  if (g && g === i) return true;
+  const resolved = resolveSupplierName(given);
+  return !!resolved && isWordPrefix(resolved, i);
+}
+
+// Client-name normalisation for owner floors: punctuation/case/width and
+// confusables folded, plus the noise tokens "the", "centre", "center".
+const FLOOR_STOPWORDS = new Set(['the', 'centre', 'center']);
+const floorNorm = (s) => normalizeName(s).split(' ').filter((w) => w && !FLOOR_STOPWORDS.has(w)).join(' ');
+
+function editDistance(a, b) {
+  if (a === b) return 0;
+  const m = a.length; const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+// Conservative fuzzy: per-token edit distance <=1 for tokens of length >=5
+// (shorter tokens must be exact), or whole-string distance <=2 for strings
+// of >=6 chars. Different clients never cross-match.
+function fuzzyNameMatch(q, n) {
+  const qt = q.split(' '); const nt = n.split(' ');
+  if (qt.length === nt.length && qt.every((w, i) => w === nt[i] || (w.length >= 5 && nt[i].length >= 5 && editDistance(w, nt[i]) <= 1))) return true;
+  return q.length >= 6 && n.length >= 6 && editDistance(q, n) <= 2;
+}
 
 const QUEUE_CAP_PER_AGENT_HOUR = 20;
 const sha1 = (s) => createHash('sha1').update(s).digest('hex');
@@ -159,6 +222,12 @@ export function validateGateInput(ctx) {
   if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) throw new GateInputError('body must be a JSON object');
   if (!isStr(ctx.agent)) throw new GateInputError('agent is required (string)');
   if (!isStr(ctx.action)) throw new GateInputError('action is required (string)');
+  if (ctx.task !== undefined) {
+    if (typeof ctx.task !== 'string') throw new GateInputError('task must be a string');
+    if (ctx.task === '__proto__' || ctx.task === 'constructor' || ctx.task === 'prototype') {
+      throw new GateInputError('task must not be a prototype key');
+    }
+  }
   const p = ctx.params ?? {};
   if (typeof p !== 'object' || Array.isArray(p) || p === null) throw new GateInputError('params must be an object');
   for (const k of ['scope', 'sources']) {
@@ -197,10 +266,11 @@ export class Chaperone {
   constructor(store) {
     this.store = store;
     this.lineage = new Lineage();
-    this.payments = []; // {ts, invoice, supplierKey, amount, run_id}
+    this.payments = []; // {ts, invoice, payeeKey, supplierKey, supplierName, amount, outcome} — global per engine, every run counts
     this.r17Deleted = new Map(); // regulated file deleted under R17 -> affected client
     this.tasks = loadTasks();
     this.reads = new Map(); // `${agent}\u0000${task}` -> Set of files actually read via the gate
+    this.tainted = new Map(); // agent -> {file, quote, line}: read content carrying instructions for the agent
     // Register every business file up front: lineage and content-similarity
     // checks work even when an agent declares no sources at all.
     for (const f of listDataFiles()) this.registerFile(f);
@@ -211,6 +281,7 @@ export class Chaperone {
     this.payments = [];
     this.r17Deleted.clear();
     this.reads.clear();
+    this.tainted.clear();
     for (const f of listDataFiles()) this.registerFile(f);
   }
 
@@ -255,12 +326,35 @@ export class Chaperone {
     return CLIENT_BY_EMAIL.has(e) || SUPPLIER_BY_EMAIL.has(e) || (!!OWNER_EMAIL && e === OWNER_EMAIL);
   }
 
-  // Owner floors match on the organisation key, so "Greenstep", "greenstep
-  // tuition" and "Greenstep Tuition Centre" all hit the same written floor.
+  // Owner floors match on the full normalised client name against the known
+  // client list AND policy.owner_floors keys: exact match first, then
+  // token-set equality, then conservative fuzzy, then whole-word prefix.
+  // "Greenstep", "The Greenstep Center", "GREENSTEP TUITION CENTRE" and a
+  // confusable-spelled "Greеnstep Tuition" all hit the same written floor;
+  // different clients never cross-match.
   floorEntry(clientName) {
-    const key = orgKey(clientName);
-    for (const [name, floor] of Object.entries(policy.owner_floors || {})) {
-      if (orgKey(name) === key) return { name, floor };
+    const q = floorNorm(clientName);
+    if (!q) return null;
+    const floors = Object.entries(policy.owner_floors || {});
+    const candidates = floors.map(([name, floor]) => ({ name, floor, norm: floorNorm(name) }));
+    for (const c of CLIENTS) {
+      const cn = floorNorm(c.name);
+      const hit = floors.find(([name]) => floorNorm(name) === cn);
+      if (hit && !candidates.some((x) => x.norm === cn)) candidates.push({ name: hit[0], floor: hit[1], norm: cn });
+    }
+    const tiers = [
+      (x) => x.norm === q,
+      (x) => {
+        const qs = new Set(q.split(' '));
+        const ns = new Set(x.norm.split(' '));
+        return ns.size === qs.size && [...ns].every((w) => qs.has(w));
+      },
+      (x) => fuzzyNameMatch(q, x.norm),
+      (x) => isWordPrefix(q, x.norm) || isWordPrefix(x.norm, q),
+    ];
+    for (const tier of tiers) {
+      const hits = candidates.filter(tier);
+      if (hits.length === 1) return { name: hits[0].name, floor: hits[0].floor };
     }
     return null;
   }
@@ -353,6 +447,12 @@ export class Chaperone {
     // carries instructions for the agent is blocked, whatever the action.
     const injection = result.injection ?? this.scanInjection(ctx.sources);
     if (injection?.flagged && result.decision !== 'BLOCK') {
+      // A payment the handler provisionally ALLOWed never happened: roll its
+      // ledger record back so it counts neither as paid nor as an attempt.
+      if (result._ledger) {
+        const idx = this.payments.indexOf(result._ledger);
+        if (idx !== -1) this.payments.splice(idx, 1);
+      }
       result.decision = 'BLOCK';
       result.rules = [...new Set([...result.rules, 'R05'])];
       result.evidence = [...(result.evidence || []), { file: injection.file, quote: injection.quote, line: injection.line, why: 'Blocked: the action acts on inbound content that contains instructions for the agent. Content is data, never authority.' }];
@@ -360,6 +460,32 @@ export class Chaperone {
       result.queue_item = null;
     }
     result.injection = injection;
+
+    // Taint tracking: an agent that successfully READS a file carrying
+    // instructions for the agent is marked — per agent, across tasks. The
+    // read itself stays ALLOW; later outbound actions are held for review.
+    if (action === 'read_file' && result.decision === 'ALLOW' && params.file) {
+      const content = contentOf(params.file) ?? this.lineage.nodes.get(params.file)?.content;
+      if (content) {
+        const norm = normalizeText(content);
+        const m = norm.match(INJECTION_RE);
+        if (m) this.tainted.set(agent, { file: params.file, quote: quoteLine(norm, m.index), line: lineOf(norm, m.index) });
+      }
+    }
+    if (result.decision === 'ALLOW' && TAINT_ACTIONS.has(action) && this.tainted.has(agent)) {
+      const t = this.tainted.get(agent);
+      // The provisional ledger record for an ALLOWed payment is rolled back:
+      // the payment is held, so it never counts as paid or as an attempt.
+      if (result._ledger) {
+        const idx = this.payments.indexOf(result._ledger);
+        if (idx !== -1) this.payments.splice(idx, 1);
+      }
+      result.decision = 'HOLD_FOR_APPROVAL';
+      result.rules = [...new Set([...result.rules, 'R05'])];
+      result.evidence = [...(result.evidence || []), { file: t.file, quote: t.quote, line: t.line, why: 'Held: this agent previously read content containing instructions for the agent. Content is data, never authority — its outbound actions need your review.' }];
+      result.owner_line = `Held: ${agent} previously read instructions addressed to it (${t.file}), so this ${action} needs your approval before anything is sent or paid.`;
+      result.queue_item = { fingerprint: `taint:${agent}:${action}:${sha1(JSON.stringify(params))}`, agent, action, summary: `${action} by ${agent}, which read injected instructions (${t.file}).`, recommendation: 'review', money_at_stake: result.money_at_stake ?? null };
+    }
 
     // The log and the decision must agree: an outbound ALLOW can never carry
     // protected data, whatever path produced it.
@@ -391,8 +517,10 @@ export class Chaperone {
 
     // Held items go to the queue once; NEVER items never do. The queue item is
     // created BEFORE the entry is hashed, so the hash covers the final entry.
+    // Fingerprints are agent-scoped (appended, so prefix checks keep working):
+    // agent B's hold never dedupes onto agent A's pending or denied item.
     if (result.decision === 'HOLD_FOR_APPROVAL' && result.queue_item) {
-      const q = this.store.enqueue({ ...result.queue_item, log_id: this.store.seq + 1, never: false, action_hash: sha1(JSON.stringify({ action, params, sources: ctx.sources })) });
+      const q = this.store.enqueue({ ...result.queue_item, fingerprint: `${result.queue_item.fingerprint}:${agent}`, log_id: this.store.seq + 1, never: false, action_hash: sha1(JSON.stringify({ action, params, sources: ctx.sources })) });
       entry.queue_id = q.queue_id;
     }
     return this.store.append(entry);
@@ -471,8 +599,9 @@ export class Chaperone {
   doRead(ctx) {
     const file = ctx.params.file;
     // Scope comes from the task record, not from the agent. The request's
-    // scope may only narrow it. An unregistered task needs nothing.
-    const taskScope = this.tasks[ctx.task] ?? [];
+    // scope may only narrow it. An unregistered task needs nothing. The
+    // lookup is own-property-safe: prototype keys never resolve to a scope.
+    const taskScope = Object.hasOwn(this.tasks, ctx.task) ? this.tasks[ctx.task] : [];
     const scope = ctx.scope.length ? taskScope.filter((f) => ctx.scope.includes(f)) : taskScope;
     const inScope = scope.includes(file);
     if (contentOf(file) === null && !this.lineage.nodes.get(file)?.content) {
@@ -513,7 +642,9 @@ export class Chaperone {
   }
 
   doList(ctx) {
-    return { decision: 'ALLOW', rules: ['R01'], evidence: [], data_level: 'internal', owner_line: `Listed ${ctx.params.dir || 'files'}.` };
+    const dir = ctx.params.dir;
+    const what = !dir || dir === '.' || dir === './' ? 'the studio files' : dir;
+    return { decision: 'ALLOW', rules: ['R01'], evidence: [], data_level: 'internal', owner_line: `Listed ${what}.` };
   }
 
   // The README that sits next to a data file ("x.csv" -> "x.README.md") and
@@ -957,11 +1088,12 @@ export class Chaperone {
 
   // ---- pay supplier (aggregated) ------------------------------------------
   // R10 allows a payment only against a received invoice, under the policy
-  // limit, to the issuer named on that invoice, in SGD. Payments aggregate
-  // per invoice over ALL time (an invoice is never paid twice) and per
-  // supplier over 24h (splitting cannot dodge the limit). Demo replays are
-  // self-contained simulations: they aggregate within their own run and never
-  // touch the real ledger.
+  // limit, to the issuer named on that invoice, in SGD. The ledger is global
+  // to this engine: every payment counts, in every run (no scenario/run_id
+  // partitioning). "Already paid" = prior ALLOWed payments for the same
+  // (canonical invoice, payee) >= the invoice's true total; any further
+  // attempt against a fully paid invoice is BLOCK (R11), never queued.
+  // Attempts still aggregate per invoice/supplier over 24h for the HOLD paths.
   doPay(ctx) {
     const { amount, invoice, supplier, currency } = ctx.params;
     const now = Date.now();
@@ -970,7 +1102,7 @@ export class Chaperone {
     // true invoice total from the invoice file (only a supplier invoice we received counts)
     let invoiceTotal = null;
     let received = false;
-    let issuerKey = null;
+    let issuerName = null;
     let issuerLine = null;
     if (invoice) {
       const c = contentOf(invoice);
@@ -979,7 +1111,7 @@ export class Chaperone {
         const m = c.match(/SGD\s*([\d,]+)/i) || c.match(/\*\*Total\*\*\s*\|\s*\*\*([\d,]+)\*\*/i);
         if (m) invoiceTotal = num(m[1]);
         const from = c.match(/From\s+(.+?)\s+to\s+/i);
-        if (from) { issuerKey = orgKey(from[1]); issuerLine = quoteLine(c, from.index); }
+        if (from) { issuerName = from[1]; issuerLine = quoteLine(c, from.index); }
       }
     }
     const evidence = [];
@@ -988,9 +1120,12 @@ export class Chaperone {
       if (inv) evidence.push(inv);
     }
 
-    // Payee substitution: the supplier must be the issuer named on the invoice.
-    if (received && issuerKey && supplierKey !== issuerKey) {
-      evidence.push({ file: invoice, quote: issuerLine, line: null, why: `The invoice is issued by ${issuerKey}, not ${supplierKey} — payee does not match the invoice` });
+    // Payee substitution: the supplier must be the issuer named on the
+    // invoice, compared by FULL normalised legal name (never the first word).
+    const matched = !!(received && issuerName && payeeMatchesIssuer(supplier, issuerName));
+    const payeeKey = matched ? normalizeName(issuerName) : (resolveSupplierName(supplier) ?? normalizeName(supplier));
+    if (received && issuerName && !matched) {
+      evidence.push({ file: invoice, quote: issuerLine, line: null, why: `The invoice is issued by ${issuerName}, not ${supplier} — payee does not match the invoice` });
       return {
         decision: 'HOLD_FOR_APPROVAL', rules: ['R11'], evidence, data_level: 'internal', money_at_stake: invoiceTotal ?? amount,
         owner_line: `Held: ${supplier} is not the issuer named on ${invoice}. Payee mismatch — this payment needs your review.`,
@@ -1007,20 +1142,33 @@ export class Chaperone {
       };
     }
 
-    // Aggregate. Real payments count over all time per invoice; demo replays
-    // aggregate only within their own run.
-    const runId = ctx.scenario ? (ctx.run_id || null) : null;
-    const relevant = this.payments.filter((p) => (runId ? p.run_id === runId : !p.run_id));
-    const prior = relevant.filter((p) => invKey && p.invoice === invKey);
+    // Duplicate payment: an invoice is never paid twice, in any run.
+    const prior = this.payments.filter((p) => invKey && p.invoice === invKey && p.payeeKey === payeeKey);
+    const paidPrior = prior.filter((p) => p.outcome === 'ALLOW');
+    const paidSum = paidPrior.reduce((a, p) => a + p.amount, 0);
+    if (received && invoiceTotal !== null && paidSum >= invoiceTotal) {
+      for (const p of paidPrior) {
+        evidence.push({ file: '(ledger)', quote: `Paid SGD ${fmt(p.amount)} to ${p.supplierName} on ${new Date(p.ts).toISOString()}`, line: null, why: `Prior ALLOWed payment against ${invoice} — an invoice is never paid twice` });
+      }
+      return {
+        decision: 'BLOCK', rules: ['R11'], evidence, data_level: 'internal', money_at_stake: invoiceTotal,
+        owner_line: `Blocked: invoice ${invoice} was already paid (SGD ${fmt(paidSum)} of SGD ${fmt(invoiceTotal)}). An invoice is never paid twice.`,
+      };
+    }
+
+    // Aggregate. All payments count over all time per invoice; attempts
+    // (ALLOW or HOLD) aggregate over 24h so splitting cannot dodge the limit.
     const perInvoiceAll = prior.reduce((a, p) => a + p.amount, 0) + amount;
     const perInvoice = prior.filter((p) => now - p.ts < DAY_MS).reduce((a, p) => a + p.amount, 0) + amount;
-    const perSupplier = relevant.filter((p) => p.supplierKey === supplierKey && now - p.ts < DAY_MS).reduce((a, p) => a + p.amount, 0) + amount;
-    this.payments.push({ ts: now, invoice: invKey, supplierKey, amount, run_id: runId });
+    const perSupplier = this.payments.filter((p) => p.payeeKey === payeeKey && now - p.ts < DAY_MS).reduce((a, p) => a + p.amount, 0) + amount;
 
     const noMatch = !received || invoiceTotal === null;
     const overLimit = (invoiceTotal ?? 0) > PAYMENT_LIMIT || perInvoice > PAYMENT_LIMIT || perSupplier > PAYMENT_LIMIT;
     const overpaid = invoiceTotal !== null && perInvoiceAll > invoiceTotal;
-    if (noMatch || overLimit || overpaid) {
+    const hold = noMatch || overLimit || overpaid;
+    const record = { ts: now, invoice: invKey, payeeKey, supplierKey, supplierName: supplier, amount, outcome: hold ? 'HOLD' : 'ALLOW' };
+    this.payments.push(record);
+    if (hold) {
       const stake = invoiceTotal ?? perInvoice;
       const split = prior.length > 0 || (invoiceTotal !== null && amount < invoiceTotal);
       let reason;
@@ -1033,9 +1181,10 @@ export class Chaperone {
         decision: 'HOLD_FOR_APPROVAL', rules: ['R11'], evidence, data_level: 'internal', money_at_stake: stake,
         owner_line: `Held: ${reason}. This payment is SGD ${fmt(amount)}; SGD ${fmt(perInvoice)} has been attempted against this invoice in the last 24 hours.`,
         queue_item: { fingerprint: `pay:${invKey || '(none)'}:${supplierKey}${overpaid ? ':over' : ''}`, agent: ctx.agent, action: 'pay_supplier', summary: `Pay ${supplier} — invoice totals SGD ${fmt(stake)}${split ? ' (split into smaller payments)' : ''}.`, recommendation: 'review', money_at_stake: stake },
+        _ledger: record,
       };
     }
-    return { decision: 'ALLOW', rules: ['R10'], evidence, data_level: 'internal', money_at_stake: amount, owner_line: `Paid ${supplier} SGD ${fmt(amount)} (matched invoice, under ${fmt(PAYMENT_LIMIT)}).` };
+    return { decision: 'ALLOW', rules: ['R10'], evidence, data_level: 'internal', money_at_stake: amount, owner_line: `Paid ${supplier} SGD ${fmt(amount)} (matched invoice, under ${fmt(PAYMENT_LIMIT)}).`, _ledger: record };
   }
 
   // New spend is always held (R12). An agent claiming "confirmed" is not the

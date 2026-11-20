@@ -111,3 +111,66 @@ test('fix10: queue_id is assigned before hashing, so it is covered by the chain'
   assert.equal(v.ok, false);
   assert.equal(v.broken_at, e.id);
 });
+
+// ---- Fix 9: owner decisions are hash-chained log entries ---------------------
+
+test('fix9: decide appends exactly one chained owner_decision entry covering queue_id/decision/by', () => {
+  const s = new Store(null);
+  s.append({ decision: 'HOLD_FOR_APPROVAL', queue_id: 'Q1' });
+  const q = s.enqueue({ fingerprint: 'f1', summary: 'Pay someone', log_id: 1 });
+  assert.equal(s.verifyChain().ok, true);
+  const before = s.log.length;
+  const out = s.decide(q.queue_id, 'approve', 'Mei');
+  assert.equal(out.ok, true);
+  assert.equal(s.log.length, before + 1);
+  const e = s.log[s.log.length - 1];
+  assert.equal(e.id, out.decision_log_id);
+  assert.equal(e.kind, 'owner_decision');
+  assert.equal(e.action, 'owner_decision');
+  assert.equal(e.queue_id, q.queue_id);
+  assert.equal(e.decision, 'approve');
+  assert.equal(e.by, 'Mei');
+  assert.equal(e.fingerprint, 'f1');
+  assert.equal(e.summary, 'Pay someone');
+  assert.equal(e.log_id, 1);
+  assert.equal(e.prev_hash, s.log[before - 1].hash);
+  assert.equal(s.verifyChain().ok, true);
+});
+
+test('fix9: failed decisions (invalid, not_found, never, already_decided) append nothing', () => {
+  const s = new Store(null);
+  const q = s.enqueue({ fingerprint: 'f1' });
+  const n = s.log.length;
+  s.decide('Q9', 'approve');
+  s.decide(q.queue_id, 'maybe');
+  assert.equal(s.log.length, n);
+  s.decide(q.queue_id, 'deny', 'Mei');
+  s.decide(q.queue_id, 'approve', 'Mei'); // already_decided
+  assert.equal(s.log.length, n + 1);
+  const never = s.enqueue({ fingerprint: 'f2', never: true });
+  s.decide(never.queue_id, 'approve');
+  assert.equal(s.log.length, n + 1);
+  assert.equal(s.verifyChain().ok, true);
+});
+
+test('fix9: tampering with the decision entry breaks the chain at that entry', () => {
+  const s = new Store(null);
+  const q = s.enqueue({ fingerprint: 'f1' });
+  s.decide(q.queue_id, 'approve', 'Mei');
+  assert.equal(s.verifyChain().ok, true);
+  const e = s.log[s.log.length - 1];
+  e.decision = 'deny'; // tamper
+  const v = s.verifyChain();
+  assert.equal(v.ok, false);
+  assert.equal(v.broken_at, e.id);
+});
+
+test('fix9: the queue event fires after the decision is chained', () => {
+  const s = new Store(null);
+  const q = s.enqueue({ fingerprint: 'f1' });
+  const order = [];
+  s.on('action', (e) => { if (e.kind === 'owner_decision') order.push('action'); });
+  s.on('queue', () => order.push('queue'));
+  s.decide(q.queue_id, 'approve', 'Mei');
+  assert.deepEqual(order, ['action', 'queue']);
+});

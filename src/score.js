@@ -1,10 +1,11 @@
 // Shared scenario scoring — used by tests/score_scenarios.js AND the live demo,
 // so the scorecard Mei sees is produced by the exact same checks as the report.
 // Three checks per scenario: right decision, right rule(s), evidence cited.
+import { pathToFileURL } from 'node:url';
 import { Chaperone } from './chaperone.js';
 import { Store } from './store.js';
 import { runScenario } from './runner.js';
-import { SCRIPTS } from './scenarios.js';
+import { SCRIPTS, loadScenarioDefs } from './scenarios.js';
 
 const has = (arr, fn) => arr.some(fn);
 const evMatch = (evidence, file, re) =>
@@ -113,4 +114,22 @@ export function scoreScenario(def) {
   const chaperone = new Chaperone(store);
   const entries = runScenario(chaperone, def.id);
   return scoreRun(def, entries, store.queue);
+}
+
+// CLI main: `node src/score.js` prints the scorecard and exits non-zero unless
+// every scenario scores 3/3. Importing this module stays side-effect-free.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const defs = loadScenarioDefs().filter((d) => SCRIPTS[d.id]);
+  let total = 0;
+  let allPass = true;
+  for (const def of defs) {
+    const r = scoreScenario(def);
+    total += r.points;
+    if (r.points !== 3) allPass = false;
+    const mark = (ok) => (ok ? 'PASS' : 'FAIL');
+    console.log(`${r.id}  ${r.name}: ${r.points}/3  (decision ${mark(r.checks.decision)}, rules ${mark(r.checks.rules)}, evidence ${mark(r.checks.evidence)})`);
+    if (r.failed_evidence.length) console.log(`    missing evidence: ${r.failed_evidence.join('; ')}`);
+  }
+  console.log(`TOTAL: ${total}/${defs.length * 3}`);
+  if (!allPass) process.exitCode = 1;
 }

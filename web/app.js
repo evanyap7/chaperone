@@ -1,14 +1,19 @@
 /* Chaperone web app. Vanilla JS, no dependencies, works offline.
    Talks to the server in src/app.js:
-     GET  /api/state         full snapshot (incl. log_chain verification)
+     GET  /api/state         full snapshot (incl. log_chain verification) + mode
      POST /api/demo/run      202 {ok, scenarios} | 409 already running
-     POST /api/queue/decide  {queue_id, decision: approve|deny}
+     POST /api/queue/decide  {queue_id, decision: approve|deny, mode}
                              200 {ok, queue} | {ok:false, code, error}
                              codes: invalid 400, not_found 404, never 403, already_decided 409
      GET  /api/events        SSE: hello, action, queue, scorecard, briefing, reset, demo, scenario
-   Owner auth is automatic: GET / sets an httpOnly SameSite=Strict cookie, so
-   same-origin fetch and EventSource carry it with no token UI.
-   Demo runs APPEND to the log (never wipe it); the briefing and scorecard
+   Auth: GET / sets NO cookie. The owner signs in via /?owner=<token> (printed
+   at server startup), which sets an httpOnly SameSite=Strict cookie and
+   redirects to a clean URL. Everyone else is a visitor: the server forces the
+   demo sandbox for them — state, events, demo runs and decisions all stay in
+   the sandbox and never touch real files, payments or approvals. The owner
+   can switch between Owner view (real) and Demo view (?mode=demo); visitors
+   never see the toggle. S.mode tracks the context the server resolved.
+   Demo runs reset the sandbox and replay it fresh; the briefing and scorecard
    reflect the latest run. Every number on screen is computed from server
    data; nothing is invented here. */
 (function () {
@@ -41,6 +46,7 @@
   const S = {
     log: [], byId: new Map(), queue: new Map(), results: [], classifier: null,
     briefing: null, lineage: [], demoRunning: false, logChain: null,
+    mode: 'demo', isOwner: false, view: null, // view: owner's chosen context ('owner'|'demo')
     scenarioIds: [], scen: new Map(), // id -> {name, status, points}
     filters: { dec: 'all', agent: 'all' },
     pending: new Map(), // queue_id -> {decision, until, timer, tick}
@@ -49,6 +55,9 @@
     videoOk: false,
     tab: 'today',
   };
+  // Owner viewing the sandbox asks for it explicitly; visitors are forced to
+  // demo by the server regardless of what they send.
+  const modeQuery = () => (S.isOwner && S.view === 'demo' ? '?mode=demo' : '');
 
   // -------------------------------------------------------------------- helpers
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -68,7 +77,7 @@
   const levelOf = (lv) => LEVELS[lv] || { label: lv || 'Unknown', n: 0, pill: 'internal' };
   const levelPill = (lv) => { const L = levelOf(lv); return `<span class="pill pill-level-${L.pill}">${esc(L.label)}</span>`; };
   const decPill = (d, label) => { const D = DEC[d]; return D ? `<span class="pill pill-status-${D.cls}">${icon(D.icon)}${esc(label || D.label)}</span>` : ''; };
-  const agentPill = (a) => `<span class="pill pill-agent">${esc(a)}</span>`;
+  const agentPill = (a) => (a == null || String(a).trim() === '' ? '' : `<span class="pill pill-agent" title="${esc(a)}">${esc(a)}</span>`);
   const meter = () => '<span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
 
   // Plain words in the reading path: file paths become the file's plain name
@@ -559,7 +568,7 @@
     const q = S.queue.get(qid);
     let res, body;
     try {
-      res = await fetch('/api/queue/decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ queue_id: qid, decision: p.decision }) });
+      res = await fetch('/api/queue/decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ queue_id: qid, decision: p.decision, mode: S.mode }) });
       body = await res.json().catch(() => ({}));
     } catch (_) {
       S.errors.set(qid, 'Could not reach Chaperone, so nothing was recorded. Try again.');
@@ -595,7 +604,7 @@
   window.addEventListener('pagehide', () => {
     for (const [qid, p] of S.pending) {
       clearTimeout(p.timer); clearInterval(p.tick);
-      try { navigator.sendBeacon('/api/queue/decide', new Blob([JSON.stringify({ queue_id: qid, decision: p.decision })], { type: 'application/json' })); } catch (_) { /* best effort */ }
+      try { navigator.sendBeacon('/api/queue/decide', new Blob([JSON.stringify({ queue_id: qid, decision: p.decision, mode: S.mode })], { type: 'application/json' })); } catch (_) { /* best effort */ }
     }
     S.pending.clear();
   });
@@ -907,13 +916,32 @@
     });
   }
   function renderQueueAndToday() { renderQueue(); renderToday(); }
+  function renderMode() {
+    const demo = S.mode !== 'owner';
+    const pill = $('#modePill');
+    pill.textContent = demo ? 'Demo mode' : 'Owner';
+    pill.classList.toggle('pill-mode-demo', demo);
+    pill.classList.toggle('pill-mode-owner', !demo);
+    pill.classList.remove('hidden');
+    $('#demoNote').classList.toggle('hidden', !demo);
+    const tg = $('#viewToggle');
+    tg.classList.toggle('hidden', !S.isOwner);
+    for (const b of $$('button[data-view]', tg)) b.setAttribute('aria-pressed', String(b.dataset.view === S.view));
+  }
   function renderAll() {
-    rebuildLog(); renderQueue(); renderToday(); renderFacts(); renderLineage(); renderScore(); renderProgress(); renderRunButton();
+    rebuildLog(); renderQueue(); renderToday(); renderFacts(); renderLineage(); renderScore(); renderProgress(); renderRunButton(); renderMode();
   }
 
   // --------------------------------------------------------------- data in
+  // Owner decisions are part of the hash chain but are not action rows: the
+  // decided-queue list already shows them. The chain length display comes
+  // from the server's verifyChain and still covers every entry.
+  const isActionEntry = (e) => e && e.kind !== 'owner_decision';
   function loadState(st) {
-    S.log = Array.isArray(st.log) ? st.log.slice() : [];
+    S.mode = st.mode === 'owner' ? 'owner' : 'demo';
+    S.isOwner = !!st.owner;
+    if (S.view == null) S.view = S.mode;
+    S.log = (Array.isArray(st.log) ? st.log : []).filter(isActionEntry);
     S.byId = new Map(S.log.map((e) => [e.id, e]));
     const keep = new Map(S.pending);
     S.queue = new Map((st.queue || []).map((q) => [q.queue_id, q]));
@@ -929,7 +957,7 @@
   }
   async function fetchState() {
     try {
-      const r = await fetch('/api/state', { cache: 'no-store' });
+      const r = await fetch('/api/state' + modeQuery(), { cache: 'no-store' });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       loadState(await r.json());
     } catch (_) {
@@ -937,7 +965,7 @@
     }
   }
   function addEntry(e) {
-    if (!e || e.id == null || S.byId.has(e.id)) return;
+    if (!isActionEntry(e) || e.id == null || S.byId.has(e.id)) return;
     S.log.push(e);
     S.byId.set(e.id, e);
     prependRow(e);
@@ -964,7 +992,7 @@
     if (!('EventSource' in window)) { setConn('lost'); return; }
     if (es) { es.close(); es = null; }
     clearTimeout(retryTimer);
-    es = new EventSource('/api/events');
+    es = new EventSource('/api/events' + modeQuery());
     // Any successful message means the stream is live again — the chip never
     // sticks on "Reconnecting" once data is flowing.
     const on = (ev, fn) => es.addEventListener(ev, (m) => {
@@ -1024,6 +1052,20 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && (!es || es.readyState === EventSource.CLOSED)) connect();
   });
+  // Owner-only view switch: re-tag the SSE stream and resync the snapshot.
+  // keepProgress preserves the scenario progress strip when the switch happens
+  // right after starting a demo run.
+  function setView(view, { keepProgress = false } = {}) {
+    if (!S.isOwner || S.view === view) return;
+    S.view = view;
+    if (!keepProgress) {
+      S.scenarioIds = []; S.scen = new Map();
+      resetAll();
+    }
+    connect();
+    fetchState();
+    renderMode();
+  }
 
   // ----------------------------------------------------------------- actions
   async function runDemo() {
@@ -1039,6 +1081,10 @@
       S.scenarioIds = Array.isArray(body.scenarios) ? body.scenarios.slice() : [];
       S.scen = new Map(S.scenarioIds.map((id) => [id, { status: 'queued' }]));
       renderProgress();
+      // The demo always runs in the sandbox: an owner watching real state is
+      // switched to the demo view so they see the run live. Visitors are
+      // already there.
+      if (S.isOwner && S.view !== 'demo') setView('demo', { keepProgress: true });
     } catch (_) {
       S.demoRunning = false;
       renderRunButton();
@@ -1082,6 +1128,8 @@
     $('#runDemo').addEventListener('click', runDemo);
 
     document.addEventListener('click', (ev) => {
+      const vw = ev.target.closest('#viewToggle button[data-view]');
+      if (vw) { setView(vw.dataset.view); return; }
       const run = ev.target.closest('[data-run]');
       if (run) { ev.preventDefault(); runDemo(); return; }
       const go = ev.target.closest('[data-goto]');

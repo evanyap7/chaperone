@@ -21,6 +21,13 @@ export function normalizeText(text) {
   return t;
 }
 
+// Full legal-name normalisation: NFKC + confusable folding, lower-case,
+// punctuation (.,()- etc.) to spaces, collapsed whitespace. Legal suffixes
+// (pte, ltd, llc) are kept — they are part of the name, not noise.
+export function normalizeName(text) {
+  return normalizeText(text).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+}
+
 const CURRENCY_WORDS = new Set(['sgd', 'usd', 'dollar', 'dollars', 's$']);
 
 // Word tokens for similarity: normalised, lower-cased, punctuation split
@@ -62,12 +69,15 @@ const TENS = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy:
 const NUMBER_WORD = '(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|and)';
 export const NUMBER_WORDS_RE = new RegExp(`\\b${NUMBER_WORD}(?:[\\s-]+${NUMBER_WORD})+\\b`, 'gi');
 
-// "five thousand two hundred and fifty" -> 5250. Returns null if not a number.
+// "five thousand two hundred and fifty" -> 5250, "5 thousand 8 hundred" ->
+// 5800, "eighty" -> 80. Digit tokens are accepted alongside number words.
+// Returns null if not a number.
 export function wordsToNumber(phrase) {
   let total = 0; let group = 0; let current = 0; let found = false;
   for (const word of String(phrase).toLowerCase().split(/[\s-]+/)) {
-    if (word === 'and') continue;
-    if (ONES[word] !== undefined) { current += ONES[word]; found = true; }
+    if (!word || word === 'and') continue;
+    if (/^\d[\d,]*$/.test(word)) { current += parseInt(word.replace(/,/g, ''), 10); found = true; }
+    else if (ONES[word] !== undefined) { current += ONES[word]; found = true; }
     else if (TENS[word] !== undefined) { current += TENS[word]; found = true; }
     else if (word === 'hundred') { current = (current || 1) * 100; found = true; }
     else if (word === 'thousand') { group = (group + current) || 1; total += group * 1000; group = 0; current = 0; found = true; }
@@ -80,20 +90,142 @@ export function wordsToNumber(phrase) {
 
 const num = (s) => parseFloat(String(s).replace(/,/g, ''));
 
-// Every money-ish figure in a text: digits with commas / k / m suffixes, and
-// number words. Years ("2026") and hyphenated identifiers ("2026-036") are not
-// amounts. Returns [{ value, raw }].
-export function extractMoney(text) {
-  const t = normalizeText(text);
-  const out = [];
-  for (const m of t.matchAll(/(?<![\d.-])(\d[\d,]*(?:\.\d+)?)\s*([km])?(?![\d-])/gi)) {
-    if (!m[2] && /^(19|20)\d\d$/.test(m[1])) continue; // a bare year
-    const v = num(m[1]) * (m[2] ? (m[2].toLowerCase() === 'k' ? 1e3 : 1e6) : 1);
-    if (Number.isFinite(v)) out.push({ value: v, raw: m[0] });
+// Any Unicode decimal digit (\p{Nd}: Arabic-Indic, Devanagari, fullwidth, ...)
+// becomes its ASCII equivalent. Each digit block's zero is found by stepping
+// back at most 9 codepoints while the previous codepoint is also Nd — O(1)
+// per character, so the whole pass is linear.
+const ND_RE = /\p{Nd}/gu;
+const IS_ND = /\p{Nd}/u;
+function asciiDigits(t) {
+  return t.replace(ND_RE, (ch) => {
+    if (ch <= '\u007F') return ch; // ASCII 0-9 fast path
+    const cp = ch.codePointAt(0);
+    let zero = cp;
+    for (let k = 0; k < 9 && IS_ND.test(String.fromCodePoint(zero - 1)); k++) zero--;
+    return String(cp - zero);
+  });
+}
+
+const isDigitCh = (c) => c >= '0' && c <= '9';
+const isLetterCh = (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+const isWordCh = (c) => c !== undefined && (isLetterCh(c) || isDigitCh(c) || c === '_');
+const NUMBER_WORD_SET = new Set([...Object.keys(ONES), ...Object.keys(TENS), 'hundred', 'thousand', 'million']);
+const isNumberWord = (w) => NUMBER_WORD_SET.has(w); // 'and' is a connector, never a start
+
+// Single-pass tokenizer: maximal digit runs (with commas and one decimal
+// part) and maximal letter runs. Everything else is a separator. Linear.
+function moneyTokens(t) {
+  const tokens = [];
+  let i = 0;
+  while (i < t.length) {
+    const ch = t[i];
+    if (isDigitCh(ch)) {
+      const start = i;
+      i++;
+      while (i < t.length && (isDigitCh(t[i]) || t[i] === ',')) i++;
+      if (t[i] === '.' && isDigitCh(t[i + 1])) {
+        i++;
+        while (i < t.length && isDigitCh(t[i])) i++;
+      }
+      tokens.push({ type: 'digit', text: t.slice(start, i), start, end: i });
+    } else if (isLetterCh(ch)) {
+      const start = i;
+      while (i < t.length && isLetterCh(t[i])) i++;
+      tokens.push({ type: 'word', text: t.slice(start, i), start, end: i });
+    } else {
+      i++;
+    }
   }
-  for (const m of t.matchAll(NUMBER_WORDS_RE)) {
-    const v = wordsToNumber(m[0]);
-    if (v !== null && v > 0) out.push({ value: v, raw: m[0] });
+  return tokens;
+}
+
+// Every money-ish figure in a text: digits with commas / k / m suffixes
+// ("5.8k", "6M", "5k8" -> 5800), number words, and mixed digit+word numbers
+// ("5 thousand 8 hundred" -> ONE value 5800). Years ("2026") and hyphenated
+// identifiers ("2026-036") are not amounts. Returns [{ value, raw }].
+//
+// Hand-written single-pass scanner: no regex with nested unbounded
+// quantifiers over number words, so pathological inputs stay linear-time.
+export function extractMoney(text) {
+  const t = asciiDigits(normalizeText(text));
+  const tokens = moneyTokens(t);
+  const out = [];
+  const push = (value, raw) => { if (Number.isFinite(value)) out.push({ value, raw }); };
+  const gap = (a, b) => t.slice(a.end, b.start);
+  const wordSep = (g) => g.length > 0 && /^[\s-]+$/.test(g);
+  const suffixSep = (g) => /^\s*$/.test(g);
+  const after = (tok) => t[tok.end];
+  const before = (tok) => (tok.start > 0 ? t[tok.start - 1] : undefined);
+  const blockedAfter = (c) => c !== undefined && (isDigitCh(c) || c === '-');
+
+  let i = 0;
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (tok.type === 'digit') {
+      const b = before(tok);
+      if (b !== undefined && (isDigitCh(b) || b === '.' || b === '-')) { i++; continue; }
+      // k / m suffix (optionally after whitespace), then "5k8" shorthand.
+      const nx = tokens[i + 1];
+      if (nx && nx.type === 'word' && /^[km]$/i.test(nx.text) && suffixSep(gap(tok, nx))) {
+        const sAfter = after(nx);
+        if (nx.text.toLowerCase() === 'k' && sAfter !== undefined && isDigitCh(sAfter)) {
+          const trail = tokens[i + 2];
+          if (trail && trail.type === 'digit' && trail.start === nx.end && /^\d{1,3}$/.test(trail.text) && !blockedAfter(after(trail))) {
+            push(num(tok.text) * 1000 + parseInt(trail.text, 10) * 10 ** (3 - trail.text.length), t.slice(tok.start, trail.end));
+            i += 3;
+            continue;
+          }
+        }
+        if (!blockedAfter(sAfter)) {
+          push(num(tok.text) * (nx.text.toLowerCase() === 'k' ? 1e3 : 1e6), t.slice(tok.start, nx.end));
+          i += 2;
+          continue;
+        }
+        // A digit or hyphen right after the suffix invalidates it: fall
+        // through to the bare number (which is valid before a letter).
+      }
+      if (blockedAfter(after(tok))) { i++; continue; }
+      // Mixed digit+word number: "5 thousand 8 hundred" is ONE value.
+      let end = i;
+      let merged = false;
+      for (let k = i + 1; k < tokens.length; k++) {
+        const cand = tokens[k];
+        if (!wordSep(gap(tokens[end], cand))) break;
+        if (cand.type === 'word' && isNumberWord(cand.text.toLowerCase())) { end = k; merged = true; }
+        else if (merged && cand.type === 'digit' && /^\d[\d,]*$/.test(cand.text) && !blockedAfter(after(cand))) { end = k; }
+        else break;
+      }
+      if (merged) {
+        const raw = t.slice(tok.start, tokens[end].end);
+        const v = wordsToNumber(raw);
+        if (v !== null && v > 0) push(v, raw);
+        i = end + 1;
+        continue;
+      }
+      if (/^(19|20)\d\d$/.test(tok.text)) { i++; continue; } // a bare year
+      push(num(tok.text), tok.text);
+      i++;
+      continue;
+    }
+    if (tok.type === 'word' && isNumberWord(tok.text.toLowerCase()) && !isWordCh(before(tok))) {
+      let end = i;
+      for (let k = i + 1; k < tokens.length; k++) {
+        const cand = tokens[k];
+        if (!wordSep(gap(tokens[end], cand))) break;
+        const w = cand.text.toLowerCase();
+        if (cand.type === 'word' && (isNumberWord(w) || w === 'and')) { end = k; }
+        else if (cand.type === 'digit' && /^\d[\d,]*$/.test(cand.text) && !blockedAfter(after(cand))) { end = k; }
+        else break;
+      }
+      if (!isWordCh(after(tokens[end]))) {
+        const raw = t.slice(tok.start, tokens[end].end);
+        const v = wordsToNumber(raw);
+        if (v !== null && v > 0) push(v, raw);
+        i = end + 1;
+        continue;
+      }
+    }
+    i++;
   }
   return out;
 }

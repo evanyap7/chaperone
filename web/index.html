@@ -58,6 +58,13 @@
       </div>
     </div>
     <div class="top-actions">
+      <!-- Which context this page is showing: the owner's real state, or the
+           visitor demo sandbox. The toggle is only ever shown to the owner. -->
+      <span id="modePill" class="pill pill-mode hidden" data-testid="mode-pill"></span>
+      <div id="viewToggle" class="view-toggle hidden" role="group" aria-label="Choose view" data-testid="view-toggle">
+        <button type="button" data-view="owner" aria-pressed="false">Owner view</button>
+        <button type="button" data-view="demo" aria-pressed="false">Demo view</button>
+      </div>
       <!-- Connection to the server's live event stream. Static dot + text label:
            the label carries the meaning, the colour only reinforces it. -->
       <span id="conn" class="conn" data-state="connecting" data-testid="conn" title="Connection to Chaperone's live feed">
@@ -70,6 +77,8 @@
       <span id="demoStatus" class="sr-only"></span>
     </div>
   </div>
+
+  <p id="demoNote" class="demo-note hidden" data-testid="demo-note">Demo mode — everything here runs in a sandbox. Real files, payments and approvals are never touched.</p>
 
   <nav class="tabs" aria-label="Sections">
     <div class="tabs-inner" id="tabs" role="tablist">

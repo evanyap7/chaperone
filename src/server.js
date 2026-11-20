@@ -25,9 +25,9 @@ process.on('unhandledRejection', (e) => console.error('unhandled rejection:', e)
 
 server.listen(PORT, HOST, () => {
   console.log(`Chaperone live on http://localhost:${PORT}`);
-  console.log(`Owner token: ${app.ownerToken}`);
-  console.log('The UI receives this token automatically as an httpOnly cookie.');
-  console.log('Owner API calls: Authorization: Bearer <token>. Worker agents never get it.');
+  console.log(`Owner sign-in: http://localhost:${PORT}/?owner=${app.ownerToken}`);
+  console.log('Visitors get a read-only demo sandbox; real files, payments and approvals are never touched.');
+  console.log('The owner token is never embedded in the page. Owner API calls: Authorization: Bearer <token>.');
 });
 
 function shutdown(signal) {

@@ -1,6 +1,11 @@
 // Chaperone HTTP app. One engine, one channel: every worker action is a
 // POST /api/gate. The UI watches via SSE. "Run demo" replays the exact scripted
-// action streams of the worker agents through this same live gate.
+// action streams of the worker agents through a separate sandbox engine.
+//
+// Two contexts: REAL (the injected store + chaperone) and DEMO (an in-memory
+// sandbox). Only the owner — signed in via /?owner=<token> or a Bearer token —
+// ever sees real state. Every visitor gets the read-only demo sandbox; demo
+// runs and visitor decisions never touch the real log, queue or ledger.
 //
 // createApp() builds the server without listening, so tests can start it on a
 // random port; src/server.js is the process entry point.
@@ -8,7 +13,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { GateInputError } from './chaperone.js';
+import { Chaperone, GateInputError } from './chaperone.js';
+import { Store } from './store.js';
 import { createHookHandler } from '../integrations/qwenwork/hook-handler.js';
 import { runScenarioLive } from './runner.js';
 import { loadScenarioDefs } from './scenarios.js';
@@ -47,10 +53,18 @@ export function createApp({
   let demoSeq = 0;
   const hook = createHookHandler({ chaperone, store });
 
+  // The demo sandbox: a completely separate in-memory engine. Visitors only
+  // ever see or touch this context; each demo run resets it and replays the
+  // scripted scenarios. The real log, queue and payment ledger are untouched.
+  const demoStore = new Store(null);
+  const demoChaperone = new Chaperone(demoStore);
+
   // ---- owner authentication -------------------------------------------------
-  // Only the owner decides. The token is generated at startup (or set via
-  // OWNER_TOKEN), printed to the console by src/server.js, and handed to the
-  // UI as an httpOnly same-site cookie. Worker agents never get it.
+  // The owner signs in by visiting /?owner=<token> (printed at startup or set
+  // via OWNER_TOKEN); a valid token is handed to the browser as an httpOnly
+  // SameSite=Strict cookie and the URL is redirected clean. Plain GET / never
+  // sets a cookie: visitors get the demo sandbox, not owner powers. Worker
+  // agents call /api/gate without any token.
   const tokenBuf = Buffer.from(ownerToken);
   function tokenFrom(req) {
     const auth = String(req.headers.authorization || '');
@@ -58,11 +72,13 @@ export function createApp({
     const m = String(req.headers.cookie || '').match(/(?:^|;\s*)chaperone_owner=([^;]+)/);
     return m ? decodeURIComponent(m[1]) : null;
   }
-  function isOwner(req) {
-    const t = tokenFrom(req);
-    if (!t) return false;
+  function tokenMatches(t) {
+    if (typeof t !== 'string') return false;
     const b = Buffer.from(t);
     return b.length === tokenBuf.length && crypto.timingSafeEqual(b, tokenBuf);
+  }
+  function isOwner(req) {
+    return tokenMatches(tokenFrom(req));
   }
   function requireOwner(req) {
     if (!isOwner(req)) throw new HttpError(401, 'owner authentication required');
@@ -72,56 +88,77 @@ export function createApp({
     return `chaperone_owner=${ownerToken}; Path=/; HttpOnly; SameSite=Strict${secure}`;
   }
 
+  // ---- context resolution ---------------------------------------------------
+  // Visitors are ALWAYS demo, whatever they ask for. The owner defaults to the
+  // real context and may explicitly view the sandbox with ?mode=demo.
+  function resolveMode(req) {
+    if (!isOwner(req)) return 'demo';
+    const url = new URL(req.url, 'http://localhost');
+    return url.searchParams.get('mode') === 'demo' ? 'demo' : 'owner';
+  }
+  function contextFor(mode) {
+    return mode === 'owner' ? { store, chaperone } : { store: demoStore, chaperone: demoChaperone };
+  }
+
   // ---- SSE ----------------------------------------------------------------
-  const sseClients = new Set();
-  function broadcast(event, data) {
+  // Each client is tagged with its resolved mode; store events are broadcast
+  // only to clients of that mode, so a visitor never receives real events.
+  const sseClients = new Map(); // res -> 'owner' | 'demo'
+  function broadcast(mode, event, data) {
     const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const res of sseClients) {
+    for (const [res, m] of sseClients) {
+      if (m !== mode) continue;
       try { res.write(msg); } catch { sseClients.delete(res); }
     }
   }
-  const listeners = {
-    action: (e) => broadcast('action', e),
-    queue: (q) => broadcast('queue', q),
-    scorecard: (r) => broadcast('scorecard', r),
-    reset: () => broadcast('reset', {}),
-    briefing: (b) => broadcast('briefing', b),
-  };
-  for (const [ev, fn] of Object.entries(listeners)) store.on(ev, fn);
+  function wireStore(st, mode) {
+    const listeners = {
+      action: (e) => broadcast(mode, 'action', e),
+      queue: (q) => broadcast(mode, 'queue', q),
+      scorecard: (r) => broadcast(mode, 'scorecard', r),
+      reset: () => broadcast(mode, 'reset', {}),
+      briefing: (b) => broadcast(mode, 'briefing', b),
+    };
+    for (const [ev, fn] of Object.entries(listeners)) st.on(ev, fn);
+    return listeners;
+  }
+  const realListeners = wireStore(store, 'owner');
+  const demoListeners = wireStore(demoStore, 'demo');
   // A comment line every heartbeatMs keeps proxies from closing idle streams.
   const heartbeat = setInterval(() => {
-    for (const res of sseClients) { try { res.write(': ping\n\n'); } catch { sseClients.delete(res); } }
+    for (const res of sseClients.keys()) { try { res.write(': ping\n\n'); } catch { sseClients.delete(res); } }
   }, heartbeatMs);
   heartbeat.unref();
 
   // ---- demo replay --------------------------------------------------------
-  // The audit log is append-only: a demo run APPENDS its scripted actions to
-  // the log and never wipes real entries, the queue or the payment ledger.
-  // Each run is a self-contained simulation (its payments aggregate within
-  // the run); the briefing and scorecard reflect the latest run.
+  // Every run is a fresh, self-contained simulation in the sandbox: the demo
+  // store and engine are reset first, then the scripted action streams replay
+  // through the demo gate. Real state is never read or written here.
   async function runDemo() {
     const runId = `run-${++demoSeq}-${Date.now()}`;
-    store.lastRunId = runId;
-    broadcast('demo', { running: true, run_id: runId });
+    demoStore.reset();
+    demoChaperone.reset();
+    demoStore.lastRunId = runId;
+    broadcast('demo', 'demo', { running: true, run_id: runId });
     const results = [];
     let error = null;
     try {
       for (const def of loadScenarioDefs()) {
-        broadcast('scenario', { id: def.id, name: def.name, status: 'running' });
-        const entries = await runScenarioLive(chaperone, def.id, { delayMs: demoDelayMs, runId });
-        const result = scoreRun(def, entries, store.queue);
+        broadcast('demo', 'scenario', { id: def.id, name: def.name, status: 'running' });
+        const entries = await runScenarioLive(demoChaperone, def.id, { delayMs: demoDelayMs, runId });
+        const result = scoreRun(def, entries, demoStore.queue);
         results.push(result);
-        store.setScenarioResults([...results]);
-        broadcast('scenario', { id: def.id, name: def.name, status: 'done', points: result.points });
+        demoStore.setScenarioResults([...results]);
+        broadcast('demo', 'scenario', { id: def.id, name: def.name, status: 'done', points: result.points });
       }
-      store.briefing = buildBriefing(store);
-      store.emit('briefing', store.briefing);
+      demoStore.briefing = buildBriefing(demoStore);
+      demoStore.emit('briefing', demoStore.briefing);
     } catch (e) {
       error = String(e?.message || e);
       log.error(`demo failed: ${e?.stack || e}`);
     } finally {
       demoRunning = false;
-      broadcast('demo', { running: false, ...(error ? { error } : {}) });
+      broadcast('demo', 'demo', { running: false, ...(error ? { error } : {}) });
     }
     return { ok: !error, results, error };
   }
@@ -153,7 +190,7 @@ export function createApp({
     if (!host || (host !== req.headers.host && host !== fwd)) throw new HttpError(403, 'cross-origin writes are not allowed');
   }
 
-  function readJsonBody(req) {
+  function readJsonBody(req, limit = maxBodyBytes) {
     const declared0 = Number(req.headers['content-length']);
     const ctype = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
     if ((declared0 > 0 || req.headers['transfer-encoding']) && ctype !== 'application/json') {
@@ -161,8 +198,8 @@ export function createApp({
     }
     return new Promise((resolve, reject) => {
       const declared = Number(req.headers['content-length']);
-      if (Number.isFinite(declared) && declared > maxBodyBytes) {
-        return reject(new HttpError(413, `body larger than ${maxBodyBytes} bytes`));
+      if (Number.isFinite(declared) && declared > limit) {
+        return reject(new HttpError(413, `body larger than ${limit} bytes`));
       }
       const chunks = [];
       let size = 0;
@@ -170,7 +207,7 @@ export function createApp({
       req.on('data', (c) => {
         if (failed) return;
         size += c.length;
-        if (size > maxBodyBytes) { failed = true; chunks.length = 0; reject(new HttpError(413, `body larger than ${maxBodyBytes} bytes`)); return; }
+        if (size > limit) { failed = true; chunks.length = 0; reject(new HttpError(413, `body larger than ${limit} bytes`)); return; }
         chunks.push(c);
       });
       req.on('end', () => {
@@ -186,8 +223,8 @@ export function createApp({
     });
   }
 
-  function lineageSnapshot() {
-    return [...chaperone.lineage.nodes.values()].map((n) => ({
+  function lineageSnapshot(chap = chaperone) {
+    return [...chap.lineage.nodes.values()].map((n) => ({
       id: n.id, kind: n.kind, level: n.level, unannounced: !!n.unannounced, derived_from: n.derived_from,
     }));
   }
@@ -228,6 +265,7 @@ export function createApp({
         'Cache-Control': REVALIDATE.has(ext) ? 'no-cache' : 'public, max-age=300',
         ETag: etag, 'Last-Modified': st.mtime.toUTCString(),
         'Accept-Ranges': 'bytes', 'X-Content-Type-Options': 'nosniff',
+        ...(ext === '.html' ? { 'Referrer-Policy': 'no-referrer' } : {}),
         ...extraHeaders,
       };
       const inm = req.headers['if-none-match'];
@@ -260,7 +298,7 @@ export function createApp({
   }
 
   function openEvents(req, res) {
-    requireOwner(req);
+    const mode = resolveMode(req);
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store',
       Connection: 'keep-alive', 'X-Accel-Buffering': 'no',
@@ -268,31 +306,36 @@ export function createApp({
     if (req.method === 'HEAD') return res.end();
     res.write('retry: 2000\n\n');
     res.write('event: hello\ndata: {}\n\n');
-    sseClients.add(res);
+    sseClients.set(res, mode);
     const drop = () => sseClients.delete(res);
     res.on('close', drop);
     res.on('error', drop);
   }
 
   // ---- routes -------------------------------------------------------------
-  // Owner-only routes require the owner token (cookie or Bearer). The gate
-  // itself is the worker channel: agents call it without the owner token.
+  // The gate is the open worker channel: agents call it without any token and
+  // it always runs against the REAL engine. Reads resolve to the owner's real
+  // context or the visitor's demo sandbox. Only /api/hook stays owner-only.
+  const GATE_BODY_LIMIT = 64 * 1024;
   const routes = {
     '/api/events': { GET: openEvents },
     '/api/state': {
       GET: (req, res) => {
-        requireOwner(req);
+        const mode = resolveMode(req);
+        const c = contextFor(mode);
         return json(res, 200, {
-          log: store.log, queue: store.queue, scenarioResults: store.scenarioResults,
-          classifierReport: store.classifierReport, briefing: store.briefing,
-          lineage: lineageSnapshot(), demoRunning,
-          log_chain: store.verifyChain(),
+          mode, owner: isOwner(req),
+          log: c.store.log, queue: c.store.queue, scenarioResults: c.store.scenarioResults,
+          // Static precomputed test report, not live state: same object in both modes.
+          classifierReport: store.classifierReport, briefing: c.store.briefing,
+          lineage: lineageSnapshot(c.chaperone), demoRunning,
+          log_chain: c.store.verifyChain(),
         });
       },
     },
     '/api/gate': {
       POST: async (req, res) => {
-        const body = await readJsonBody(req);
+        const body = await readJsonBody(req, GATE_BODY_LIMIT);
         try {
           return json(res, 200, chaperone.gate(body));
         } catch (e) {
@@ -303,33 +346,41 @@ export function createApp({
     },
     '/api/demo/run': {
       POST: (req, res) => {
-        requireOwner(req);
+        // Open to visitors: it only ever runs the sandbox simulation.
         if (!startDemo()) return json(res, 409, { error: 'demo already running' });
         return json(res, 202, { ok: true, scenarios: loadScenarioDefs().map((d) => d.id) });
       },
     },
     '/api/queue/decide': {
       POST: async (req, res) => {
-        const { queue_id, decision } = await readJsonBody(req);
-        requireOwner(req);
+        const { queue_id, decision, mode } = await readJsonBody(req);
+        const owner = isOwner(req);
+        // Visitors always decide in the sandbox; the owner decides real items
+        // by default (Bearer API behaviour) or sandbox items with mode:'demo'.
+        const target = owner && mode !== 'demo' ? store : demoStore;
         if (typeof queue_id !== 'string' || !queue_id) return json(res, 400, { ok: false, code: 'invalid', error: 'queue_id is required' });
-        const out = store.decide(queue_id, decision, OWNER_FIRST_NAME || 'owner');
+        const out = target.decide(queue_id, decision, owner ? (OWNER_FIRST_NAME || 'owner') : 'Demo visitor');
         return json(res, out.ok ? 200 : (DECIDE_STATUS[out.code] || 400), out);
       },
     },
     '/api/hook': {
       POST: async (req, res) => {
-        const body = await readJsonBody(req);
+        const body = await readJsonBody(req, GATE_BODY_LIMIT);
         requireOwner(req);
         return json(res, 200, await hook(body));
       },
     },
-    '/api/briefing': { GET: (req, res) => { requireOwner(req); return json(res, 200, store.briefing || buildBriefing(store)); } },
-    '/api/lineage': { GET: (req, res) => { requireOwner(req); return json(res, 200, lineageSnapshot()); } },
-    // '/api/hook' (QwenWork PreToolUse adapter, TASK 2) mounts here.
+    '/api/briefing': {
+      GET: (req, res) => {
+        const c = contextFor(resolveMode(req));
+        return json(res, 200, c.store.briefing || buildBriefing(c.store));
+      },
+    },
+    '/api/lineage': { GET: (req, res) => json(res, 200, lineageSnapshot(contextFor(resolveMode(req)).chaperone)) },
     '/api/health': {
       GET: (req, res) => json(res, 200, {
         ok: true, demoRunning, actions: store.log.length, queue: store.queue.length,
+        demo_actions: demoStore.log.length, demo_queue: demoStore.queue.length,
         sse_clients: sseClients.size, uptime_s: Math.round(process.uptime()),
       }),
     },
@@ -352,7 +403,20 @@ export function createApp({
     if (p === '/api' || p.startsWith('/api/')) throw new HttpError(404, 'unknown API endpoint');
     if (method !== 'GET') throw new HttpError(405, `method ${req.method} not allowed`, { Allow: 'GET, HEAD' });
     if (p.startsWith('/assets/')) return serveStatic(req, res, assetsDir, p.slice('/assets/'.length));
-    if (p === '/' || p === '/index.html') return serveStatic(req, res, webDir, 'index.html', { 'Set-Cookie': ownerCookie(req) });
+    if (p === '/' || p === '/index.html') {
+      // Owner sign-in: /?owner=<token> sets the cookie and redirects to a
+      // clean URL. A plain GET / serves the UI with NO cookie — visitors are
+      // demo mode, never owner.
+      if (url.searchParams.has('owner')) {
+        if (!tokenMatches(url.searchParams.get('owner'))) throw new HttpError(401, 'invalid owner token');
+        res.writeHead(302, {
+          Location: '/', 'Set-Cookie': ownerCookie(req),
+          'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
+        });
+        return res.end();
+      }
+      return serveStatic(req, res, webDir, 'index.html');
+    }
     return serveStatic(req, res, webDir, p);
   }
 
@@ -366,10 +430,17 @@ export function createApp({
         const headers = { ...(e.headers || {}) };
         if (status === 413) {
           // Answer, then drain (discard) the rest of the upload so the client
-          // can read the 413; a client that keeps sending is cut off after 2s.
-          headers.Connection = 'close';
+          // can reliably read the 413. Do NOT set Connection: close up front:
+          // Node would then reset the socket while the client is still writing,
+          // losing the response. Close once the body is drained AND the response
+          // is sent; a client that keeps sending is cut off after 2s.
           req.resume();
-          res.on('finish', () => setTimeout(() => req.destroy(), 2000).unref());
+          const cutoff = setTimeout(() => req.destroy(), 2000).unref();
+          let resDone = false; let reqDone = false;
+          const maybeClose = () => { if (resDone && reqDone) { clearTimeout(cutoff); req.destroy(); } };
+          res.on('finish', () => { resDone = true; maybeClose(); });
+          req.on('end', () => { reqDone = true; maybeClose(); });
+          req.on('error', () => { reqDone = true; maybeClose(); });
         }
         json(res, status, { ok: false, error: status === 500 ? 'internal error' : e.message }, headers);
       });
@@ -380,23 +451,26 @@ export function createApp({
   });
   server.on('close', () => {
     clearInterval(heartbeat);
-    for (const [ev, fn] of Object.entries(listeners)) store.off(ev, fn);
-    for (const res of sseClients) { try { res.end(); } catch { /* gone */ } }
+    for (const [ev, fn] of Object.entries(realListeners)) store.off(ev, fn);
+    for (const [ev, fn] of Object.entries(demoListeners)) demoStore.off(ev, fn);
+    for (const res of sseClients.keys()) { try { res.end(); } catch { /* gone */ } }
     sseClients.clear();
   });
   // Close idle SSE streams so server.close() can finish.
   const origClose = server.close.bind(server);
   server.close = (cb) => {
-    for (const res of sseClients) { try { res.end(); } catch { /* gone */ } }
+    for (const res of sseClients.keys()) { try { res.end(); } catch { /* gone */ } }
     sseClients.clear();
     server.closeIdleConnections?.();
     return origClose(cb);
   };
 
   return {
-    server, broadcast,
+    server,
+    broadcast: (event, data) => { broadcast('owner', event, data); broadcast('demo', event, data); },
     startDemo,
     ownerToken,
+    demoStore, demoChaperone,
     get demoRunning() { return demoRunning; },
     get demoPromise() { return demoPromise; },
     get sseClientCount() { return sseClients.size; },

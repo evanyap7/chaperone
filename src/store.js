@@ -104,8 +104,14 @@ export class Store extends EventEmitter {
     q.status = decision === 'approve' ? 'approved' : 'denied';
     q.decided_by = by;
     q.decided_at = new Date().toISOString();
+    // The decision itself is part of the append-only hash chain: who released
+    // (or refused) what, covered by the same tamper-evidence as every action.
+    const entry = this.append({
+      kind: 'owner_decision', action: 'owner_decision', queue_id, decision, by,
+      fingerprint: q.fingerprint, summary: q.summary, log_id: q.log_id ?? null,
+    });
     this.emit('queue', q);
-    return { ok: true, queue: q };
+    return { ok: true, queue: q, decision_log_id: entry.id };
   }
 
   setScenarioResults(results) {
