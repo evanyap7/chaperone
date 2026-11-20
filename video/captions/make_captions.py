@@ -49,9 +49,11 @@ PILL_STROKE = (30, 41, 59, 255)
 WHITE = '#FFFFFF'
 UPCOMING = '#94A3B8'
 DECISION = {  # normalised token -> caption colour (editor report §1.4)
+    # 'approval' intentionally NOT coloured: it appears inside BLOCK scenes
+    # ("An email is not an approval.") where HOLD-yellow would mislead.
     'block': '#EDA69C', 'blocked': '#EDA69C', 'stopped': '#EDA69C',
     'hold': '#E8C988', 'held': '#E8C988', 'holds': '#E8C988',
-    'waiting': '#E8C988', 'waits': '#E8C988', 'approval': '#E8C988',
+    'waiting': '#E8C988', 'waits': '#E8C988',
     'allow': '#A9D9B8', 'allowed': '#A9D9B8', 'allows': '#A9D9B8', 'done': '#A9D9B8',
 }
 
@@ -222,24 +224,24 @@ def dp_align(a, b):
     return pairs
 
 def script_words(seg):
-    """Display tokens + alignment subtokens. SAY_AS applied to the ALIGNMENT side
-    only (whisper hears 'May', the script/captions keep 'Mei'). Standalone dashes
-    attach to the previous word and get no time of their own."""
-    spoken = tts.say_as(seg['narration'])
-    toks = spoken.split()
+    """Display tokens + alignment subtokens. SAY_AS applied per display word on
+    the ALIGNMENT side only (whisper hears 'May' / 'Kwen Work', the script and
+    captions keep 'Mei' / 'QwenWork'). Per-word application supports 1->many
+    respellings (QwenWork -> 'Kwen Work'). Standalone dashes attach to the
+    previous word and get no time of their own."""
     disp = seg['narration'].split()
-    assert len(toks) == len(disp)
     words, subs = [], []
-    for d, t in zip(disp, toks):
+    for d in disp:
         if re.fullmatch(r'[—–-]+', d):
             if words:
                 words[-1]['text'] += ' ' + d
             continue
+        t = tts.say_as(d)
         ss = norm_subs(t)
         words.append({'text': d, 'sub0': len(subs), 'subn': len(subs) + len(ss),
                       'start': None, 'end': None, 'matched': False})
         subs += ss
-        if ends_sentence(t):
+        if ends_sentence(d):
             subs.append('\x00')   # keep "twenty. Five" from merging into #205
     subs, imap = canon(subs)
     for w in words:

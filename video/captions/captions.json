@@ -27,8 +27,8 @@
  },
  "alignment": {
   "model": "faster-whisper small.en int8 (CPU, default settings)",
-  "words_total": 400,
-  "words_matched": 400,
+  "words_total": 392,
+  "words_matched": 392,
   "match_rate": 1.0,
   "max_drift_s": 0.0,
   "drift_note": "word starts snapped verbatim to fresh whisper timestamps; merged-number words spread 1:1 across ASR fragments (or proportionally within the merged span); unmatched words interpolated between matched anchors"
@@ -50,7 +50,7 @@
      "sub0": 0,
      "subn": 1,
      "start": 0.0,
-     "end": 0.22,
+     "end": 0.24,
      "matched": true,
      "hits": [
       0
@@ -64,7 +64,7 @@
      "cue": 1,
      "window": [
       0.05,
-      0.22
+      0.24
      ],
      "png": "w000.png"
     },
@@ -72,8 +72,8 @@
      "text": "email",
      "sub0": 1,
      "subn": 2,
-     "start": 0.22,
-     "end": 0.56,
+     "start": 0.24,
+     "end": 0.54,
      "matched": true,
      "hits": [
       1
@@ -86,8 +86,8 @@
      "line": 0,
      "cue": 1,
      "window": [
-      0.22,
-      0.56
+      0.24,
+      0.54
      ],
      "png": "w001.png"
     },
@@ -95,7 +95,7 @@
      "text": "hides",
      "sub0": 2,
      "subn": 3,
-     "start": 0.56,
+     "start": 0.54,
      "end": 0.9,
      "matched": true,
      "hits": [
@@ -109,7 +109,7 @@
      "line": 0,
      "cue": 1,
      "window": [
-      0.56,
+      0.54,
       0.9
      ],
      "png": "w002.png"
@@ -165,7 +165,7 @@
      "sub0": 5,
      "subn": 6,
      "start": 1.28,
-     "end": 1.58,
+     "end": 1.6,
      "matched": true,
      "hits": [
       5
@@ -179,7 +179,7 @@
      "cue": 1,
      "window": [
       1.28,
-      1.58
+      1.6
      ],
      "png": "w005.png"
     },
@@ -187,7 +187,7 @@
      "text": "Mei's",
      "sub0": 6,
      "subn": 7,
-     "start": 1.58,
+     "start": 1.6,
      "end": 1.9,
      "matched": true,
      "hits": [
@@ -201,7 +201,7 @@
      "line": 0,
      "cue": 1,
      "window": [
-      1.58,
+      1.6,
       1.9
      ],
      "png": "w006.png"
@@ -499,7 +499,7 @@
      "sub0": 19,
      "subn": 20,
      "start": 6.36,
-     "end": 6.68,
+     "end": 6.7,
      "matched": true,
      "hits": [
       19
@@ -717,7 +717,7 @@
   {
    "id": 4,
    "seg": 2,
-   "start": 10.43,
+   "start": 10.41,
    "end": 14.71,
    "lines": [
     "Five AI agents email clients,",
@@ -728,7 +728,7 @@
      "text": "Five",
      "sub0": 5,
      "subn": 6,
-     "start": 10.48,
+     "start": 10.46,
      "end": 10.68,
      "matched": true,
      "hits": [
@@ -742,7 +742,7 @@
      "line": 0,
      "cue": 4,
      "window": [
-      10.43,
+      10.41,
       10.68
      ],
      "png": "w028.png"
@@ -881,7 +881,7 @@
      "cue": 4,
      "window": [
       13.0,
-      13.76
+      13.78
      ],
      "png": "w034.png"
     },
@@ -889,7 +889,7 @@
      "text": "and",
      "sub0": 12,
      "subn": 13,
-     "start": 13.76,
+     "start": 13.78,
      "end": 13.86,
      "matched": true,
      "hits": [
@@ -903,7 +903,7 @@
      "line": 1,
      "cue": 4,
      "window": [
-      13.76,
+      13.78,
       13.86
      ],
      "png": "w035.png"
@@ -1351,7 +1351,7 @@
      "sub0": 31,
      "subn": 32,
      "start": 20.94,
-     "end": 21.34,
+     "end": 21.32,
      "matched": true,
      "hits": [
       31
@@ -1365,7 +1365,7 @@
      "cue": 6,
      "window": [
       20.94,
-      21.34
+      21.32
      ],
      "png": "w054.png"
     },
@@ -1373,7 +1373,7 @@
      "text": "world,",
      "sub0": 32,
      "subn": 33,
-     "start": 21.34,
+     "start": 21.32,
      "end": 21.68,
      "matched": true,
      "hits": [
@@ -1387,7 +1387,7 @@
      "line": 1,
      "cue": 6,
      "window": [
-      21.34,
+      21.32,
       21.68
      ],
      "png": "w055.png"
@@ -1580,7 +1580,7 @@
      "text": "This",
      "sub0": 0,
      "subn": 1,
-     "start": 26.04,
+     "start": 26.02,
      "end": 26.44,
      "matched": true,
      "hits": [
@@ -1673,7 +1673,7 @@
      "sub0": 4,
      "subn": 5,
      "start": 26.98,
-     "end": 27.3,
+     "end": 27.28,
      "matched": true,
      "hits": [
       4
@@ -1687,7 +1687,7 @@
      "cue": 8,
      "window": [
       26.98,
-      27.3
+      27.28
      ],
      "png": "w067.png"
     },
@@ -1695,7 +1695,7 @@
      "text": "Run",
      "sub0": 5,
      "subn": 6,
-     "start": 27.3,
+     "start": 27.28,
      "end": 27.98,
      "matched": true,
      "hits": [
@@ -1709,7 +1709,7 @@
      "line": 0,
      "cue": 8,
      "window": [
-      27.3,
+      27.28,
       27.98
      ],
      "png": "w068.png"
@@ -1937,7 +1937,7 @@
   {
    "id": 10,
    "seg": 4,
-   "start": 32.59,
+   "start": 32.57,
    "end": 36.95,
    "lines": [
     "The morning briefing: six risky",
@@ -1948,7 +1948,7 @@
      "text": "The",
      "sub0": 0,
      "subn": 1,
-     "start": 32.64,
+     "start": 32.62,
      "end": 32.86,
      "matched": true,
      "hits": [
@@ -1962,7 +1962,7 @@
      "line": 0,
      "cue": 10,
      "window": [
-      32.59,
+      32.57,
       32.86
      ],
      "png": "w078.png"
@@ -2009,7 +2009,7 @@
      "cue": 10,
      "window": [
       33.08,
-      34.2
+      34.22
      ],
      "png": "w080.png"
     },
@@ -2017,7 +2017,7 @@
      "text": "six",
      "sub0": 3,
      "subn": 4,
-     "start": 34.2,
+     "start": 34.22,
      "end": 34.36,
      "matched": true,
      "hits": [
@@ -2031,7 +2031,7 @@
      "line": 0,
      "cue": 10,
      "window": [
-      34.2,
+      34.22,
       34.36
      ],
      "png": "w081.png"
@@ -2101,7 +2101,7 @@
      "cue": 10,
      "window": [
       35.32,
-      36.14
+      36.16
      ],
      "png": "w084.png"
     },
@@ -2109,7 +2109,7 @@
      "text": "four",
      "sub0": 7,
      "subn": 8,
-     "start": 36.14,
+     "start": 36.16,
      "end": 36.28,
      "matched": true,
      "hits": [
@@ -2123,7 +2123,7 @@
      "line": 1,
      "cue": 10,
      "window": [
-      36.14,
+      36.16,
       36.28
      ],
      "png": "w085.png"
@@ -2237,7 +2237,7 @@
      "sub0": 12,
      "subn": 13,
      "start": 37.8,
-     "end": 38.38,
+     "end": 38.4,
      "matched": true,
      "hits": [
       12
@@ -2251,7 +2251,7 @@
      "cue": 11,
      "window": [
       37.8,
-      38.38
+      38.4
      ],
      "png": "w090.png"
     },
@@ -2259,8 +2259,8 @@
      "text": "ten",
      "sub0": 13,
      "subn": 14,
-     "start": 38.38,
-     "end": 38.516,
+     "start": 38.4,
+     "end": 38.534,
      "matched": true,
      "hits": [
       13
@@ -2274,8 +2274,8 @@
      "line": 0,
      "cue": 11,
      "window": [
-      38.38,
-      38.516
+      38.4,
+      38.534
      ],
      "png": "w091.png"
     },
@@ -2283,8 +2283,8 @@
      "text": "thousand",
      "sub0": 13,
      "subn": 14,
-     "start": 38.516,
-     "end": 38.879,
+     "start": 38.534,
+     "end": 38.891,
      "matched": true,
      "hits": [
       13
@@ -2298,8 +2298,8 @@
      "line": 0,
      "cue": 11,
      "window": [
-      38.516,
-      38.879
+      38.534,
+      38.891
      ],
      "png": "w092.png"
     },
@@ -2307,8 +2307,8 @@
      "text": "two",
      "sub0": 13,
      "subn": 14,
-     "start": 38.879,
-     "end": 39.015,
+     "start": 38.891,
+     "end": 39.025,
      "matched": true,
      "hits": [
       13
@@ -2322,8 +2322,8 @@
      "line": 0,
      "cue": 11,
      "window": [
-      38.879,
-      39.015
+      38.891,
+      39.025
      ],
      "png": "w093.png"
     },
@@ -2331,8 +2331,8 @@
      "text": "hundred",
      "sub0": 13,
      "subn": 14,
-     "start": 39.015,
-     "end": 39.333,
+     "start": 39.025,
+     "end": 39.337,
      "matched": true,
      "hits": [
       13
@@ -2346,8 +2346,8 @@
      "line": 0,
      "cue": 11,
      "window": [
-      39.015,
-      39.333
+      39.025,
+      39.337
      ],
      "png": "w094.png"
     },
@@ -2355,7 +2355,7 @@
      "text": "sixty \u2014",
      "sub0": 13,
      "subn": 14,
-     "start": 39.333,
+     "start": 39.337,
      "end": 39.56,
      "matched": true,
      "hits": [
@@ -2370,7 +2370,7 @@
      "line": 1,
      "cue": 11,
      "window": [
-      39.333,
+      39.337,
       40.2
      ],
      "png": "w095.png"
@@ -3117,7 +3117,7 @@
      "sub0": 2,
      "subn": 3,
      "start": 52.14,
-     "end": 52.56,
+     "end": 52.54,
      "matched": true,
      "hits": [
       2
@@ -3131,7 +3131,7 @@
      "cue": 15,
      "window": [
       52.14,
-      52.56
+      52.54
      ],
      "png": "w126.png"
     },
@@ -3139,7 +3139,7 @@
      "text": "had",
      "sub0": 3,
      "subn": 4,
-     "start": 52.56,
+     "start": 52.54,
      "end": 52.92,
      "matched": true,
      "hits": [
@@ -3153,7 +3153,7 @@
      "line": 0,
      "cue": 15,
      "window": [
-      52.56,
+      52.54,
       52.92
      ],
      "png": "w127.png"
@@ -3375,7 +3375,7 @@
      "cue": 16,
      "window": [
       56.44,
-      57.38
+      57.4
      ],
      "png": "w136.png"
     },
@@ -3383,8 +3383,8 @@
      "text": "Five",
      "sub0": 13,
      "subn": 14,
-     "start": 57.38,
-     "end": 57.72,
+     "start": 57.4,
+     "end": 57.7,
      "matched": true,
      "hits": [
       13
@@ -3397,8 +3397,8 @@
      "line": 0,
      "cue": 16,
      "window": [
-      57.38,
-      57.72
+      57.4,
+      57.7
      ],
      "png": "w137.png"
     },
@@ -3406,7 +3406,7 @@
      "text": "days \u2014",
      "sub0": 14,
      "subn": 15,
-     "start": 57.72,
+     "start": 57.7,
      "end": 57.94,
      "matched": true,
      "hits": [
@@ -3420,7 +3420,7 @@
      "line": 0,
      "cue": 16,
      "window": [
-      57.72,
+      57.7,
       58.16
      ],
      "png": "w138.png"
@@ -3677,7 +3677,7 @@
      "sub0": 21,
      "subn": 22,
      "start": 61.72,
-     "end": 61.955,
+     "end": 61.951,
      "matched": true,
      "hits": [
       21
@@ -3692,7 +3692,7 @@
      "cue": 17,
      "window": [
       61.72,
-      61.955
+      61.951
      ],
      "png": "w149.png"
     },
@@ -3700,8 +3700,8 @@
      "text": "thousand",
      "sub0": 21,
      "subn": 22,
-     "start": 61.955,
-     "end": 62.426,
+     "start": 61.951,
+     "end": 62.412,
      "matched": true,
      "hits": [
       21
@@ -3715,8 +3715,8 @@
      "line": 0,
      "cue": 17,
      "window": [
-      61.955,
-      62.426
+      61.951,
+      62.412
      ],
      "png": "w150.png"
     },
@@ -3724,8 +3724,8 @@
      "text": "forty.",
      "sub0": 21,
      "subn": 22,
-     "start": 62.426,
-     "end": 62.72,
+     "start": 62.412,
+     "end": 62.7,
      "matched": true,
      "hits": [
       21
@@ -3739,7 +3739,7 @@
      "line": 1,
      "cue": 17,
      "window": [
-      62.426,
+      62.412,
       63.8
      ],
      "png": "w151.png"
@@ -4039,7 +4039,7 @@
      "cue": 19,
      "window": [
       68.26,
-      68.92
+      68.94
      ],
      "png": "w163.png"
     },
@@ -4047,7 +4047,7 @@
      "text": "stopped.",
      "sub0": 12,
      "subn": 13,
-     "start": 68.92,
+     "start": 68.94,
      "end": 69.32,
      "matched": true,
      "hits": [
@@ -4061,7 +4061,7 @@
      "line": 0,
      "cue": 19,
      "window": [
-      68.92,
+      68.94,
       69.47
      ],
      "png": "w164.png"
@@ -4394,7 +4394,7 @@
      "sub0": 13,
      "subn": 14,
      "start": 75.62,
-     "end": 75.8,
+     "end": 75.82,
      "matched": true,
      "hits": [
       13
@@ -4408,7 +4408,7 @@
      "cue": 21,
      "window": [
       75.62,
-      75.8
+      75.82
      ],
      "png": "w178.png"
     },
@@ -4416,7 +4416,7 @@
      "text": "safe",
      "sub0": 14,
      "subn": 15,
-     "start": 75.8,
+     "start": 75.82,
      "end": 75.98,
      "matched": true,
      "hits": [
@@ -4430,7 +4430,7 @@
      "line": 0,
      "cue": 21,
      "window": [
-      75.8,
+      75.82,
       75.98
      ],
      "png": "w179.png"
@@ -4520,8 +4520,8 @@
      "text": "Seven",
      "sub0": 0,
      "subn": 1,
-     "start": 78.44,
-     "end": 78.728,
+     "start": 78.48,
+     "end": 78.756,
      "matched": true,
      "hits": [
       0
@@ -4536,7 +4536,7 @@
      "cue": 22,
      "window": [
       78.55,
-      78.728
+      78.756
      ],
      "png": "w183.png"
     },
@@ -4544,8 +4544,8 @@
      "text": "hundred",
      "sub0": 0,
      "subn": 1,
-     "start": 78.728,
-     "end": 79.132,
+     "start": 78.756,
+     "end": 79.144,
      "matched": true,
      "hits": [
       0
@@ -4559,8 +4559,8 @@
      "line": 0,
      "cue": 22,
      "window": [
-      78.728,
-      79.132
+      78.756,
+      79.144
      ],
      "png": "w184.png"
     },
@@ -4568,7 +4568,7 @@
      "text": "fifty",
      "sub0": 0,
      "subn": 1,
-     "start": 79.132,
+     "start": 79.144,
      "end": 79.42,
      "matched": true,
      "hits": [
@@ -4583,7 +4583,7 @@
      "line": 0,
      "cue": 22,
      "window": [
-      79.132,
+      79.144,
       79.42
      ],
      "png": "w185.png"
@@ -4616,7 +4616,7 @@
      "sub0": 2,
      "subn": 3,
      "start": 80.2,
-     "end": 80.412,
+     "end": 80.418,
      "matched": true,
      "hits": [
       2
@@ -4631,7 +4631,7 @@
      "cue": 22,
      "window": [
       80.2,
-      80.412
+      80.418
      ],
      "png": "w187.png"
     },
@@ -4639,8 +4639,8 @@
      "text": "hundred",
      "sub0": 2,
      "subn": 3,
-     "start": 80.412,
-     "end": 80.708,
+     "start": 80.418,
+     "end": 80.722,
      "matched": true,
      "hits": [
       2
@@ -4654,8 +4654,8 @@
      "line": 0,
      "cue": 22,
      "window": [
-      80.412,
-      80.708
+      80.418,
+      80.722
      ],
      "png": "w188.png"
     },
@@ -4663,8 +4663,8 @@
      "text": "fifty",
      "sub0": 2,
      "subn": 3,
-     "start": 80.708,
-     "end": 80.92,
+     "start": 80.722,
+     "end": 80.94,
      "matched": true,
      "hits": [
       2
@@ -4678,8 +4678,8 @@
      "line": 1,
      "cue": 22,
      "window": [
-      80.708,
-      80.92
+      80.722,
+      80.94
      ],
      "png": "w189.png"
     },
@@ -4687,7 +4687,7 @@
      "text": "is",
      "sub0": 3,
      "subn": 4,
-     "start": 80.92,
+     "start": 80.94,
      "end": 81.68,
      "matched": true,
      "hits": [
@@ -4701,7 +4701,7 @@
      "line": 1,
      "cue": 22,
      "window": [
-      80.92,
+      80.94,
       81.68
      ],
      "png": "w190.png"
@@ -4711,7 +4711,7 @@
      "sub0": 4,
      "subn": 5,
      "start": 81.68,
-     "end": 82.08,
+     "end": 82.07,
      "matched": true,
      "hits": [
       4
@@ -4726,7 +4726,7 @@
      "cue": 22,
      "window": [
       81.68,
-      82.08
+      82.07
      ],
      "png": "w191.png"
     },
@@ -4734,8 +4734,8 @@
      "text": "hundred \u2014",
      "sub0": 4,
      "subn": 5,
-     "start": 82.08,
-     "end": 82.48,
+     "start": 82.07,
+     "end": 82.46,
      "matched": true,
      "hits": [
       4
@@ -4749,8 +4749,8 @@
      "line": 1,
      "cue": 22,
      "window": [
-      82.08,
-      82.48
+      82.07,
+      82.46
      ],
      "png": "w192.png"
     },
@@ -4758,8 +4758,8 @@
      "text": "over",
      "sub0": 5,
      "subn": 6,
-     "start": 82.48,
-     "end": 83.14,
+     "start": 82.46,
+     "end": 83.16,
      "matched": true,
      "hits": [
       5
@@ -4772,8 +4772,8 @@
      "line": 1,
      "cue": 22,
      "window": [
-      82.48,
-      83.14
+      82.46,
+      83.16
      ],
      "png": "w193.png"
     },
@@ -4781,7 +4781,7 @@
      "text": "the",
      "sub0": 6,
      "subn": 7,
-     "start": 83.14,
+     "start": 83.16,
      "end": 83.32,
      "matched": true,
      "hits": [
@@ -4795,7 +4795,7 @@
      "line": 1,
      "cue": 22,
      "window": [
-      83.14,
+      83.16,
       83.27
      ],
      "png": "w194.png"
@@ -4854,7 +4854,7 @@
      "cue": 23,
      "window": [
       84.02,
-      85.12
+      85.14
      ],
      "png": "w196.png"
     },
@@ -4862,7 +4862,7 @@
      "text": "Chaperone",
      "sub0": 9,
      "subn": 10,
-     "start": 85.12,
+     "start": 85.14,
      "end": 85.4,
      "matched": true,
      "hits": [
@@ -4876,7 +4876,7 @@
      "line": 0,
      "cue": 23,
      "window": [
-      85.12,
+      85.14,
       85.4
      ],
      "png": "w197.png"
@@ -5047,7 +5047,7 @@
   {
    "id": 24,
    "seg": 10,
-   "start": 89.29,
+   "start": 89.13,
    "end": 92.35,
    "lines": [
     "An email, supposedly from Mei,",
@@ -5058,8 +5058,8 @@
      "text": "An",
      "sub0": 0,
      "subn": 1,
-     "start": 89.34,
-     "end": 89.39,
+     "start": 89.18,
+     "end": 89.36,
      "matched": true,
      "hits": [
       0
@@ -5072,7 +5072,7 @@
      "line": 0,
      "cue": 24,
      "window": [
-      89.29,
+      89.13,
       89.36
      ],
      "png": "w205.png"
@@ -5105,7 +5105,7 @@
      "sub0": 2,
      "subn": 3,
      "start": 90.14,
-     "end": 90.34,
+     "end": 90.36,
      "matched": true,
      "hits": [
       2
@@ -5119,7 +5119,7 @@
      "cue": 24,
      "window": [
       90.14,
-      90.34
+      90.36
      ],
      "png": "w207.png"
     },
@@ -5127,7 +5127,7 @@
      "text": "from",
      "sub0": 3,
      "subn": 4,
-     "start": 90.34,
+     "start": 90.36,
      "end": 90.72,
      "matched": true,
      "hits": [
@@ -5141,7 +5141,7 @@
      "line": 0,
      "cue": 24,
      "window": [
-      90.34,
+      90.36,
       90.72
      ],
      "png": "w208.png"
@@ -5165,7 +5165,7 @@
      "cue": 24,
      "window": [
       90.72,
-      91.18
+      91.16
      ],
      "png": "w209.png"
     },
@@ -5173,7 +5173,7 @@
      "text": "approved",
      "sub0": 5,
      "subn": 6,
-     "start": 91.18,
+     "start": 91.16,
      "end": 91.58,
      "matched": true,
      "hits": [
@@ -5187,7 +5187,7 @@
      "line": 1,
      "cue": 24,
      "window": [
-      91.18,
+      91.16,
       91.58
      ],
      "png": "w210.png"
@@ -5246,7 +5246,7 @@
    "id": 25,
    "seg": 10,
    "start": 92.89,
-   "end": 96.91,
+   "end": 96.93,
    "lines": [
     "Her written floor is sixty-five",
     "hundred. An email is not an approval."
@@ -5349,7 +5349,7 @@
      "sub0": 11,
      "subn": 12,
      "start": 93.9,
-     "end": 94.339,
+     "end": 94.35,
      "matched": true,
      "hits": [
       11
@@ -5364,7 +5364,7 @@
      "cue": 25,
      "window": [
       93.9,
-      94.339
+      94.35
      ],
      "png": "w217.png"
     },
@@ -5372,8 +5372,8 @@
      "text": "hundred.",
      "sub0": 11,
      "subn": 12,
-     "start": 94.339,
-     "end": 94.68,
+     "start": 94.35,
+     "end": 94.7,
      "matched": true,
      "hits": [
       11
@@ -5387,7 +5387,7 @@
      "line": 1,
      "cue": 25,
      "window": [
-      94.339,
+      94.35,
       95.28
      ],
      "png": "w218.png"
@@ -5512,7 +5512,7 @@
      "sub0": 17,
      "subn": 18,
      "start": 96.48,
-     "end": 96.76,
+     "end": 96.78,
      "matched": true,
      "hits": [
       17
@@ -5521,12 +5521,12 @@
       17
      ],
      "seg": 10,
-     "color": "#E8C988",
+     "color": null,
      "line": 1,
      "cue": 25,
      "window": [
       96.48,
-      96.91
+      96.93
      ],
      "png": "w224.png"
     }
@@ -5535,8 +5535,8 @@
   {
    "id": 26,
    "seg": 10,
-   "start": 97.37,
-   "end": 98.27,
+   "start": 97.75,
+   "end": 98.45,
    "lines": [
     "Blocked."
    ],
@@ -5545,7 +5545,7 @@
      "text": "Blocked.",
      "sub0": 18,
      "subn": 19,
-     "start": 97.42,
+     "start": 97.8,
      "end": 98.02,
      "matched": true,
      "hits": [
@@ -5559,8 +5559,8 @@
      "line": 0,
      "cue": 26,
      "window": [
-      97.37,
-      98.27
+      97.75,
+      98.45
      ],
      "png": "w225.png"
     }
@@ -5741,7 +5741,7 @@
   {
    "id": 28,
    "seg": 11,
-   "start": 101.97,
+   "start": 101.99,
    "end": 103.69,
    "lines": [
     "Held. Mei says no."
@@ -5751,8 +5751,8 @@
      "text": "Held.",
      "sub0": 7,
      "subn": 8,
-     "start": 102.02,
-     "end": 102.07,
+     "start": 102.04,
+     "end": 102.09,
      "matched": true,
      "hits": [
       7
@@ -5765,7 +5765,7 @@
      "line": 0,
      "cue": 28,
      "window": [
-      101.97,
+      101.99,
       102.96
      ],
      "png": "w233.png"
@@ -5844,7 +5844,7 @@
   {
    "id": 29,
    "seg": 12,
-   "start": 104.19,
+   "start": 104.15,
    "end": 107.79,
    "lines": [
     "And when the contract says delete,",
@@ -5855,7 +5855,7 @@
      "text": "And",
      "sub0": 0,
      "subn": 1,
-     "start": 104.24,
+     "start": 104.2,
      "end": 104.38,
      "matched": true,
      "hits": [
@@ -5869,7 +5869,7 @@
      "line": 0,
      "cue": 29,
      "window": [
-      104.19,
+      104.15,
       104.38
      ],
      "png": "w237.png"
@@ -5902,7 +5902,7 @@
      "sub0": 2,
      "subn": 3,
      "start": 104.46,
-     "end": 104.6,
+     "end": 104.58,
      "matched": true,
      "hits": [
       2
@@ -5916,7 +5916,7 @@
      "cue": 29,
      "window": [
       104.46,
-      104.6
+      104.58
      ],
      "png": "w239.png"
     },
@@ -5924,7 +5924,7 @@
      "text": "contract",
      "sub0": 3,
      "subn": 4,
-     "start": 104.6,
+     "start": 104.58,
      "end": 104.98,
      "matched": true,
      "hits": [
@@ -5938,7 +5938,7 @@
      "line": 0,
      "cue": 29,
      "window": [
-      104.6,
+      104.58,
       104.98
      ],
      "png": "w240.png"
@@ -6166,8 +6166,8 @@
   {
    "id": 31,
    "seg": 13,
-   "start": 110.13,
-   "end": 114.13,
+   "start": 110.05,
+   "end": 114.33,
    "lines": [
     "Ten scenarios, three checks each:",
     "the right decision, the right rule,"
@@ -6177,8 +6177,8 @@
      "text": "Ten",
      "sub0": 0,
      "subn": 1,
-     "start": 110.18,
-     "end": 110.44,
+     "start": 109.78,
+     "end": 110.42,
      "matched": true,
      "hits": [
       0
@@ -6191,8 +6191,8 @@
      "line": 0,
      "cue": 31,
      "window": [
-      110.13,
-      110.44
+      110.05,
+      110.42
      ],
      "png": "w250.png"
     },
@@ -6200,8 +6200,8 @@
      "text": "scenarios,",
      "sub0": 1,
      "subn": 2,
-     "start": 110.44,
-     "end": 110.96,
+     "start": 110.42,
+     "end": 110.98,
      "matched": true,
      "hits": [
       1
@@ -6214,8 +6214,8 @@
      "line": 0,
      "cue": 31,
      "window": [
-      110.44,
-      111.3
+      110.42,
+      111.36
      ],
      "png": "w251.png"
     },
@@ -6223,8 +6223,8 @@
      "text": "three",
      "sub0": 2,
      "subn": 3,
-     "start": 111.3,
-     "end": 111.42,
+     "start": 111.36,
+     "end": 111.46,
      "matched": true,
      "hits": [
       2
@@ -6237,8 +6237,8 @@
      "line": 0,
      "cue": 31,
      "window": [
-      111.3,
-      111.42
+      111.36,
+      111.46
      ],
      "png": "w252.png"
     },
@@ -6246,8 +6246,8 @@
      "text": "checks",
      "sub0": 3,
      "subn": 4,
-     "start": 111.42,
-     "end": 111.66,
+     "start": 111.46,
+     "end": 111.72,
      "matched": true,
      "hits": [
       3
@@ -6260,8 +6260,8 @@
      "line": 0,
      "cue": 31,
      "window": [
-      111.42,
-      111.66
+      111.46,
+      111.72
      ],
      "png": "w253.png"
     },
@@ -6269,8 +6269,8 @@
      "text": "each:",
      "sub0": 4,
      "subn": 5,
-     "start": 111.66,
-     "end": 111.92,
+     "start": 111.72,
+     "end": 112.0,
      "matched": true,
      "hits": [
       4
@@ -6283,8 +6283,8 @@
      "line": 0,
      "cue": 31,
      "window": [
-      111.66,
-      111.92
+      111.72,
+      112.54
      ],
      "png": "w254.png"
     },
@@ -6292,37 +6292,14 @@
      "text": "the",
      "sub0": 5,
      "subn": 6,
-     "start": 111.92,
-     "end": 112.54,
-     "matched": true,
-     "hits": [
-      5
-     ],
-     "owners": [
-      5
-     ],
-     "seg": 13,
-     "color": null,
-     "line": 1,
-     "cue": 31,
-     "window": [
-      111.92,
-      112.54
-     ],
-     "png": "w255.png"
-    },
-    {
-     "text": "right",
-     "sub0": 6,
-     "subn": 7,
      "start": 112.54,
-     "end": 112.72,
+     "end": 112.66,
      "matched": true,
      "hits": [
-      6
+      5
      ],
      "owners": [
-      6
+      5
      ],
      "seg": 13,
      "color": null,
@@ -6330,7 +6307,30 @@
      "cue": 31,
      "window": [
       112.54,
-      112.72
+      112.66
+     ],
+     "png": "w255.png"
+    },
+    {
+     "text": "right",
+     "sub0": 6,
+     "subn": 7,
+     "start": 112.66,
+     "end": 112.86,
+     "matched": true,
+     "hits": [
+      6
+     ],
+     "owners": [
+      6
+     ],
+     "seg": 13,
+     "color": null,
+     "line": 1,
+     "cue": 31,
+     "window": [
+      112.66,
+      112.86
      ],
      "png": "w256.png"
     },
@@ -6338,8 +6338,8 @@
      "text": "decision,",
      "sub0": 7,
      "subn": 8,
-     "start": 112.72,
-     "end": 113.1,
+     "start": 112.86,
+     "end": 113.22,
      "matched": true,
      "hits": [
       7
@@ -6352,8 +6352,8 @@
      "line": 1,
      "cue": 31,
      "window": [
-      112.72,
-      113.48
+      112.86,
+      113.62
      ],
      "png": "w257.png"
     },
@@ -6361,8 +6361,8 @@
      "text": "the",
      "sub0": 8,
      "subn": 9,
-     "start": 113.48,
-     "end": 113.53,
+     "start": 113.62,
+     "end": 113.68,
      "matched": true,
      "hits": [
       8
@@ -6375,8 +6375,8 @@
      "line": 1,
      "cue": 31,
      "window": [
-      113.48,
-      113.5
+      113.62,
+      113.68
      ],
      "png": "w258.png"
     },
@@ -6384,8 +6384,8 @@
      "text": "right",
      "sub0": 9,
      "subn": 10,
-     "start": 113.5,
-     "end": 113.7,
+     "start": 113.68,
+     "end": 113.88,
      "matched": true,
      "hits": [
       9
@@ -6398,8 +6398,8 @@
      "line": 1,
      "cue": 31,
      "window": [
-      113.5,
-      113.7
+      113.68,
+      113.88
      ],
      "png": "w259.png"
     },
@@ -6407,8 +6407,8 @@
      "text": "rule,",
      "sub0": 10,
      "subn": 11,
-     "start": 113.7,
-     "end": 114.02,
+     "start": 113.88,
+     "end": 114.18,
      "matched": true,
      "hits": [
       10
@@ -6421,8 +6421,8 @@
      "line": 1,
      "cue": 31,
      "window": [
-      113.7,
-      114.13
+      113.88,
+      114.33
      ],
      "png": "w260.png"
     }
@@ -6431,8 +6431,8 @@
   {
    "id": 32,
    "seg": 13,
-   "start": 114.13,
-   "end": 118.43,
+   "start": 114.33,
+   "end": 118.55,
    "lines": [
     "the right evidence. Thirty out of",
     "thirty. The classifier got thirty of"
@@ -6442,8 +6442,8 @@
      "text": "the",
      "sub0": 11,
      "subn": 12,
-     "start": 114.18,
-     "end": 114.28,
+     "start": 114.38,
+     "end": 114.48,
      "matched": true,
      "hits": [
       11
@@ -6456,8 +6456,8 @@
      "line": 0,
      "cue": 32,
      "window": [
-      114.13,
-      114.28
+      114.33,
+      114.48
      ],
      "png": "w261.png"
     },
@@ -6465,37 +6465,14 @@
      "text": "right",
      "sub0": 12,
      "subn": 13,
-     "start": 114.28,
-     "end": 114.48,
-     "matched": true,
-     "hits": [
-      12
-     ],
-     "owners": [
-      12
-     ],
-     "seg": 13,
-     "color": null,
-     "line": 0,
-     "cue": 32,
-     "window": [
-      114.28,
-      114.48
-     ],
-     "png": "w262.png"
-    },
-    {
-     "text": "evidence.",
-     "sub0": 13,
-     "subn": 14,
      "start": 114.48,
-     "end": 115.0,
+     "end": 114.7,
      "matched": true,
      "hits": [
-      13
+      12
      ],
      "owners": [
-      13
+      12
      ],
      "seg": 13,
      "color": null,
@@ -6503,7 +6480,30 @@
      "cue": 32,
      "window": [
       114.48,
-      115.66
+      114.7
+     ],
+     "png": "w262.png"
+    },
+    {
+     "text": "evidence.",
+     "sub0": 13,
+     "subn": 14,
+     "start": 114.7,
+     "end": 115.14,
+     "matched": true,
+     "hits": [
+      13
+     ],
+     "owners": [
+      13
+     ],
+     "seg": 13,
+     "color": null,
+     "line": 0,
+     "cue": 32,
+     "window": [
+      114.7,
+      115.64
      ],
      "png": "w263.png"
     },
@@ -6511,8 +6511,8 @@
      "text": "Thirty",
      "sub0": 14,
      "subn": 15,
-     "start": 115.66,
-     "end": 115.88,
+     "start": 115.64,
+     "end": 115.98,
      "matched": true,
      "hits": [
       14
@@ -6525,8 +6525,8 @@
      "line": 0,
      "cue": 32,
      "window": [
-      115.66,
-      115.88
+      115.64,
+      115.98
      ],
      "png": "w264.png"
     },
@@ -6534,8 +6534,8 @@
      "text": "out",
      "sub0": 15,
      "subn": 16,
-     "start": 115.88,
-     "end": 116.04,
+     "start": 115.98,
+     "end": 116.16,
      "matched": true,
      "hits": [
       15
@@ -6548,8 +6548,8 @@
      "line": 0,
      "cue": 32,
      "window": [
-      115.88,
-      116.04
+      115.98,
+      116.16
      ],
      "png": "w265.png"
     },
@@ -6557,8 +6557,8 @@
      "text": "of",
      "sub0": 16,
      "subn": 17,
-     "start": 116.04,
-     "end": 116.14,
+     "start": 116.16,
+     "end": 116.24,
      "matched": true,
      "hits": [
       16
@@ -6571,8 +6571,8 @@
      "line": 0,
      "cue": 32,
      "window": [
-      116.04,
-      116.14
+      116.16,
+      116.24
      ],
      "png": "w266.png"
     },
@@ -6580,8 +6580,8 @@
      "text": "thirty.",
      "sub0": 17,
      "subn": 18,
-     "start": 116.14,
-     "end": 116.48,
+     "start": 116.24,
+     "end": 116.56,
      "matched": true,
      "hits": [
       17
@@ -6594,8 +6594,8 @@
      "line": 1,
      "cue": 32,
      "window": [
-      116.14,
-      117.04
+      116.24,
+      117.08
      ],
      "png": "w267.png"
     },
@@ -6603,8 +6603,8 @@
      "text": "The",
      "sub0": 18,
      "subn": 19,
-     "start": 117.04,
-     "end": 117.16,
+     "start": 117.08,
+     "end": 117.26,
      "matched": true,
      "hits": [
       18
@@ -6617,8 +6617,8 @@
      "line": 1,
      "cue": 32,
      "window": [
-      117.04,
-      117.16
+      117.08,
+      117.26
      ],
      "png": "w268.png"
     },
@@ -6626,8 +6626,8 @@
      "text": "classifier",
      "sub0": 19,
      "subn": 20,
-     "start": 117.16,
-     "end": 117.7,
+     "start": 117.26,
+     "end": 117.8,
      "matched": true,
      "hits": [
       19
@@ -6640,8 +6640,8 @@
      "line": 1,
      "cue": 32,
      "window": [
-      117.16,
-      117.7
+      117.26,
+      117.8
      ],
      "png": "w269.png"
     },
@@ -6649,8 +6649,8 @@
      "text": "got",
      "sub0": 20,
      "subn": 21,
-     "start": 117.7,
-     "end": 117.92,
+     "start": 117.8,
+     "end": 118.02,
      "matched": true,
      "hits": [
       20
@@ -6663,8 +6663,8 @@
      "line": 1,
      "cue": 32,
      "window": [
-      117.7,
-      117.92
+      117.8,
+      118.02
      ],
      "png": "w270.png"
     },
@@ -6672,8 +6672,8 @@
      "text": "thirty",
      "sub0": 21,
      "subn": 22,
-     "start": 117.92,
-     "end": 118.32,
+     "start": 118.02,
+     "end": 118.44,
      "matched": true,
      "hits": [
       21
@@ -6686,8 +6686,8 @@
      "line": 1,
      "cue": 32,
      "window": [
-      117.92,
-      118.32
+      118.02,
+      118.44
      ],
      "png": "w271.png"
     },
@@ -6695,8 +6695,8 @@
      "text": "of",
      "sub0": 22,
      "subn": 23,
-     "start": 118.32,
-     "end": 118.48,
+     "start": 118.44,
+     "end": 118.6,
      "matched": true,
      "hits": [
       22
@@ -6709,8 +6709,8 @@
      "line": 1,
      "cue": 32,
      "window": [
-      118.32,
-      118.43
+      118.44,
+      118.55
      ],
      "png": "w272.png"
     }
@@ -6719,19 +6719,19 @@
   {
    "id": 33,
    "seg": 13,
-   "start": 118.43,
-   "end": 122.13,
+   "start": 118.55,
+   "end": 122.19,
    "lines": [
     "thirty files right. And one hundred",
-    "thirty-six unit tests pass."
+    "seventy-three unit tests pass."
    ],
    "words": [
     {
      "text": "thirty",
      "sub0": 23,
      "subn": 24,
-     "start": 118.48,
-     "end": 118.78,
+     "start": 118.6,
+     "end": 118.9,
      "matched": true,
      "hits": [
       23
@@ -6744,8 +6744,8 @@
      "line": 0,
      "cue": 33,
      "window": [
-      118.43,
-      118.78
+      118.55,
+      118.9
      ],
      "png": "w273.png"
     },
@@ -6753,8 +6753,8 @@
      "text": "files",
      "sub0": 24,
      "subn": 25,
-     "start": 118.78,
-     "end": 119.1,
+     "start": 118.9,
+     "end": 119.22,
      "matched": true,
      "hits": [
       24
@@ -6767,8 +6767,8 @@
      "line": 0,
      "cue": 33,
      "window": [
-      118.78,
-      119.1
+      118.9,
+      119.22
      ],
      "png": "w274.png"
     },
@@ -6776,8 +6776,8 @@
      "text": "right.",
      "sub0": 25,
      "subn": 26,
-     "start": 119.1,
-     "end": 119.42,
+     "start": 119.22,
+     "end": 119.52,
      "matched": true,
      "hits": [
       25
@@ -6790,8 +6790,8 @@
      "line": 0,
      "cue": 33,
      "window": [
-      119.1,
-      119.96
+      119.22,
+      119.98
      ],
      "png": "w275.png"
     },
@@ -6799,8 +6799,8 @@
      "text": "And",
      "sub0": 26,
      "subn": 27,
-     "start": 119.96,
-     "end": 120.04,
+     "start": 119.98,
+     "end": 120.08,
      "matched": true,
      "hits": [
       26
@@ -6813,8 +6813,8 @@
      "line": 0,
      "cue": 33,
      "window": [
-      119.96,
-      120.04
+      119.98,
+      120.08
      ],
      "png": "w276.png"
     },
@@ -6822,8 +6822,8 @@
      "text": "one",
      "sub0": 27,
      "subn": 28,
-     "start": 120.04,
-     "end": 120.157,
+     "start": 120.08,
+     "end": 120.175,
      "matched": true,
      "hits": [
       27
@@ -6837,8 +6837,8 @@
      "line": 0,
      "cue": 33,
      "window": [
-      120.04,
-      120.157
+      120.08,
+      120.175
      ],
      "png": "w277.png"
     },
@@ -6846,8 +6846,8 @@
      "text": "hundred",
      "sub0": 27,
      "subn": 28,
-     "start": 120.157,
-     "end": 120.429,
+     "start": 120.175,
+     "end": 120.398,
      "matched": true,
      "hits": [
       27
@@ -6861,16 +6861,16 @@
      "line": 0,
      "cue": 33,
      "window": [
-      120.157,
-      120.429
+      120.175,
+      120.398
      ],
      "png": "w278.png"
     },
     {
-     "text": "thirty-six",
+     "text": "seventy-three",
      "sub0": 27,
      "subn": 28,
-     "start": 120.429,
+     "start": 120.398,
      "end": 120.78,
      "matched": true,
      "hits": [
@@ -6885,7 +6885,7 @@
      "line": 1,
      "cue": 33,
      "window": [
-      120.429,
+      120.398,
       120.78
      ],
      "png": "w279.png"
@@ -6895,7 +6895,7 @@
      "sub0": 28,
      "subn": 29,
      "start": 120.78,
-     "end": 121.34,
+     "end": 121.38,
      "matched": true,
      "hits": [
       28
@@ -6909,7 +6909,7 @@
      "cue": 33,
      "window": [
       120.78,
-      121.34
+      121.38
      ],
      "png": "w280.png"
     },
@@ -6917,8 +6917,8 @@
      "text": "tests",
      "sub0": 29,
      "subn": 30,
-     "start": 121.34,
-     "end": 121.62,
+     "start": 121.38,
+     "end": 121.68,
      "matched": true,
      "hits": [
       29
@@ -6931,8 +6931,8 @@
      "line": 1,
      "cue": 33,
      "window": [
-      121.34,
-      121.62
+      121.38,
+      121.68
      ],
      "png": "w281.png"
     },
@@ -6940,8 +6940,8 @@
      "text": "pass.",
      "sub0": 30,
      "subn": 31,
-     "start": 121.62,
-     "end": 121.98,
+     "start": 121.68,
+     "end": 122.04,
      "matched": true,
      "hits": [
       30
@@ -6954,8 +6954,8 @@
      "line": 1,
      "cue": 33,
      "window": [
-      121.62,
-      122.13
+      121.68,
+      122.19
      ],
      "png": "w282.png"
     }
@@ -6964,8 +6964,8 @@
   {
    "id": 34,
    "seg": 14,
-   "start": 124.21,
-   "end": 129.05,
+   "start": 124.05,
+   "end": 129.01,
    "lines": [
     "Who pays? One-person studios,",
     "agencies, and fractional ops teams \u2014"
@@ -6975,7 +6975,7 @@
      "text": "Who",
      "sub0": 0,
      "subn": 1,
-     "start": 124.26,
+     "start": 124.02,
      "end": 124.4,
      "matched": true,
      "hits": [
@@ -6989,7 +6989,7 @@
      "line": 0,
      "cue": 34,
      "window": [
-      124.21,
+      124.05,
       124.4
      ],
      "png": "w283.png"
@@ -6999,7 +6999,7 @@
      "sub0": 1,
      "subn": 2,
      "start": 124.4,
-     "end": 124.68,
+     "end": 124.66,
      "matched": true,
      "hits": [
       1
@@ -7013,7 +7013,7 @@
      "cue": 34,
      "window": [
       124.4,
-      125.34
+      125.24
      ],
      "png": "w284.png"
     },
@@ -7021,8 +7021,8 @@
      "text": "One-person",
      "sub0": 2,
      "subn": 4,
-     "start": 125.34,
-     "end": 125.84,
+     "start": 125.24,
+     "end": 125.82,
      "matched": true,
      "hits": [
       2,
@@ -7037,8 +7037,8 @@
      "line": 0,
      "cue": 34,
      "window": [
-      125.34,
-      125.84
+      125.24,
+      125.82
      ],
      "png": "w285.png"
     },
@@ -7046,7 +7046,7 @@
      "text": "studios,",
      "sub0": 4,
      "subn": 5,
-     "start": 125.84,
+     "start": 125.82,
      "end": 126.36,
      "matched": true,
      "hits": [
@@ -7060,8 +7060,8 @@
      "line": 0,
      "cue": 34,
      "window": [
-      125.84,
-      126.9
+      125.82,
+      126.84
      ],
      "png": "w286.png"
     },
@@ -7069,8 +7069,8 @@
      "text": "agencies,",
      "sub0": 5,
      "subn": 6,
-     "start": 126.9,
-     "end": 127.24,
+     "start": 126.84,
+     "end": 127.18,
      "matched": true,
      "hits": [
       5
@@ -7083,8 +7083,8 @@
      "line": 1,
      "cue": 34,
      "window": [
-      126.9,
-      127.68
+      126.84,
+      127.64
      ],
      "png": "w287.png"
     },
@@ -7092,8 +7092,8 @@
      "text": "and",
      "sub0": 6,
      "subn": 7,
-     "start": 127.68,
-     "end": 127.74,
+     "start": 127.64,
+     "end": 127.72,
      "matched": true,
      "hits": [
       6
@@ -7106,8 +7106,8 @@
      "line": 1,
      "cue": 34,
      "window": [
-      127.68,
-      127.74
+      127.64,
+      127.72
      ],
      "png": "w288.png"
     },
@@ -7115,8 +7115,8 @@
      "text": "fractional",
      "sub0": 7,
      "subn": 8,
-     "start": 127.74,
-     "end": 128.36,
+     "start": 127.72,
+     "end": 128.3,
      "matched": true,
      "hits": [
       7
@@ -7129,8 +7129,8 @@
      "line": 1,
      "cue": 34,
      "window": [
-      127.74,
-      128.36
+      127.72,
+      128.3
      ],
      "png": "w289.png"
     },
@@ -7138,8 +7138,8 @@
      "text": "ops",
      "sub0": 8,
      "subn": 9,
-     "start": 128.36,
-     "end": 128.5,
+     "start": 128.3,
+     "end": 128.46,
      "matched": true,
      "hits": [
       8
@@ -7152,8 +7152,8 @@
      "line": 1,
      "cue": 34,
      "window": [
-      128.36,
-      128.5
+      128.3,
+      128.46
      ],
      "png": "w290.png"
     },
@@ -7161,8 +7161,8 @@
      "text": "teams \u2014",
      "sub0": 9,
      "subn": 10,
-     "start": 128.5,
-     "end": 128.9,
+     "start": 128.46,
+     "end": 128.86,
      "matched": true,
      "hits": [
       9
@@ -7175,8 +7175,8 @@
      "line": 1,
      "cue": 34,
      "window": [
-      128.5,
-      129.05
+      128.46,
+      129.01
      ],
      "png": "w291.png"
     }
@@ -7185,8 +7185,8 @@
   {
    "id": 35,
    "seg": 14,
-   "start": 129.49,
-   "end": 133.47,
+   "start": 129.41,
+   "end": 133.33,
    "lines": [
     "people who let agents email clients",
     "and move money, but can't hire a"
@@ -7196,8 +7196,8 @@
      "text": "people",
      "sub0": 10,
      "subn": 11,
-     "start": 129.54,
-     "end": 129.76,
+     "start": 129.46,
+     "end": 129.7,
      "matched": true,
      "hits": [
       10
@@ -7210,8 +7210,8 @@
      "line": 0,
      "cue": 35,
      "window": [
-      129.49,
-      129.76
+      129.41,
+      129.7
      ],
      "png": "w292.png"
     },
@@ -7219,8 +7219,8 @@
      "text": "who",
      "sub0": 11,
      "subn": 12,
-     "start": 129.76,
-     "end": 129.94,
+     "start": 129.7,
+     "end": 129.88,
      "matched": true,
      "hits": [
       11
@@ -7233,8 +7233,8 @@
      "line": 0,
      "cue": 35,
      "window": [
-      129.76,
-      129.94
+      129.7,
+      129.88
      ],
      "png": "w293.png"
     },
@@ -7242,8 +7242,8 @@
      "text": "let",
      "sub0": 12,
      "subn": 13,
-     "start": 129.94,
-     "end": 130.12,
+     "start": 129.88,
+     "end": 130.06,
      "matched": true,
      "hits": [
       12
@@ -7256,8 +7256,8 @@
      "line": 0,
      "cue": 35,
      "window": [
-      129.94,
-      130.12
+      129.88,
+      130.06
      ],
      "png": "w294.png"
     },
@@ -7265,8 +7265,8 @@
      "text": "agents",
      "sub0": 13,
      "subn": 14,
-     "start": 130.12,
-     "end": 130.58,
+     "start": 130.06,
+     "end": 130.5,
      "matched": true,
      "hits": [
       13
@@ -7279,8 +7279,8 @@
      "line": 0,
      "cue": 35,
      "window": [
-      130.12,
-      130.58
+      130.06,
+      130.5
      ],
      "png": "w295.png"
     },
@@ -7288,8 +7288,8 @@
      "text": "email",
      "sub0": 14,
      "subn": 15,
-     "start": 130.58,
-     "end": 130.88,
+     "start": 130.5,
+     "end": 130.82,
      "matched": true,
      "hits": [
       14
@@ -7302,8 +7302,8 @@
      "line": 0,
      "cue": 35,
      "window": [
-      130.58,
-      130.88
+      130.5,
+      130.82
      ],
      "png": "w296.png"
     },
@@ -7311,8 +7311,8 @@
      "text": "clients",
      "sub0": 15,
      "subn": 16,
-     "start": 130.88,
-     "end": 131.38,
+     "start": 130.82,
+     "end": 131.32,
      "matched": true,
      "hits": [
       15
@@ -7325,8 +7325,8 @@
      "line": 0,
      "cue": 35,
      "window": [
-      130.88,
-      131.38
+      130.82,
+      131.32
      ],
      "png": "w297.png"
     },
@@ -7334,8 +7334,8 @@
      "text": "and",
      "sub0": 16,
      "subn": 17,
-     "start": 131.38,
-     "end": 131.64,
+     "start": 131.32,
+     "end": 131.58,
      "matched": true,
      "hits": [
       16
@@ -7348,8 +7348,8 @@
      "line": 1,
      "cue": 35,
      "window": [
-      131.38,
-      131.64
+      131.32,
+      131.58
      ],
      "png": "w298.png"
     },
@@ -7357,8 +7357,8 @@
      "text": "move",
      "sub0": 17,
      "subn": 18,
-     "start": 131.64,
-     "end": 131.86,
+     "start": 131.58,
+     "end": 131.8,
      "matched": true,
      "hits": [
       17
@@ -7371,8 +7371,8 @@
      "line": 1,
      "cue": 35,
      "window": [
-      131.64,
-      131.86
+      131.58,
+      131.8
      ],
      "png": "w299.png"
     },
@@ -7380,8 +7380,8 @@
      "text": "money,",
      "sub0": 18,
      "subn": 19,
-     "start": 131.86,
-     "end": 132.22,
+     "start": 131.8,
+     "end": 132.14,
      "matched": true,
      "hits": [
       18
@@ -7394,8 +7394,8 @@
      "line": 1,
      "cue": 35,
      "window": [
-      131.86,
-      132.62
+      131.8,
+      132.5
      ],
      "png": "w300.png"
     },
@@ -7403,8 +7403,8 @@
      "text": "but",
      "sub0": 19,
      "subn": 20,
-     "start": 132.62,
-     "end": 132.8,
+     "start": 132.5,
+     "end": 132.72,
      "matched": true,
      "hits": [
       19
@@ -7417,8 +7417,8 @@
      "line": 1,
      "cue": 35,
      "window": [
-      132.62,
-      132.8
+      132.5,
+      132.72
      ],
      "png": "w301.png"
     },
@@ -7426,8 +7426,8 @@
      "text": "can't",
      "sub0": 20,
      "subn": 21,
-     "start": 132.8,
-     "end": 133.12,
+     "start": 132.72,
+     "end": 133.0,
      "matched": true,
      "hits": [
       20
@@ -7440,8 +7440,8 @@
      "line": 1,
      "cue": 35,
      "window": [
-      132.8,
-      133.12
+      132.72,
+      133.0
      ],
      "png": "w302.png"
     },
@@ -7449,8 +7449,8 @@
      "text": "hire",
      "sub0": 21,
      "subn": 22,
-     "start": 133.12,
-     "end": 133.34,
+     "start": 133.0,
+     "end": 133.2,
      "matched": true,
      "hits": [
       21
@@ -7463,8 +7463,8 @@
      "line": 1,
      "cue": 35,
      "window": [
-      133.12,
-      133.34
+      133.0,
+      133.2
      ],
      "png": "w303.png"
     },
@@ -7472,8 +7472,8 @@
      "text": "a",
      "sub0": 22,
      "subn": 23,
-     "start": 133.34,
-     "end": 133.52,
+     "start": 133.2,
+     "end": 133.38,
      "matched": true,
      "hits": [
       22
@@ -7486,8 +7486,8 @@
      "line": 1,
      "cue": 35,
      "window": [
-      133.34,
-      133.47
+      133.2,
+      133.33
      ],
      "png": "w304.png"
     }
@@ -7496,19 +7496,19 @@
   {
    "id": 36,
    "seg": 14,
-   "start": 133.47,
-   "end": 137.51,
+   "start": 133.33,
+   "end": 137.67,
    "lines": [
-    "compliance team. Chaperone sits",
-    "between the agents and the world,"
+    "compliance team. One person can safely",
+    "run a whole team of agents."
    ],
    "words": [
     {
      "text": "compliance",
      "sub0": 23,
      "subn": 24,
-     "start": 133.52,
-     "end": 133.96,
+     "start": 133.38,
+     "end": 133.74,
      "matched": true,
      "hits": [
       23
@@ -7521,8 +7521,8 @@
      "line": 0,
      "cue": 36,
      "window": [
-      133.47,
-      133.96
+      133.33,
+      133.74
      ],
      "png": "w305.png"
     },
@@ -7530,8 +7530,8 @@
      "text": "team.",
      "sub0": 24,
      "subn": 25,
-     "start": 133.96,
-     "end": 134.38,
+     "start": 133.74,
+     "end": 134.16,
      "matched": true,
      "hits": [
       24
@@ -7544,17 +7544,17 @@
      "line": 0,
      "cue": 36,
      "window": [
-      133.96,
-      135.0
+      133.74,
+      134.16
      ],
      "png": "w306.png"
     },
     {
-     "text": "Chaperone",
+     "text": "One",
      "sub0": 25,
      "subn": 26,
-     "start": 135.0,
-     "end": 135.38,
+     "start": 134.16,
+     "end": 134.84,
      "matched": true,
      "hits": [
       25
@@ -7567,17 +7567,17 @@
      "line": 0,
      "cue": 36,
      "window": [
-      135.0,
-      135.38
+      134.16,
+      134.84
      ],
      "png": "w307.png"
     },
     {
-     "text": "sits",
+     "text": "person",
      "sub0": 26,
      "subn": 27,
-     "start": 135.38,
-     "end": 135.64,
+     "start": 134.84,
+     "end": 135.22,
      "matched": true,
      "hits": [
       26
@@ -7590,17 +7590,17 @@
      "line": 0,
      "cue": 36,
      "window": [
-      135.38,
-      135.64
+      134.84,
+      135.22
      ],
      "png": "w308.png"
     },
     {
-     "text": "between",
+     "text": "can",
      "sub0": 27,
      "subn": 28,
-     "start": 135.64,
-     "end": 136.02,
+     "start": 135.22,
+     "end": 135.6,
      "matched": true,
      "hits": [
       27
@@ -7610,20 +7610,20 @@
      ],
      "seg": 14,
      "color": null,
-     "line": 1,
+     "line": 0,
      "cue": 36,
      "window": [
-      135.64,
-      136.02
+      135.22,
+      135.6
      ],
      "png": "w309.png"
     },
     {
-     "text": "the",
+     "text": "safely",
      "sub0": 28,
      "subn": 29,
-     "start": 136.02,
-     "end": 136.18,
+     "start": 135.6,
+     "end": 135.94,
      "matched": true,
      "hits": [
       28
@@ -7633,20 +7633,20 @@
      ],
      "seg": 14,
      "color": null,
-     "line": 1,
+     "line": 0,
      "cue": 36,
      "window": [
-      136.02,
-      136.18
+      135.6,
+      135.94
      ],
      "png": "w310.png"
     },
     {
-     "text": "agents",
+     "text": "run",
      "sub0": 29,
      "subn": 30,
-     "start": 136.18,
-     "end": 136.56,
+     "start": 135.94,
+     "end": 136.28,
      "matched": true,
      "hits": [
       29
@@ -7659,17 +7659,17 @@
      "line": 1,
      "cue": 36,
      "window": [
-      136.18,
-      136.56
+      135.94,
+      136.28
      ],
      "png": "w311.png"
     },
     {
-     "text": "and",
+     "text": "a",
      "sub0": 30,
      "subn": 31,
-     "start": 136.56,
-     "end": 136.8,
+     "start": 136.28,
+     "end": 136.46,
      "matched": true,
      "hits": [
       30
@@ -7682,17 +7682,17 @@
      "line": 1,
      "cue": 36,
      "window": [
-      136.56,
-      136.8
+      136.28,
+      136.46
      ],
      "png": "w312.png"
     },
     {
-     "text": "the",
+     "text": "whole",
      "sub0": 31,
      "subn": 32,
-     "start": 136.8,
-     "end": 136.9,
+     "start": 136.46,
+     "end": 136.68,
      "matched": true,
      "hits": [
       31
@@ -7705,17 +7705,17 @@
      "line": 1,
      "cue": 36,
      "window": [
-      136.8,
-      136.9
+      136.46,
+      136.68
      ],
      "png": "w313.png"
     },
     {
-     "text": "world,",
+     "text": "team",
      "sub0": 32,
      "subn": 33,
-     "start": 136.9,
-     "end": 137.24,
+     "start": 136.68,
+     "end": 136.94,
      "matched": true,
      "hits": [
       32
@@ -7728,386 +7728,64 @@
      "line": 1,
      "cue": 36,
      "window": [
-      136.9,
-      137.51
+      136.68,
+      136.94
      ],
      "png": "w314.png"
+    },
+    {
+     "text": "of",
+     "sub0": 33,
+     "subn": 34,
+     "start": 136.94,
+     "end": 137.14,
+     "matched": true,
+     "hits": [
+      33
+     ],
+     "owners": [
+      33
+     ],
+     "seg": 14,
+     "color": null,
+     "line": 1,
+     "cue": 36,
+     "window": [
+      136.94,
+      137.14
+     ],
+     "png": "w315.png"
+    },
+    {
+     "text": "agents.",
+     "sub0": 34,
+     "subn": 35,
+     "start": 137.14,
+     "end": 137.52,
+     "matched": true,
+     "hits": [
+      34
+     ],
+     "owners": [
+      34
+     ],
+     "seg": 14,
+     "color": null,
+     "line": 1,
+     "cue": 36,
+     "window": [
+      137.14,
+      137.67
+     ],
+     "png": "w316.png"
     }
    ]
   },
   {
    "id": 37,
-   "seg": 14,
-   "start": 137.51,
-   "end": 141.59,
-   "lines": [
-    "so one person can safely run a whole",
-    "team of them. Pricing is being"
-   ],
-   "words": [
-    {
-     "text": "so",
-     "sub0": 33,
-     "subn": 34,
-     "start": 137.56,
-     "end": 137.82,
-     "matched": true,
-     "hits": [
-      33
-     ],
-     "owners": [
-      33
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      137.51,
-      137.82
-     ],
-     "png": "w315.png"
-    },
-    {
-     "text": "one",
-     "sub0": 34,
-     "subn": 35,
-     "start": 137.82,
-     "end": 138.08,
-     "matched": true,
-     "hits": [
-      34
-     ],
-     "owners": [
-      34
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      137.82,
-      138.08
-     ],
-     "png": "w316.png"
-    },
-    {
-     "text": "person",
-     "sub0": 35,
-     "subn": 36,
-     "start": 138.08,
-     "end": 138.42,
-     "matched": true,
-     "hits": [
-      35
-     ],
-     "owners": [
-      35
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      138.08,
-      138.42
-     ],
-     "png": "w317.png"
-    },
-    {
-     "text": "can",
-     "sub0": 36,
-     "subn": 37,
-     "start": 138.42,
-     "end": 138.66,
-     "matched": true,
-     "hits": [
-      36
-     ],
-     "owners": [
-      36
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      138.42,
-      138.66
-     ],
-     "png": "w318.png"
-    },
-    {
-     "text": "safely",
-     "sub0": 37,
-     "subn": 38,
-     "start": 138.66,
-     "end": 139.02,
-     "matched": true,
-     "hits": [
-      37
-     ],
-     "owners": [
-      37
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      138.66,
-      139.02
-     ],
-     "png": "w319.png"
-    },
-    {
-     "text": "run",
-     "sub0": 38,
-     "subn": 39,
-     "start": 139.02,
-     "end": 139.34,
-     "matched": true,
-     "hits": [
-      38
-     ],
-     "owners": [
-      38
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      139.02,
-      139.34
-     ],
-     "png": "w320.png"
-    },
-    {
-     "text": "a",
-     "sub0": 39,
-     "subn": 40,
-     "start": 139.34,
-     "end": 139.52,
-     "matched": true,
-     "hits": [
-      39
-     ],
-     "owners": [
-      39
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      139.34,
-      139.52
-     ],
-     "png": "w321.png"
-    },
-    {
-     "text": "whole",
-     "sub0": 40,
-     "subn": 41,
-     "start": 139.52,
-     "end": 139.76,
-     "matched": true,
-     "hits": [
-      40
-     ],
-     "owners": [
-      40
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 37,
-     "window": [
-      139.52,
-      139.76
-     ],
-     "png": "w322.png"
-    },
-    {
-     "text": "team",
-     "sub0": 41,
-     "subn": 42,
-     "start": 139.76,
-     "end": 140.06,
-     "matched": true,
-     "hits": [
-      41
-     ],
-     "owners": [
-      41
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 1,
-     "cue": 37,
-     "window": [
-      139.76,
-      140.06
-     ],
-     "png": "w323.png"
-    },
-    {
-     "text": "of",
-     "sub0": 42,
-     "subn": 43,
-     "start": 140.06,
-     "end": 140.24,
-     "matched": true,
-     "hits": [
-      42
-     ],
-     "owners": [
-      42
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 1,
-     "cue": 37,
-     "window": [
-      140.06,
-      140.24
-     ],
-     "png": "w324.png"
-    },
-    {
-     "text": "them.",
-     "sub0": 43,
-     "subn": 44,
-     "start": 140.24,
-     "end": 140.4,
-     "matched": true,
-     "hits": [
-      43
-     ],
-     "owners": [
-      43
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 1,
-     "cue": 37,
-     "window": [
-      140.24,
-      140.4
-     ],
-     "png": "w325.png"
-    },
-    {
-     "text": "Pricing",
-     "sub0": 44,
-     "subn": 45,
-     "start": 140.4,
-     "end": 141.06,
-     "matched": true,
-     "hits": [
-      44
-     ],
-     "owners": [
-      44
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 1,
-     "cue": 37,
-     "window": [
-      140.4,
-      141.06
-     ],
-     "png": "w326.png"
-    },
-    {
-     "text": "is",
-     "sub0": 45,
-     "subn": 46,
-     "start": 141.06,
-     "end": 141.44,
-     "matched": true,
-     "hits": [
-      45
-     ],
-     "owners": [
-      45
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 1,
-     "cue": 37,
-     "window": [
-      141.06,
-      141.44
-     ],
-     "png": "w327.png"
-    },
-    {
-     "text": "being",
-     "sub0": 46,
-     "subn": 47,
-     "start": 141.44,
-     "end": 141.64,
-     "matched": true,
-     "hits": [
-      46
-     ],
-     "owners": [
-      46
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 1,
-     "cue": 37,
-     "window": [
-      141.44,
-      141.59
-     ],
-     "png": "w328.png"
-    }
-   ]
-  },
-  {
-   "id": 38,
-   "seg": 14,
-   "start": 141.59,
-   "end": 142.49,
-   "lines": [
-    "confirmed."
-   ],
-   "words": [
-    {
-     "text": "confirmed.",
-     "sub0": 47,
-     "subn": 48,
-     "start": 141.64,
-     "end": 142.28,
-     "matched": true,
-     "hits": [
-      47
-     ],
-     "owners": [
-      47
-     ],
-     "seg": 14,
-     "color": null,
-     "line": 0,
-     "cue": 38,
-     "window": [
-      141.59,
-      142.49
-     ],
-     "png": "w329.png"
-    }
-   ]
-  },
-  {
-   "id": 39,
    "seg": 15,
-   "start": 144.39,
-   "end": 148.55,
+   "start": 138.37,
+   "end": 142.43,
    "lines": [
     "QwenWork built this project:",
     "the video, the music, the title art,"
@@ -8116,12 +7794,12 @@
     {
      "text": "QwenWork",
      "sub0": 0,
-     "subn": 1,
-     "start": 144.44,
-     "end": 144.88,
+     "subn": 2,
+     "start": 138.42,
+     "end": 138.68,
      "matched": true,
      "hits": [
-      1
+      0
      ],
      "owners": [
       0
@@ -8129,22 +7807,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      144.39,
-      144.88
+      138.37,
+      138.68
      ],
-     "png": "w330.png"
+     "png": "w317.png"
     },
     {
      "text": "built",
-     "sub0": 1,
-     "subn": 2,
-     "start": 144.88,
-     "end": 145.14,
+     "sub0": 2,
+     "subn": 3,
+     "start": 138.68,
+     "end": 138.96,
      "matched": true,
      "hits": [
-      2
+      1
      ],
      "owners": [
       1
@@ -8152,22 +7830,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      144.88,
-      145.14
+      138.68,
+      138.96
      ],
-     "png": "w331.png"
+     "png": "w318.png"
     },
     {
      "text": "this",
-     "sub0": 2,
-     "subn": 3,
-     "start": 145.14,
-     "end": 145.4,
+     "sub0": 3,
+     "subn": 4,
+     "start": 138.96,
+     "end": 139.22,
      "matched": true,
      "hits": [
-      3
+      2
      ],
      "owners": [
       2
@@ -8175,22 +7853,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      145.14,
-      145.4
+      138.96,
+      139.22
      ],
-     "png": "w332.png"
+     "png": "w319.png"
     },
     {
      "text": "project:",
-     "sub0": 3,
-     "subn": 4,
-     "start": 145.4,
-     "end": 145.84,
+     "sub0": 4,
+     "subn": 5,
+     "start": 139.22,
+     "end": 139.66,
      "matched": true,
      "hits": [
-      4
+      3
      ],
      "owners": [
       3
@@ -8198,22 +7876,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      145.4,
-      146.48
+      139.22,
+      140.3
      ],
-     "png": "w333.png"
+     "png": "w320.png"
     },
     {
      "text": "the",
-     "sub0": 4,
-     "subn": 5,
-     "start": 146.48,
-     "end": 146.53,
+     "sub0": 5,
+     "subn": 6,
+     "start": 140.3,
+     "end": 140.35,
      "matched": true,
      "hits": [
-      5
+      4
      ],
      "owners": [
       4
@@ -8221,22 +7899,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      146.48,
-      146.5
+      140.3,
+      140.3
      ],
-     "png": "w334.png"
+     "png": "w321.png"
     },
     {
      "text": "video,",
-     "sub0": 5,
-     "subn": 6,
-     "start": 146.5,
-     "end": 146.8,
+     "sub0": 6,
+     "subn": 7,
+     "start": 140.3,
+     "end": 140.62,
      "matched": true,
      "hits": [
-      6
+      5
      ],
      "owners": [
       5
@@ -8244,22 +7922,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      146.5,
-      147.08
+      140.3,
+      140.9
      ],
-     "png": "w335.png"
+     "png": "w322.png"
     },
     {
      "text": "the",
-     "sub0": 6,
-     "subn": 7,
-     "start": 147.08,
-     "end": 147.13,
+     "sub0": 7,
+     "subn": 8,
+     "start": 140.9,
+     "end": 140.95,
      "matched": true,
      "hits": [
-      7
+      6
      ],
      "owners": [
       6
@@ -8267,22 +7945,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      147.08,
-      147.12
+      140.9,
+      140.92
      ],
-     "png": "w336.png"
+     "png": "w323.png"
     },
     {
      "text": "music,",
-     "sub0": 7,
-     "subn": 8,
-     "start": 147.12,
-     "end": 147.42,
+     "sub0": 8,
+     "subn": 9,
+     "start": 140.92,
+     "end": 141.24,
      "matched": true,
      "hits": [
-      8
+      7
      ],
      "owners": [
       7
@@ -8290,22 +7968,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      147.12,
-      147.76
+      140.92,
+      141.6
      ],
-     "png": "w337.png"
+     "png": "w324.png"
     },
     {
      "text": "the",
-     "sub0": 8,
-     "subn": 9,
-     "start": 147.76,
-     "end": 147.81,
+     "sub0": 9,
+     "subn": 10,
+     "start": 141.6,
+     "end": 141.65,
      "matched": true,
      "hits": [
-      9
+      8
      ],
      "owners": [
       8
@@ -8313,22 +7991,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      147.76,
-      147.8
+      141.6,
+      141.64
      ],
-     "png": "w338.png"
+     "png": "w325.png"
     },
     {
      "text": "title",
-     "sub0": 9,
-     "subn": 10,
-     "start": 147.8,
-     "end": 148.1,
+     "sub0": 10,
+     "subn": 11,
+     "start": 141.64,
+     "end": 141.94,
      "matched": true,
      "hits": [
-      10
+      9
      ],
      "owners": [
       9
@@ -8336,22 +8014,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      147.8,
-      148.1
+      141.64,
+      141.94
      ],
-     "png": "w339.png"
+     "png": "w326.png"
     },
     {
      "text": "art,",
-     "sub0": 10,
-     "subn": 11,
-     "start": 148.1,
-     "end": 148.42,
+     "sub0": 11,
+     "subn": 12,
+     "start": 141.94,
+     "end": 142.24,
      "matched": true,
      "hits": [
-      11
+      10
      ],
      "owners": [
       10
@@ -8359,33 +8037,33 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 39,
+     "cue": 37,
      "window": [
-      148.1,
-      148.55
+      141.94,
+      142.43
      ],
-     "png": "w340.png"
+     "png": "w327.png"
     }
    ]
   },
   {
-   "id": 40,
+   "id": 38,
    "seg": 15,
-   "start": 148.55,
-   "end": 150.29,
+   "start": 142.43,
+   "end": 144.15,
    "lines": [
     "the integration, and the deploy."
    ],
    "words": [
     {
      "text": "the",
-     "sub0": 11,
-     "subn": 12,
-     "start": 148.6,
-     "end": 148.68,
+     "sub0": 12,
+     "subn": 13,
+     "start": 142.48,
+     "end": 142.53,
      "matched": true,
      "hits": [
-      12
+      11
      ],
      "owners": [
       11
@@ -8393,22 +8071,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 40,
+     "cue": 38,
      "window": [
-      148.55,
-      148.68
+      142.43,
+      142.52
      ],
-     "png": "w341.png"
+     "png": "w328.png"
     },
     {
      "text": "integration,",
-     "sub0": 12,
-     "subn": 13,
-     "start": 148.68,
-     "end": 149.12,
+     "sub0": 13,
+     "subn": 14,
+     "start": 142.52,
+     "end": 142.98,
      "matched": true,
      "hits": [
-      13
+      12
      ],
      "owners": [
       12
@@ -8416,22 +8094,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 40,
+     "cue": 38,
      "window": [
-      148.68,
-      149.52
+      142.52,
+      143.4
      ],
-     "png": "w342.png"
+     "png": "w329.png"
     },
     {
      "text": "and",
-     "sub0": 13,
-     "subn": 14,
-     "start": 149.52,
-     "end": 149.66,
+     "sub0": 14,
+     "subn": 15,
+     "start": 143.4,
+     "end": 143.52,
      "matched": true,
      "hits": [
-      14
+      13
      ],
      "owners": [
       13
@@ -8439,22 +8117,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 40,
+     "cue": 38,
      "window": [
-      149.52,
-      149.66
+      143.4,
+      143.52
      ],
-     "png": "w343.png"
+     "png": "w330.png"
     },
     {
      "text": "the",
-     "sub0": 14,
-     "subn": 15,
-     "start": 149.66,
-     "end": 149.76,
+     "sub0": 15,
+     "subn": 16,
+     "start": 143.52,
+     "end": 143.62,
      "matched": true,
      "hits": [
-      15
+      14
      ],
      "owners": [
       14
@@ -8462,22 +8140,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 40,
+     "cue": 38,
      "window": [
-      149.66,
-      149.76
+      143.52,
+      143.62
      ],
-     "png": "w344.png"
+     "png": "w331.png"
     },
     {
      "text": "deploy.",
-     "sub0": 15,
-     "subn": 16,
-     "start": 149.76,
-     "end": 150.14,
+     "sub0": 16,
+     "subn": 17,
+     "start": 143.62,
+     "end": 144.0,
      "matched": true,
      "hits": [
-      16
+      15
      ],
      "owners": [
       15
@@ -8485,33 +8163,33 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 40,
+     "cue": 38,
      "window": [
-      149.76,
-      150.29
+      143.62,
+      144.15
      ],
-     "png": "w345.png"
+     "png": "w332.png"
     }
    ]
   },
   {
-   "id": 41,
+   "id": 39,
    "seg": 15,
-   "start": 150.63,
-   "end": 152.77,
+   "start": 144.57,
+   "end": 146.53,
    "lines": [
     "The app runs on QwenWork Pages."
    ],
    "words": [
     {
      "text": "The",
-     "sub0": 16,
-     "subn": 17,
-     "start": 150.68,
-     "end": 150.84,
+     "sub0": 17,
+     "subn": 18,
+     "start": 144.62,
+     "end": 144.74,
      "matched": true,
      "hits": [
-      17
+      16
      ],
      "owners": [
       16
@@ -8519,22 +8197,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 41,
+     "cue": 39,
      "window": [
-      150.63,
-      150.84
+      144.57,
+      144.74
      ],
-     "png": "w346.png"
+     "png": "w333.png"
     },
     {
      "text": "app",
-     "sub0": 17,
-     "subn": 18,
-     "start": 150.84,
-     "end": 151.08,
+     "sub0": 18,
+     "subn": 19,
+     "start": 144.74,
+     "end": 145.0,
      "matched": true,
      "hits": [
-      18
+      17
      ],
      "owners": [
       17
@@ -8542,22 +8220,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 41,
+     "cue": 39,
      "window": [
-      150.84,
-      151.08
+      144.74,
+      145.0
      ],
-     "png": "w347.png"
+     "png": "w334.png"
     },
     {
      "text": "runs",
-     "sub0": 18,
-     "subn": 19,
-     "start": 151.08,
-     "end": 151.38,
+     "sub0": 19,
+     "subn": 20,
+     "start": 145.0,
+     "end": 145.3,
      "matched": true,
      "hits": [
-      19
+      18
      ],
      "owners": [
       18
@@ -8565,22 +8243,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 41,
+     "cue": 39,
      "window": [
-      151.08,
-      151.38
+      145.0,
+      145.3
      ],
-     "png": "w348.png"
+     "png": "w335.png"
     },
     {
      "text": "on",
-     "sub0": 19,
-     "subn": 20,
-     "start": 151.38,
-     "end": 151.64,
+     "sub0": 20,
+     "subn": 21,
+     "start": 145.3,
+     "end": 145.52,
      "matched": true,
      "hits": [
-      20
+      19
      ],
      "owners": [
       19
@@ -8588,22 +8266,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 41,
+     "cue": 39,
      "window": [
-      151.38,
-      151.64
+      145.3,
+      145.52
      ],
-     "png": "w349.png"
+     "png": "w336.png"
     },
     {
      "text": "QwenWork",
-     "sub0": 20,
-     "subn": 21,
-     "start": 151.64,
-     "end": 152.2,
+     "sub0": 21,
+     "subn": 23,
+     "start": 145.52,
+     "end": 145.92,
      "matched": true,
      "hits": [
-      22
+      20
      ],
      "owners": [
       20
@@ -8611,22 +8289,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 41,
+     "cue": 39,
      "window": [
-      151.64,
-      152.2
+      145.52,
+      145.92
      ],
-     "png": "w350.png"
+     "png": "w337.png"
     },
     {
      "text": "Pages.",
-     "sub0": 21,
-     "subn": 22,
-     "start": 152.2,
-     "end": 152.62,
+     "sub0": 23,
+     "subn": 24,
+     "start": 145.92,
+     "end": 146.38,
      "matched": true,
      "hits": [
-      23
+      21
      ],
      "owners": [
       21
@@ -8634,34 +8312,34 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 41,
+     "cue": 39,
      "window": [
-      152.2,
-      152.77
+      145.92,
+      146.53
      ],
-     "png": "w351.png"
+     "png": "w338.png"
     }
    ]
   },
   {
-   "id": 42,
+   "id": 40,
    "seg": 15,
-   "start": 153.13,
-   "end": 157.83,
+   "start": 146.87,
+   "end": 151.03,
    "lines": [
-    "And live Qwen agents run through the",
-    "gate right now. A sales agent tries to"
+    "And live QwenWork agents run through",
+    "the gate right now. Watch:"
    ],
    "words": [
     {
      "text": "And",
-     "sub0": 22,
-     "subn": 23,
-     "start": 153.18,
-     "end": 153.3,
+     "sub0": 24,
+     "subn": 25,
+     "start": 146.92,
+     "end": 147.06,
      "matched": true,
      "hits": [
-      24
+      22
      ],
      "owners": [
       22
@@ -8669,22 +8347,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      153.13,
-      153.3
+      146.87,
+      147.06
      ],
-     "png": "w352.png"
+     "png": "w339.png"
     },
     {
      "text": "live",
-     "sub0": 23,
-     "subn": 24,
-     "start": 153.3,
-     "end": 153.52,
+     "sub0": 25,
+     "subn": 26,
+     "start": 147.06,
+     "end": 147.3,
      "matched": true,
      "hits": [
-      25
+      23
      ],
      "owners": [
       23
@@ -8692,22 +8370,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      153.3,
-      153.52
+      147.06,
+      147.3
      ],
-     "png": "w353.png"
+     "png": "w340.png"
     },
     {
-     "text": "Qwen",
-     "sub0": 24,
-     "subn": 25,
-     "start": 153.52,
-     "end": 153.94,
+     "text": "QwenWork",
+     "sub0": 26,
+     "subn": 28,
+     "start": 147.3,
+     "end": 147.8,
      "matched": true,
      "hits": [
-      26
+      24
      ],
      "owners": [
       24
@@ -8715,22 +8393,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      153.52,
-      153.94
+      147.3,
+      147.8
      ],
-     "png": "w354.png"
+     "png": "w341.png"
     },
     {
      "text": "agents",
-     "sub0": 25,
-     "subn": 26,
-     "start": 153.94,
-     "end": 154.36,
+     "sub0": 28,
+     "subn": 29,
+     "start": 147.8,
+     "end": 148.24,
      "matched": true,
      "hits": [
-      27
+      25
      ],
      "owners": [
       25
@@ -8738,22 +8416,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      153.94,
-      154.36
+      147.8,
+      148.24
      ],
-     "png": "w355.png"
+     "png": "w342.png"
     },
     {
      "text": "run",
-     "sub0": 26,
-     "subn": 27,
-     "start": 154.36,
-     "end": 154.86,
+     "sub0": 29,
+     "subn": 30,
+     "start": 148.24,
+     "end": 148.72,
      "matched": true,
      "hits": [
-      28
+      26
      ],
      "owners": [
       26
@@ -8761,22 +8439,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      154.36,
-      154.86
+      148.24,
+      148.72
      ],
-     "png": "w356.png"
+     "png": "w343.png"
     },
     {
      "text": "through",
-     "sub0": 27,
-     "subn": 28,
-     "start": 154.86,
-     "end": 155.08,
+     "sub0": 30,
+     "subn": 31,
+     "start": 148.72,
+     "end": 148.94,
      "matched": true,
      "hits": [
-      29
+      27
      ],
      "owners": [
       27
@@ -8784,45 +8462,45 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      154.86,
-      155.08
+      148.72,
+      148.94
      ],
-     "png": "w357.png"
+     "png": "w344.png"
     },
     {
      "text": "the",
-     "sub0": 28,
-     "subn": 29,
-     "start": 155.08,
-     "end": 155.2,
+     "sub0": 31,
+     "subn": 32,
+     "start": 148.94,
+     "end": 149.08,
      "matched": true,
      "hits": [
-      30
+      28
      ],
      "owners": [
       28
      ],
      "seg": 15,
      "color": null,
-     "line": 0,
-     "cue": 42,
+     "line": 1,
+     "cue": 40,
      "window": [
-      155.08,
-      155.2
+      148.94,
+      149.08
      ],
-     "png": "w358.png"
+     "png": "w345.png"
     },
     {
      "text": "gate",
-     "sub0": 29,
-     "subn": 30,
-     "start": 155.2,
-     "end": 155.42,
+     "sub0": 32,
+     "subn": 33,
+     "start": 149.08,
+     "end": 149.3,
      "matched": true,
      "hits": [
-      31
+      29
      ],
      "owners": [
       29
@@ -8830,22 +8508,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      155.2,
-      155.42
+      149.08,
+      149.3
      ],
-     "png": "w359.png"
+     "png": "w346.png"
     },
     {
      "text": "right",
-     "sub0": 30,
-     "subn": 31,
-     "start": 155.42,
-     "end": 155.72,
+     "sub0": 33,
+     "subn": 34,
+     "start": 149.3,
+     "end": 149.62,
      "matched": true,
      "hits": [
-      32
+      30
      ],
      "owners": [
       30
@@ -8853,22 +8531,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      155.42,
-      155.72
+      149.3,
+      149.62
      ],
-     "png": "w360.png"
+     "png": "w347.png"
     },
     {
      "text": "now.",
-     "sub0": 31,
-     "subn": 32,
-     "start": 155.72,
-     "end": 156.06,
+     "sub0": 34,
+     "subn": 35,
+     "start": 149.62,
+     "end": 150.04,
      "matched": true,
      "hits": [
-      33
+      31
      ],
      "owners": [
       31
@@ -8876,22 +8554,22 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      155.72,
-      156.54
+      149.62,
+      150.6
      ],
-     "png": "w361.png"
+     "png": "w348.png"
     },
     {
-     "text": "A",
-     "sub0": 32,
-     "subn": 33,
-     "start": 156.54,
-     "end": 156.66,
+     "text": "Watch:",
+     "sub0": 35,
+     "subn": 36,
+     "start": 150.6,
+     "end": 150.74,
      "matched": true,
      "hits": [
-      34
+      32
      ],
      "owners": [
       32
@@ -8899,126 +8577,126 @@
      "seg": 15,
      "color": null,
      "line": 1,
-     "cue": 42,
+     "cue": 40,
      "window": [
-      156.54,
-      156.66
+      150.6,
+      151.03
      ],
-     "png": "w362.png"
-    },
+     "png": "w349.png"
+    }
+   ]
+  },
+  {
+   "id": 41,
+   "seg": 15,
+   "start": 151.03,
+   "end": 154.41,
+   "lines": [
+    "an agent tries to read bank details it",
+    "doesn't need \u2014 blocked."
+   ],
+   "words": [
     {
-     "text": "sales",
-     "sub0": 33,
-     "subn": 34,
-     "start": 156.66,
-     "end": 156.92,
+     "text": "an",
+     "sub0": 36,
+     "subn": 37,
+     "start": 151.08,
+     "end": 151.13,
      "matched": true,
      "hits": [
-      35
+      33
      ],
      "owners": [
       33
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 42,
+     "line": 0,
+     "cue": 41,
      "window": [
-      156.66,
-      156.92
+      151.03,
+      151.12
      ],
-     "png": "w363.png"
+     "png": "w350.png"
     },
     {
      "text": "agent",
-     "sub0": 34,
-     "subn": 35,
-     "start": 156.92,
-     "end": 157.32,
+     "sub0": 37,
+     "subn": 38,
+     "start": 151.12,
+     "end": 151.42,
      "matched": true,
      "hits": [
-      36
+      34
      ],
      "owners": [
       34
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 42,
+     "line": 0,
+     "cue": 41,
      "window": [
-      156.92,
-      157.32
+      151.12,
+      151.42
      ],
-     "png": "w364.png"
+     "png": "w351.png"
     },
     {
      "text": "tries",
-     "sub0": 35,
-     "subn": 36,
-     "start": 157.32,
-     "end": 157.66,
+     "sub0": 38,
+     "subn": 39,
+     "start": 151.42,
+     "end": 151.72,
      "matched": true,
      "hits": [
-      37
+      35
      ],
      "owners": [
       35
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 42,
+     "line": 0,
+     "cue": 41,
      "window": [
-      157.32,
-      157.66
+      151.42,
+      151.72
      ],
-     "png": "w365.png"
+     "png": "w352.png"
     },
     {
      "text": "to",
-     "sub0": 36,
-     "subn": 37,
-     "start": 157.66,
-     "end": 157.88,
+     "sub0": 39,
+     "subn": 40,
+     "start": 151.72,
+     "end": 151.94,
      "matched": true,
      "hits": [
-      38
+      36
      ],
      "owners": [
       36
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 42,
+     "line": 0,
+     "cue": 41,
      "window": [
-      157.66,
-      157.83
+      151.72,
+      151.94
      ],
-     "png": "w366.png"
-    }
-   ]
-  },
-  {
-   "id": 43,
-   "seg": 15,
-   "start": 157.83,
-   "end": 162.17,
-   "lines": [
-    "email the client list outside \u2014",
-    "blocked. An ops agent tries to delete"
-   ],
-   "words": [
+     "png": "w353.png"
+    },
     {
-     "text": "email",
-     "sub0": 37,
-     "subn": 38,
-     "start": 157.88,
-     "end": 158.16,
+     "text": "read",
+     "sub0": 40,
+     "subn": 41,
+     "start": 151.94,
+     "end": 152.12,
      "matched": true,
      "hits": [
-      39
+      37
      ],
      "owners": [
       37
@@ -9026,22 +8704,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 43,
+     "cue": 41,
      "window": [
-      157.83,
-      158.16
+      151.94,
+      152.12
      ],
-     "png": "w367.png"
+     "png": "w354.png"
     },
     {
-     "text": "the",
-     "sub0": 38,
-     "subn": 39,
-     "start": 158.16,
-     "end": 158.38,
+     "text": "bank",
+     "sub0": 41,
+     "subn": 42,
+     "start": 152.12,
+     "end": 152.32,
      "matched": true,
      "hits": [
-      40
+      38
      ],
      "owners": [
       38
@@ -9049,22 +8727,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 43,
+     "cue": 41,
      "window": [
-      158.16,
-      158.38
+      152.12,
+      152.32
      ],
-     "png": "w368.png"
+     "png": "w355.png"
     },
     {
-     "text": "client",
-     "sub0": 39,
-     "subn": 40,
-     "start": 158.38,
-     "end": 158.66,
+     "text": "details",
+     "sub0": 42,
+     "subn": 43,
+     "start": 152.32,
+     "end": 152.74,
      "matched": true,
      "hits": [
-      41
+      39
      ],
      "owners": [
       39
@@ -9072,22 +8750,22 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 43,
+     "cue": 41,
      "window": [
-      158.38,
-      158.66
+      152.32,
+      152.74
      ],
-     "png": "w369.png"
+     "png": "w356.png"
     },
     {
-     "text": "list",
-     "sub0": 40,
-     "subn": 41,
-     "start": 158.66,
-     "end": 158.88,
+     "text": "it",
+     "sub0": 43,
+     "subn": 44,
+     "start": 152.74,
+     "end": 153.04,
      "matched": true,
      "hits": [
-      42
+      40
      ],
      "owners": [
       40
@@ -9095,217 +8773,218 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 43,
+     "cue": 41,
      "window": [
-      158.66,
-      158.88
+      152.74,
+      153.04
      ],
-     "png": "w370.png"
+     "png": "w357.png"
     },
     {
-     "text": "outside \u2014",
-     "sub0": 41,
-     "subn": 42,
-     "start": 158.88,
-     "end": 159.44,
+     "text": "doesn't",
+     "sub0": 44,
+     "subn": 45,
+     "start": 153.04,
+     "end": 153.3,
      "matched": true,
      "hits": [
-      43
+      41
      ],
      "owners": [
       41
      ],
      "seg": 15,
      "color": null,
-     "line": 0,
-     "cue": 43,
+     "line": 1,
+     "cue": 41,
      "window": [
-      158.88,
-      159.96
+      153.04,
+      153.3
      ],
-     "png": "w371.png"
+     "png": "w358.png"
     },
     {
-     "text": "blocked.",
-     "sub0": 42,
-     "subn": 43,
-     "start": 159.96,
-     "end": 160.18,
+     "text": "need \u2014",
+     "sub0": 45,
+     "subn": 46,
+     "start": 153.3,
+     "end": 153.66,
      "matched": true,
      "hits": [
-      44
+      42
      ],
      "owners": [
       42
      ],
      "seg": 15,
-     "color": "#EDA69C",
+     "color": null,
      "line": 1,
-     "cue": 43,
+     "cue": 41,
      "window": [
-      159.96,
-      160.72
+      153.3,
+      154.06
      ],
-     "png": "w372.png"
+     "png": "w359.png"
     },
     {
-     "text": "An",
-     "sub0": 43,
-     "subn": 44,
-     "start": 160.72,
-     "end": 160.86,
+     "text": "blocked.",
+     "sub0": 46,
+     "subn": 47,
+     "start": 154.06,
+     "end": 154.26,
      "matched": true,
      "hits": [
-      45
+      43
      ],
      "owners": [
       43
      ],
      "seg": 15,
-     "color": null,
+     "color": "#EDA69C",
      "line": 1,
-     "cue": 43,
+     "cue": 41,
      "window": [
-      160.72,
-      160.86
+      154.06,
+      154.41
      ],
-     "png": "w373.png"
-    },
+     "png": "w360.png"
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "seg": 15,
+   "start": 154.87,
+   "end": 157.97,
+   "lines": [
+    "It tries to delete an unpaid invoice \u2014",
+    "held for Mei."
+   ],
+   "words": [
     {
-     "text": "ops",
-     "sub0": 44,
-     "subn": 45,
-     "start": 160.86,
-     "end": 161.08,
+     "text": "It",
+     "sub0": 47,
+     "subn": 48,
+     "start": 154.92,
+     "end": 155.02,
      "matched": true,
      "hits": [
-      46
+      44
      ],
      "owners": [
       44
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 43,
+     "line": 0,
+     "cue": 42,
      "window": [
-      160.86,
-      161.08
+      154.87,
+      155.02
      ],
-     "png": "w374.png"
+     "png": "w361.png"
     },
     {
-     "text": "agent",
-     "sub0": 45,
-     "subn": 46,
-     "start": 161.08,
-     "end": 161.5,
+     "text": "tries",
+     "sub0": 48,
+     "subn": 49,
+     "start": 155.02,
+     "end": 155.26,
      "matched": true,
      "hits": [
-      47
+      45
      ],
      "owners": [
       45
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 43,
+     "line": 0,
+     "cue": 42,
      "window": [
-      161.08,
-      161.5
+      155.02,
+      155.26
      ],
-     "png": "w375.png"
+     "png": "w362.png"
     },
     {
-     "text": "tries",
-     "sub0": 46,
-     "subn": 47,
-     "start": 161.5,
-     "end": 161.8,
+     "text": "to",
+     "sub0": 49,
+     "subn": 50,
+     "start": 155.26,
+     "end": 155.48,
      "matched": true,
      "hits": [
-      48
+      46
      ],
      "owners": [
       46
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 43,
+     "line": 0,
+     "cue": 42,
      "window": [
-      161.5,
-      161.8
+      155.26,
+      155.48
      ],
-     "png": "w376.png"
+     "png": "w363.png"
     },
     {
-     "text": "to",
-     "sub0": 47,
-     "subn": 48,
-     "start": 161.8,
-     "end": 162.02,
+     "text": "delete",
+     "sub0": 50,
+     "subn": 51,
+     "start": 155.48,
+     "end": 155.72,
      "matched": true,
      "hits": [
-      49
+      47
      ],
      "owners": [
       47
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 43,
+     "line": 0,
+     "cue": 42,
      "window": [
-      161.8,
-      162.02
+      155.48,
+      155.72
      ],
-     "png": "w377.png"
+     "png": "w364.png"
     },
     {
-     "text": "delete",
-     "sub0": 48,
-     "subn": 49,
-     "start": 162.02,
-     "end": 162.22,
+     "text": "an",
+     "sub0": 51,
+     "subn": 52,
+     "start": 155.72,
+     "end": 155.9,
      "matched": true,
      "hits": [
-      50
+      48
      ],
      "owners": [
       48
      ],
      "seg": 15,
      "color": null,
-     "line": 1,
-     "cue": 43,
+     "line": 0,
+     "cue": 42,
      "window": [
-      162.02,
-      162.17
+      155.72,
+      155.9
      ],
-     "png": "w378.png"
-    }
-   ]
-  },
-  {
-   "id": 44,
-   "seg": 15,
-   "start": 162.17,
-   "end": 163.85,
-   "lines": [
-    "records \u2014 held for Mei."
-   ],
-   "words": [
+     "png": "w365.png"
+    },
     {
-     "text": "records \u2014",
-     "sub0": 49,
-     "subn": 50,
-     "start": 162.22,
-     "end": 162.76,
+     "text": "unpaid",
+     "sub0": 52,
+     "subn": 53,
+     "start": 155.9,
+     "end": 156.28,
      "matched": true,
      "hits": [
-      51
+      49
      ],
      "owners": [
       49
@@ -9313,100 +8992,123 @@
      "seg": 15,
      "color": null,
      "line": 0,
-     "cue": 44,
+     "cue": 42,
      "window": [
-      162.17,
-      163.14
+      155.9,
+      156.28
      ],
-     "png": "w379.png"
+     "png": "w366.png"
     },
     {
-     "text": "held",
-     "sub0": 50,
-     "subn": 51,
-     "start": 163.14,
-     "end": 163.22,
+     "text": "invoice \u2014",
+     "sub0": 53,
+     "subn": 54,
+     "start": 156.28,
+     "end": 156.88,
      "matched": true,
      "hits": [
-      52
+      50
      ],
      "owners": [
       50
      ],
      "seg": 15,
-     "color": "#E8C988",
+     "color": null,
      "line": 0,
-     "cue": 44,
+     "cue": 42,
      "window": [
-      163.14,
-      163.22
+      156.28,
+      156.88
      ],
-     "png": "w380.png"
+     "png": "w367.png"
     },
     {
-     "text": "for",
-     "sub0": 51,
-     "subn": 52,
-     "start": 163.22,
-     "end": 163.44,
+     "text": "held",
+     "sub0": 54,
+     "subn": 55,
+     "start": 156.88,
+     "end": 157.34,
      "matched": true,
      "hits": [
-      53
+      51
      ],
      "owners": [
       51
      ],
      "seg": 15,
-     "color": null,
-     "line": 0,
-     "cue": 44,
+     "color": "#E8C988",
+     "line": 1,
+     "cue": 42,
      "window": [
-      163.22,
-      163.44
+      156.88,
+      157.34
      ],
-     "png": "w381.png"
+     "png": "w368.png"
     },
     {
-     "text": "Mei.",
-     "sub0": 52,
-     "subn": 53,
-     "start": 163.44,
-     "end": 163.7,
+     "text": "for",
+     "sub0": 55,
+     "subn": 56,
+     "start": 157.34,
+     "end": 157.58,
      "matched": true,
      "hits": [
-      54
+      52
      ],
      "owners": [
       52
      ],
      "seg": 15,
      "color": null,
-     "line": 0,
-     "cue": 44,
+     "line": 1,
+     "cue": 42,
      "window": [
-      163.44,
-      163.85
+      157.34,
+      157.58
      ],
-     "png": "w382.png"
+     "png": "w369.png"
+    },
+    {
+     "text": "Mei.",
+     "sub0": 56,
+     "subn": 57,
+     "start": 157.58,
+     "end": 157.82,
+     "matched": true,
+     "hits": [
+      53
+     ],
+     "owners": [
+      53
+     ],
+     "seg": 15,
+     "color": null,
+     "line": 1,
+     "cue": 42,
+     "window": [
+      157.58,
+      157.97
+     ],
+     "png": "w370.png"
     }
    ]
   },
   {
-   "id": 45,
+   "id": 43,
    "seg": 16,
-   "start": 166.05,
-   "end": 169.53,
+   "start": 162.05,
+   "end": 165.67,
    "lines": [
     "See it live \u2014 the links are in the",
-    "description. Chaperone,"
+    "description. Chaperone."
    ],
    "words": [
     {
      "text": "See",
      "sub0": 0,
      "subn": 1,
-     "start": 165.88,
-     "end": 166.44,
+     "start": 161.94,
+     "end": 162.46,
      "matched": true,
      "hits": [
       0
@@ -9417,19 +9119,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      166.05,
-      166.44
+      162.05,
+      162.46
      ],
-     "png": "w383.png"
+     "png": "w371.png"
     },
     {
      "text": "it",
      "sub0": 1,
      "subn": 2,
-     "start": 166.44,
-     "end": 166.56,
+     "start": 162.46,
+     "end": 162.58,
      "matched": true,
      "hits": [
       1
@@ -9440,19 +9142,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      166.44,
-      166.56
+      162.46,
+      162.58
      ],
-     "png": "w384.png"
+     "png": "w372.png"
     },
     {
      "text": "live \u2014",
      "sub0": 2,
      "subn": 3,
-     "start": 166.56,
-     "end": 166.84,
+     "start": 162.58,
+     "end": 162.84,
      "matched": true,
      "hits": [
       2
@@ -9463,19 +9165,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      166.56,
-      167.22
+      162.58,
+      163.2
      ],
-     "png": "w385.png"
+     "png": "w373.png"
     },
     {
      "text": "the",
      "sub0": 3,
      "subn": 4,
-     "start": 167.22,
-     "end": 167.28,
+     "start": 163.2,
+     "end": 163.28,
      "matched": true,
      "hits": [
       3
@@ -9486,19 +9188,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      167.22,
-      167.28
+      163.2,
+      163.28
      ],
-     "png": "w386.png"
+     "png": "w374.png"
     },
     {
      "text": "links",
      "sub0": 4,
      "subn": 5,
-     "start": 167.28,
-     "end": 167.48,
+     "start": 163.28,
+     "end": 163.5,
      "matched": true,
      "hits": [
       4
@@ -9509,19 +9211,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      167.28,
-      167.48
+      163.28,
+      163.5
      ],
-     "png": "w387.png"
+     "png": "w375.png"
     },
     {
      "text": "are",
      "sub0": 5,
      "subn": 6,
-     "start": 167.48,
-     "end": 167.72,
+     "start": 163.5,
+     "end": 163.74,
      "matched": true,
      "hits": [
       5
@@ -9532,19 +9234,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      167.48,
-      167.72
+      163.5,
+      163.74
      ],
-     "png": "w388.png"
+     "png": "w376.png"
     },
     {
      "text": "in",
      "sub0": 6,
      "subn": 7,
-     "start": 167.72,
-     "end": 167.82,
+     "start": 163.74,
+     "end": 163.84,
      "matched": true,
      "hits": [
       6
@@ -9555,19 +9257,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      167.72,
-      167.82
+      163.74,
+      163.84
      ],
-     "png": "w389.png"
+     "png": "w377.png"
     },
     {
      "text": "the",
      "sub0": 7,
      "subn": 8,
-     "start": 167.82,
-     "end": 167.9,
+     "start": 163.84,
+     "end": 163.92,
      "matched": true,
      "hits": [
       7
@@ -9578,19 +9280,19 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      167.82,
-      167.9
+      163.84,
+      163.92
      ],
-     "png": "w390.png"
+     "png": "w378.png"
     },
     {
      "text": "description.",
      "sub0": 8,
      "subn": 9,
-     "start": 167.9,
-     "end": 168.28,
+     "start": 163.92,
+     "end": 164.36,
      "matched": true,
      "hits": [
       8
@@ -9601,19 +9303,19 @@
      "seg": 16,
      "color": null,
      "line": 1,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      167.9,
-      169.0
+      163.92,
+      165.0
      ],
-     "png": "w391.png"
+     "png": "w379.png"
     },
     {
-     "text": "Chaperone,",
+     "text": "Chaperone.",
      "sub0": 9,
      "subn": 10,
-     "start": 169.0,
-     "end": 169.58,
+     "start": 165.0,
+     "end": 165.52,
      "matched": true,
      "hits": [
       9
@@ -9624,31 +9326,30 @@
      "seg": 16,
      "color": null,
      "line": 1,
-     "cue": 45,
+     "cue": 43,
      "window": [
-      169.0,
-      169.53
+      165.0,
+      165.67
      ],
-     "png": "w392.png"
+     "png": "w380.png"
     }
    ]
   },
   {
-   "id": 46,
+   "id": 44,
    "seg": 16,
-   "start": 169.53,
-   "end": 172.39,
+   "start": 165.95,
+   "end": 168.25,
    "lines": [
-    "from Hashmeta. Give your agents a",
-    "chaperone."
+    "Built with QwenWork, live on Hashmeta."
    ],
    "words": [
     {
-     "text": "from",
+     "text": "Built",
      "sub0": 10,
      "subn": 11,
-     "start": 169.58,
-     "end": 169.78,
+     "start": 166.0,
+     "end": 166.2,
      "matched": true,
      "hits": [
       10
@@ -9659,150 +9360,253 @@
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 46,
+     "cue": 44,
      "window": [
-      169.53,
-      169.78
+      165.95,
+      166.2
      ],
-     "png": "w393.png"
+     "png": "w381.png"
+    },
+    {
+     "text": "with",
+     "sub0": 11,
+     "subn": 12,
+     "start": 166.2,
+     "end": 166.46,
+     "matched": true,
+     "hits": [
+      11
+     ],
+     "owners": [
+      11
+     ],
+     "seg": 16,
+     "color": null,
+     "line": 0,
+     "cue": 44,
+     "window": [
+      166.2,
+      166.46
+     ],
+     "png": "w382.png"
+    },
+    {
+     "text": "QwenWork,",
+     "sub0": 12,
+     "subn": 14,
+     "start": 166.46,
+     "end": 166.96,
+     "matched": true,
+     "hits": [
+      12
+     ],
+     "owners": [
+      12
+     ],
+     "seg": 16,
+     "color": null,
+     "line": 0,
+     "cue": 44,
+     "window": [
+      166.46,
+      167.22
+     ],
+     "png": "w383.png"
+    },
+    {
+     "text": "live",
+     "sub0": 14,
+     "subn": 15,
+     "start": 167.22,
+     "end": 167.48,
+     "matched": true,
+     "hits": [
+      13
+     ],
+     "owners": [
+      13
+     ],
+     "seg": 16,
+     "color": null,
+     "line": 0,
+     "cue": 44,
+     "window": [
+      167.22,
+      167.48
+     ],
+     "png": "w384.png"
+    },
+    {
+     "text": "on",
+     "sub0": 15,
+     "subn": 16,
+     "start": 167.48,
+     "end": 167.68,
+     "matched": true,
+     "hits": [
+      14
+     ],
+     "owners": [
+      14
+     ],
+     "seg": 16,
+     "color": null,
+     "line": 0,
+     "cue": 44,
+     "window": [
+      167.48,
+      167.68
+     ],
+     "png": "w385.png"
     },
     {
      "text": "Hashmeta.",
-     "sub0": 11,
-     "subn": 12,
-     "start": 169.78,
-     "end": 170.26,
+     "sub0": 16,
+     "subn": 17,
+     "start": 167.68,
+     "end": 168.1,
      "matched": true,
      "hits": [
-      11
+      15
      ],
      "owners": [
-      11
+      15
      ],
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 46,
+     "cue": 44,
      "window": [
-      169.78,
-      170.88
+      167.68,
+      168.25
      ],
-     "png": "w394.png"
-    },
+     "png": "w386.png"
+    }
+   ]
+  },
+  {
+   "id": 45,
+   "seg": 16,
+   "start": 168.71,
+   "end": 170.21,
+   "lines": [
+    "Give your agents a chaperone."
+   ],
+   "words": [
     {
      "text": "Give",
-     "sub0": 12,
-     "subn": 13,
-     "start": 170.88,
-     "end": 170.98,
+     "sub0": 17,
+     "subn": 18,
+     "start": 168.76,
+     "end": 168.84,
      "matched": true,
      "hits": [
-      12
+      16
      ],
      "owners": [
-      12
+      16
      ],
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 46,
+     "cue": 45,
      "window": [
-      170.88,
-      170.98
+      168.71,
+      168.84
      ],
-     "png": "w395.png"
+     "png": "w387.png"
     },
     {
      "text": "your",
-     "sub0": 13,
-     "subn": 14,
-     "start": 170.98,
-     "end": 171.16,
+     "sub0": 18,
+     "subn": 19,
+     "start": 168.84,
+     "end": 169.02,
      "matched": true,
      "hits": [
-      13
+      17
      ],
      "owners": [
-      13
+      17
      ],
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 46,
+     "cue": 45,
      "window": [
-      170.98,
-      171.16
+      168.84,
+      169.02
      ],
-     "png": "w396.png"
+     "png": "w388.png"
     },
     {
      "text": "agents",
-     "sub0": 14,
-     "subn": 15,
-     "start": 171.16,
-     "end": 171.5,
+     "sub0": 19,
+     "subn": 20,
+     "start": 169.02,
+     "end": 169.34,
      "matched": true,
      "hits": [
-      14
+      18
      ],
      "owners": [
-      14
+      18
      ],
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 46,
+     "cue": 45,
      "window": [
-      171.16,
-      171.5
+      169.02,
+      169.34
      ],
-     "png": "w397.png"
+     "png": "w389.png"
     },
     {
      "text": "a",
-     "sub0": 15,
-     "subn": 16,
-     "start": 171.5,
-     "end": 171.7,
+     "sub0": 20,
+     "subn": 21,
+     "start": 169.34,
+     "end": 169.54,
      "matched": true,
      "hits": [
-      15
+      19
      ],
      "owners": [
-      15
+      19
      ],
      "seg": 16,
      "color": null,
      "line": 0,
-     "cue": 46,
+     "cue": 45,
      "window": [
-      171.5,
-      171.7
+      169.34,
+      169.54
      ],
-     "png": "w398.png"
+     "png": "w390.png"
     },
     {
      "text": "chaperone.",
-     "sub0": 16,
-     "subn": 17,
-     "start": 171.7,
-     "end": 172.24,
+     "sub0": 21,
+     "subn": 22,
+     "start": 169.54,
+     "end": 170.06,
      "matched": true,
      "hits": [
-      16
+      20
      ],
      "owners": [
-      16
+      20
      ],
      "seg": 16,
      "color": null,
-     "line": 1,
-     "cue": 46,
+     "line": 0,
+     "cue": 45,
      "window": [
-      171.7,
-      172.39
+      169.54,
+      170.21
      ],
-     "png": "w399.png"
+     "png": "w391.png"
     }
    ]
   }
@@ -9813,7 +9617,7 @@
    "sub0": 0,
    "subn": 1,
    "start": 0.0,
-   "end": 0.22,
+   "end": 0.24,
    "matched": true,
    "hits": [
     0
@@ -9827,7 +9631,7 @@
    "cue": 1,
    "window": [
     0.05,
-    0.22
+    0.24
    ],
    "png": "w000.png"
   },
@@ -9835,8 +9639,8 @@
    "text": "email",
    "sub0": 1,
    "subn": 2,
-   "start": 0.22,
-   "end": 0.56,
+   "start": 0.24,
+   "end": 0.54,
    "matched": true,
    "hits": [
     1
@@ -9849,8 +9653,8 @@
    "line": 0,
    "cue": 1,
    "window": [
-    0.22,
-    0.56
+    0.24,
+    0.54
    ],
    "png": "w001.png"
   },
@@ -9858,7 +9662,7 @@
    "text": "hides",
    "sub0": 2,
    "subn": 3,
-   "start": 0.56,
+   "start": 0.54,
    "end": 0.9,
    "matched": true,
    "hits": [
@@ -9872,7 +9676,7 @@
    "line": 0,
    "cue": 1,
    "window": [
-    0.56,
+    0.54,
     0.9
    ],
    "png": "w002.png"
@@ -9928,7 +9732,7 @@
    "sub0": 5,
    "subn": 6,
    "start": 1.28,
-   "end": 1.58,
+   "end": 1.6,
    "matched": true,
    "hits": [
     5
@@ -9942,7 +9746,7 @@
    "cue": 1,
    "window": [
     1.28,
-    1.58
+    1.6
    ],
    "png": "w005.png"
   },
@@ -9950,7 +9754,7 @@
    "text": "Mei's",
    "sub0": 6,
    "subn": 7,
-   "start": 1.58,
+   "start": 1.6,
    "end": 1.9,
    "matched": true,
    "hits": [
@@ -9964,7 +9768,7 @@
    "line": 0,
    "cue": 1,
    "window": [
-    1.58,
+    1.6,
     1.9
    ],
    "png": "w006.png"
@@ -10250,7 +10054,7 @@
    "sub0": 19,
    "subn": 20,
    "start": 6.36,
-   "end": 6.68,
+   "end": 6.7,
    "matched": true,
    "hits": [
     19
@@ -10456,7 +10260,7 @@
    "text": "Five",
    "sub0": 5,
    "subn": 6,
-   "start": 10.48,
+   "start": 10.46,
    "end": 10.68,
    "matched": true,
    "hits": [
@@ -10470,7 +10274,7 @@
    "line": 0,
    "cue": 4,
    "window": [
-    10.43,
+    10.41,
     10.68
    ],
    "png": "w028.png"
@@ -10609,7 +10413,7 @@
    "cue": 4,
    "window": [
     13.0,
-    13.76
+    13.78
    ],
    "png": "w034.png"
   },
@@ -10617,7 +10421,7 @@
    "text": "and",
    "sub0": 12,
    "subn": 13,
-   "start": 13.76,
+   "start": 13.78,
    "end": 13.86,
    "matched": true,
    "hits": [
@@ -10631,7 +10435,7 @@
    "line": 1,
    "cue": 4,
    "window": [
-    13.76,
+    13.78,
     13.86
    ],
    "png": "w035.png"
@@ -11055,7 +10859,7 @@
    "sub0": 31,
    "subn": 32,
    "start": 20.94,
-   "end": 21.34,
+   "end": 21.32,
    "matched": true,
    "hits": [
     31
@@ -11069,7 +10873,7 @@
    "cue": 6,
    "window": [
     20.94,
-    21.34
+    21.32
    ],
    "png": "w054.png"
   },
@@ -11077,7 +10881,7 @@
    "text": "world,",
    "sub0": 32,
    "subn": 33,
-   "start": 21.34,
+   "start": 21.32,
    "end": 21.68,
    "matched": true,
    "hits": [
@@ -11091,7 +10895,7 @@
    "line": 1,
    "cue": 6,
    "window": [
-    21.34,
+    21.32,
     21.68
    ],
    "png": "w055.png"
@@ -11261,7 +11065,7 @@
    "text": "This",
    "sub0": 0,
    "subn": 1,
-   "start": 26.04,
+   "start": 26.02,
    "end": 26.44,
    "matched": true,
    "hits": [
@@ -11354,7 +11158,7 @@
    "sub0": 4,
    "subn": 5,
    "start": 26.98,
-   "end": 27.3,
+   "end": 27.28,
    "matched": true,
    "hits": [
     4
@@ -11368,7 +11172,7 @@
    "cue": 8,
    "window": [
     26.98,
-    27.3
+    27.28
    ],
    "png": "w067.png"
   },
@@ -11376,7 +11180,7 @@
    "text": "Run",
    "sub0": 5,
    "subn": 6,
-   "start": 27.3,
+   "start": 27.28,
    "end": 27.98,
    "matched": true,
    "hits": [
@@ -11390,7 +11194,7 @@
    "line": 0,
    "cue": 8,
    "window": [
-    27.3,
+    27.28,
     27.98
    ],
    "png": "w068.png"
@@ -11606,7 +11410,7 @@
    "text": "The",
    "sub0": 0,
    "subn": 1,
-   "start": 32.64,
+   "start": 32.62,
    "end": 32.86,
    "matched": true,
    "hits": [
@@ -11620,7 +11424,7 @@
    "line": 0,
    "cue": 10,
    "window": [
-    32.59,
+    32.57,
     32.86
    ],
    "png": "w078.png"
@@ -11667,7 +11471,7 @@
    "cue": 10,
    "window": [
     33.08,
-    34.2
+    34.22
    ],
    "png": "w080.png"
   },
@@ -11675,7 +11479,7 @@
    "text": "six",
    "sub0": 3,
    "subn": 4,
-   "start": 34.2,
+   "start": 34.22,
    "end": 34.36,
    "matched": true,
    "hits": [
@@ -11689,7 +11493,7 @@
    "line": 0,
    "cue": 10,
    "window": [
-    34.2,
+    34.22,
     34.36
    ],
    "png": "w081.png"
@@ -11759,7 +11563,7 @@
    "cue": 10,
    "window": [
     35.32,
-    36.14
+    36.16
    ],
    "png": "w084.png"
   },
@@ -11767,7 +11571,7 @@
    "text": "four",
    "sub0": 7,
    "subn": 8,
-   "start": 36.14,
+   "start": 36.16,
    "end": 36.28,
    "matched": true,
    "hits": [
@@ -11781,7 +11585,7 @@
    "line": 1,
    "cue": 10,
    "window": [
-    36.14,
+    36.16,
     36.28
    ],
    "png": "w085.png"
@@ -11883,7 +11687,7 @@
    "sub0": 12,
    "subn": 13,
    "start": 37.8,
-   "end": 38.38,
+   "end": 38.4,
    "matched": true,
    "hits": [
     12
@@ -11897,7 +11701,7 @@
    "cue": 11,
    "window": [
     37.8,
-    38.38
+    38.4
    ],
    "png": "w090.png"
   },
@@ -11905,8 +11709,8 @@
    "text": "ten",
    "sub0": 13,
    "subn": 14,
-   "start": 38.38,
-   "end": 38.516,
+   "start": 38.4,
+   "end": 38.534,
    "matched": true,
    "hits": [
     13
@@ -11920,8 +11724,8 @@
    "line": 0,
    "cue": 11,
    "window": [
-    38.38,
-    38.516
+    38.4,
+    38.534
    ],
    "png": "w091.png"
   },
@@ -11929,8 +11733,8 @@
    "text": "thousand",
    "sub0": 13,
    "subn": 14,
-   "start": 38.516,
-   "end": 38.879,
+   "start": 38.534,
+   "end": 38.891,
    "matched": true,
    "hits": [
     13
@@ -11944,8 +11748,8 @@
    "line": 0,
    "cue": 11,
    "window": [
-    38.516,
-    38.879
+    38.534,
+    38.891
    ],
    "png": "w092.png"
   },
@@ -11953,8 +11757,8 @@
    "text": "two",
    "sub0": 13,
    "subn": 14,
-   "start": 38.879,
-   "end": 39.015,
+   "start": 38.891,
+   "end": 39.025,
    "matched": true,
    "hits": [
     13
@@ -11968,8 +11772,8 @@
    "line": 0,
    "cue": 11,
    "window": [
-    38.879,
-    39.015
+    38.891,
+    39.025
    ],
    "png": "w093.png"
   },
@@ -11977,8 +11781,8 @@
    "text": "hundred",
    "sub0": 13,
    "subn": 14,
-   "start": 39.015,
-   "end": 39.333,
+   "start": 39.025,
+   "end": 39.337,
    "matched": true,
    "hits": [
     13
@@ -11992,8 +11796,8 @@
    "line": 0,
    "cue": 11,
    "window": [
-    39.015,
-    39.333
+    39.025,
+    39.337
    ],
    "png": "w094.png"
   },
@@ -12001,7 +11805,7 @@
    "text": "sixty \u2014",
    "sub0": 13,
    "subn": 14,
-   "start": 39.333,
+   "start": 39.337,
    "end": 39.56,
    "matched": true,
    "hits": [
@@ -12016,7 +11820,7 @@
    "line": 1,
    "cue": 11,
    "window": [
-    39.333,
+    39.337,
     40.2
    ],
    "png": "w095.png"
@@ -12716,7 +12520,7 @@
    "sub0": 2,
    "subn": 3,
    "start": 52.14,
-   "end": 52.56,
+   "end": 52.54,
    "matched": true,
    "hits": [
     2
@@ -12730,7 +12534,7 @@
    "cue": 15,
    "window": [
     52.14,
-    52.56
+    52.54
    ],
    "png": "w126.png"
   },
@@ -12738,7 +12542,7 @@
    "text": "had",
    "sub0": 3,
    "subn": 4,
-   "start": 52.56,
+   "start": 52.54,
    "end": 52.92,
    "matched": true,
    "hits": [
@@ -12752,7 +12556,7 @@
    "line": 0,
    "cue": 15,
    "window": [
-    52.56,
+    52.54,
     52.92
    ],
    "png": "w127.png"
@@ -12962,7 +12766,7 @@
    "cue": 16,
    "window": [
     56.44,
-    57.38
+    57.4
    ],
    "png": "w136.png"
   },
@@ -12970,8 +12774,8 @@
    "text": "Five",
    "sub0": 13,
    "subn": 14,
-   "start": 57.38,
-   "end": 57.72,
+   "start": 57.4,
+   "end": 57.7,
    "matched": true,
    "hits": [
     13
@@ -12984,8 +12788,8 @@
    "line": 0,
    "cue": 16,
    "window": [
-    57.38,
-    57.72
+    57.4,
+    57.7
    ],
    "png": "w137.png"
   },
@@ -12993,7 +12797,7 @@
    "text": "days \u2014",
    "sub0": 14,
    "subn": 15,
-   "start": 57.72,
+   "start": 57.7,
    "end": 57.94,
    "matched": true,
    "hits": [
@@ -13007,7 +12811,7 @@
    "line": 0,
    "cue": 16,
    "window": [
-    57.72,
+    57.7,
     58.16
    ],
    "png": "w138.png"
@@ -13252,7 +13056,7 @@
    "sub0": 21,
    "subn": 22,
    "start": 61.72,
-   "end": 61.955,
+   "end": 61.951,
    "matched": true,
    "hits": [
     21
@@ -13267,7 +13071,7 @@
    "cue": 17,
    "window": [
     61.72,
-    61.955
+    61.951
    ],
    "png": "w149.png"
   },
@@ -13275,8 +13079,8 @@
    "text": "thousand",
    "sub0": 21,
    "subn": 22,
-   "start": 61.955,
-   "end": 62.426,
+   "start": 61.951,
+   "end": 62.412,
    "matched": true,
    "hits": [
     21
@@ -13290,8 +13094,8 @@
    "line": 0,
    "cue": 17,
    "window": [
-    61.955,
-    62.426
+    61.951,
+    62.412
    ],
    "png": "w150.png"
   },
@@ -13299,8 +13103,8 @@
    "text": "forty.",
    "sub0": 21,
    "subn": 22,
-   "start": 62.426,
-   "end": 62.72,
+   "start": 62.412,
+   "end": 62.7,
    "matched": true,
    "hits": [
     21
@@ -13314,7 +13118,7 @@
    "line": 1,
    "cue": 17,
    "window": [
-    62.426,
+    62.412,
     63.8
    ],
    "png": "w151.png"
@@ -13592,7 +13396,7 @@
    "cue": 19,
    "window": [
     68.26,
-    68.92
+    68.94
    ],
    "png": "w163.png"
   },
@@ -13600,7 +13404,7 @@
    "text": "stopped.",
    "sub0": 12,
    "subn": 13,
-   "start": 68.92,
+   "start": 68.94,
    "end": 69.32,
    "matched": true,
    "hits": [
@@ -13614,7 +13418,7 @@
    "line": 0,
    "cue": 19,
    "window": [
-    68.92,
+    68.94,
     69.47
    ],
    "png": "w164.png"
@@ -13923,7 +13727,7 @@
    "sub0": 13,
    "subn": 14,
    "start": 75.62,
-   "end": 75.8,
+   "end": 75.82,
    "matched": true,
    "hits": [
     13
@@ -13937,7 +13741,7 @@
    "cue": 21,
    "window": [
     75.62,
-    75.8
+    75.82
    ],
    "png": "w178.png"
   },
@@ -13945,7 +13749,7 @@
    "text": "safe",
    "sub0": 14,
    "subn": 15,
-   "start": 75.8,
+   "start": 75.82,
    "end": 75.98,
    "matched": true,
    "hits": [
@@ -13959,7 +13763,7 @@
    "line": 0,
    "cue": 21,
    "window": [
-    75.8,
+    75.82,
     75.98
    ],
    "png": "w179.png"
@@ -14037,8 +13841,8 @@
    "text": "Seven",
    "sub0": 0,
    "subn": 1,
-   "start": 78.44,
-   "end": 78.728,
+   "start": 78.48,
+   "end": 78.756,
    "matched": true,
    "hits": [
     0
@@ -14053,7 +13857,7 @@
    "cue": 22,
    "window": [
     78.55,
-    78.728
+    78.756
    ],
    "png": "w183.png"
   },
@@ -14061,8 +13865,8 @@
    "text": "hundred",
    "sub0": 0,
    "subn": 1,
-   "start": 78.728,
-   "end": 79.132,
+   "start": 78.756,
+   "end": 79.144,
    "matched": true,
    "hits": [
     0
@@ -14076,8 +13880,8 @@
    "line": 0,
    "cue": 22,
    "window": [
-    78.728,
-    79.132
+    78.756,
+    79.144
    ],
    "png": "w184.png"
   },
@@ -14085,7 +13889,7 @@
    "text": "fifty",
    "sub0": 0,
    "subn": 1,
-   "start": 79.132,
+   "start": 79.144,
    "end": 79.42,
    "matched": true,
    "hits": [
@@ -14100,7 +13904,7 @@
    "line": 0,
    "cue": 22,
    "window": [
-    79.132,
+    79.144,
     79.42
    ],
    "png": "w185.png"
@@ -14133,7 +13937,7 @@
    "sub0": 2,
    "subn": 3,
    "start": 80.2,
-   "end": 80.412,
+   "end": 80.418,
    "matched": true,
    "hits": [
     2
@@ -14148,7 +13952,7 @@
    "cue": 22,
    "window": [
     80.2,
-    80.412
+    80.418
    ],
    "png": "w187.png"
   },
@@ -14156,8 +13960,8 @@
    "text": "hundred",
    "sub0": 2,
    "subn": 3,
-   "start": 80.412,
-   "end": 80.708,
+   "start": 80.418,
+   "end": 80.722,
    "matched": true,
    "hits": [
     2
@@ -14171,8 +13975,8 @@
    "line": 0,
    "cue": 22,
    "window": [
-    80.412,
-    80.708
+    80.418,
+    80.722
    ],
    "png": "w188.png"
   },
@@ -14180,8 +13984,8 @@
    "text": "fifty",
    "sub0": 2,
    "subn": 3,
-   "start": 80.708,
-   "end": 80.92,
+   "start": 80.722,
+   "end": 80.94,
    "matched": true,
    "hits": [
     2
@@ -14195,8 +13999,8 @@
    "line": 1,
    "cue": 22,
    "window": [
-    80.708,
-    80.92
+    80.722,
+    80.94
    ],
    "png": "w189.png"
   },
@@ -14204,7 +14008,7 @@
    "text": "is",
    "sub0": 3,
    "subn": 4,
-   "start": 80.92,
+   "start": 80.94,
    "end": 81.68,
    "matched": true,
    "hits": [
@@ -14218,7 +14022,7 @@
    "line": 1,
    "cue": 22,
    "window": [
-    80.92,
+    80.94,
     81.68
    ],
    "png": "w190.png"
@@ -14228,7 +14032,7 @@
    "sub0": 4,
    "subn": 5,
    "start": 81.68,
-   "end": 82.08,
+   "end": 82.07,
    "matched": true,
    "hits": [
     4
@@ -14243,7 +14047,7 @@
    "cue": 22,
    "window": [
     81.68,
-    82.08
+    82.07
    ],
    "png": "w191.png"
   },
@@ -14251,8 +14055,8 @@
    "text": "hundred \u2014",
    "sub0": 4,
    "subn": 5,
-   "start": 82.08,
-   "end": 82.48,
+   "start": 82.07,
+   "end": 82.46,
    "matched": true,
    "hits": [
     4
@@ -14266,8 +14070,8 @@
    "line": 1,
    "cue": 22,
    "window": [
-    82.08,
-    82.48
+    82.07,
+    82.46
    ],
    "png": "w192.png"
   },
@@ -14275,8 +14079,8 @@
    "text": "over",
    "sub0": 5,
    "subn": 6,
-   "start": 82.48,
-   "end": 83.14,
+   "start": 82.46,
+   "end": 83.16,
    "matched": true,
    "hits": [
     5
@@ -14289,8 +14093,8 @@
    "line": 1,
    "cue": 22,
    "window": [
-    82.48,
-    83.14
+    82.46,
+    83.16
    ],
    "png": "w193.png"
   },
@@ -14298,7 +14102,7 @@
    "text": "the",
    "sub0": 6,
    "subn": 7,
-   "start": 83.14,
+   "start": 83.16,
    "end": 83.32,
    "matched": true,
    "hits": [
@@ -14312,7 +14116,7 @@
    "line": 1,
    "cue": 22,
    "window": [
-    83.14,
+    83.16,
     83.27
    ],
    "png": "w194.png"
@@ -14359,7 +14163,7 @@
    "cue": 23,
    "window": [
     84.02,
-    85.12
+    85.14
    ],
    "png": "w196.png"
   },
@@ -14367,7 +14171,7 @@
    "text": "Chaperone",
    "sub0": 9,
    "subn": 10,
-   "start": 85.12,
+   "start": 85.14,
    "end": 85.4,
    "matched": true,
    "hits": [
@@ -14381,7 +14185,7 @@
    "line": 0,
    "cue": 23,
    "window": [
-    85.12,
+    85.14,
     85.4
    ],
    "png": "w197.png"
@@ -14551,8 +14355,8 @@
    "text": "An",
    "sub0": 0,
    "subn": 1,
-   "start": 89.34,
-   "end": 89.39,
+   "start": 89.18,
+   "end": 89.36,
    "matched": true,
    "hits": [
     0
@@ -14565,7 +14369,7 @@
    "line": 0,
    "cue": 24,
    "window": [
-    89.29,
+    89.13,
     89.36
    ],
    "png": "w205.png"
@@ -14598,7 +14402,7 @@
    "sub0": 2,
    "subn": 3,
    "start": 90.14,
-   "end": 90.34,
+   "end": 90.36,
    "matched": true,
    "hits": [
     2
@@ -14612,7 +14416,7 @@
    "cue": 24,
    "window": [
     90.14,
-    90.34
+    90.36
    ],
    "png": "w207.png"
   },
@@ -14620,7 +14424,7 @@
    "text": "from",
    "sub0": 3,
    "subn": 4,
-   "start": 90.34,
+   "start": 90.36,
    "end": 90.72,
    "matched": true,
    "hits": [
@@ -14634,7 +14438,7 @@
    "line": 0,
    "cue": 24,
    "window": [
-    90.34,
+    90.36,
     90.72
    ],
    "png": "w208.png"
@@ -14658,7 +14462,7 @@
    "cue": 24,
    "window": [
     90.72,
-    91.18
+    91.16
    ],
    "png": "w209.png"
   },
@@ -14666,7 +14470,7 @@
    "text": "approved",
    "sub0": 5,
    "subn": 6,
-   "start": 91.18,
+   "start": 91.16,
    "end": 91.58,
    "matched": true,
    "hits": [
@@ -14680,7 +14484,7 @@
    "line": 1,
    "cue": 24,
    "window": [
-    91.18,
+    91.16,
     91.58
    ],
    "png": "w210.png"
@@ -14830,7 +14634,7 @@
    "sub0": 11,
    "subn": 12,
    "start": 93.9,
-   "end": 94.339,
+   "end": 94.35,
    "matched": true,
    "hits": [
     11
@@ -14845,7 +14649,7 @@
    "cue": 25,
    "window": [
     93.9,
-    94.339
+    94.35
    ],
    "png": "w217.png"
   },
@@ -14853,8 +14657,8 @@
    "text": "hundred.",
    "sub0": 11,
    "subn": 12,
-   "start": 94.339,
-   "end": 94.68,
+   "start": 94.35,
+   "end": 94.7,
    "matched": true,
    "hits": [
     11
@@ -14868,7 +14672,7 @@
    "line": 1,
    "cue": 25,
    "window": [
-    94.339,
+    94.35,
     95.28
    ],
    "png": "w218.png"
@@ -14993,7 +14797,7 @@
    "sub0": 17,
    "subn": 18,
    "start": 96.48,
-   "end": 96.76,
+   "end": 96.78,
    "matched": true,
    "hits": [
     17
@@ -15002,12 +14806,12 @@
     17
    ],
    "seg": 10,
-   "color": "#E8C988",
+   "color": null,
    "line": 1,
    "cue": 25,
    "window": [
     96.48,
-    96.91
+    96.93
    ],
    "png": "w224.png"
   },
@@ -15015,7 +14819,7 @@
    "text": "Blocked.",
    "sub0": 18,
    "subn": 19,
-   "start": 97.42,
+   "start": 97.8,
    "end": 98.02,
    "matched": true,
    "hits": [
@@ -15029,8 +14833,8 @@
    "line": 0,
    "cue": 26,
    "window": [
-    97.37,
-    98.27
+    97.75,
+    98.45
    ],
    "png": "w225.png"
   },
@@ -15199,8 +15003,8 @@
    "text": "Held.",
    "sub0": 7,
    "subn": 8,
-   "start": 102.02,
-   "end": 102.07,
+   "start": 102.04,
+   "end": 102.09,
    "matched": true,
    "hits": [
     7
@@ -15213,7 +15017,7 @@
    "line": 0,
    "cue": 28,
    "window": [
-    101.97,
+    101.99,
     102.96
    ],
    "png": "w233.png"
@@ -15291,7 +15095,7 @@
    "text": "And",
    "sub0": 0,
    "subn": 1,
-   "start": 104.24,
+   "start": 104.2,
    "end": 104.38,
    "matched": true,
    "hits": [
@@ -15305,7 +15109,7 @@
    "line": 0,
    "cue": 29,
    "window": [
-    104.19,
+    104.15,
     104.38
    ],
    "png": "w237.png"
@@ -15338,7 +15142,7 @@
    "sub0": 2,
    "subn": 3,
    "start": 104.46,
-   "end": 104.6,
+   "end": 104.58,
    "matched": true,
    "hits": [
     2
@@ -15352,7 +15156,7 @@
    "cue": 29,
    "window": [
     104.46,
-    104.6
+    104.58
    ],
    "png": "w239.png"
   },
@@ -15360,7 +15164,7 @@
    "text": "contract",
    "sub0": 3,
    "subn": 4,
-   "start": 104.6,
+   "start": 104.58,
    "end": 104.98,
    "matched": true,
    "hits": [
@@ -15374,7 +15178,7 @@
    "line": 0,
    "cue": 29,
    "window": [
-    104.6,
+    104.58,
     104.98
    ],
    "png": "w240.png"
@@ -15590,8 +15394,8 @@
    "text": "Ten",
    "sub0": 0,
    "subn": 1,
-   "start": 110.18,
-   "end": 110.44,
+   "start": 109.78,
+   "end": 110.42,
    "matched": true,
    "hits": [
     0
@@ -15604,8 +15408,8 @@
    "line": 0,
    "cue": 31,
    "window": [
-    110.13,
-    110.44
+    110.05,
+    110.42
    ],
    "png": "w250.png"
   },
@@ -15613,8 +15417,8 @@
    "text": "scenarios,",
    "sub0": 1,
    "subn": 2,
-   "start": 110.44,
-   "end": 110.96,
+   "start": 110.42,
+   "end": 110.98,
    "matched": true,
    "hits": [
     1
@@ -15627,8 +15431,8 @@
    "line": 0,
    "cue": 31,
    "window": [
-    110.44,
-    111.3
+    110.42,
+    111.36
    ],
    "png": "w251.png"
   },
@@ -15636,8 +15440,8 @@
    "text": "three",
    "sub0": 2,
    "subn": 3,
-   "start": 111.3,
-   "end": 111.42,
+   "start": 111.36,
+   "end": 111.46,
    "matched": true,
    "hits": [
     2
@@ -15650,8 +15454,8 @@
    "line": 0,
    "cue": 31,
    "window": [
-    111.3,
-    111.42
+    111.36,
+    111.46
    ],
    "png": "w252.png"
   },
@@ -15659,8 +15463,8 @@
    "text": "checks",
    "sub0": 3,
    "subn": 4,
-   "start": 111.42,
-   "end": 111.66,
+   "start": 111.46,
+   "end": 111.72,
    "matched": true,
    "hits": [
     3
@@ -15673,8 +15477,8 @@
    "line": 0,
    "cue": 31,
    "window": [
-    111.42,
-    111.66
+    111.46,
+    111.72
    ],
    "png": "w253.png"
   },
@@ -15682,8 +15486,8 @@
    "text": "each:",
    "sub0": 4,
    "subn": 5,
-   "start": 111.66,
-   "end": 111.92,
+   "start": 111.72,
+   "end": 112.0,
    "matched": true,
    "hits": [
     4
@@ -15696,8 +15500,8 @@
    "line": 0,
    "cue": 31,
    "window": [
-    111.66,
-    111.92
+    111.72,
+    112.54
    ],
    "png": "w254.png"
   },
@@ -15705,37 +15509,14 @@
    "text": "the",
    "sub0": 5,
    "subn": 6,
-   "start": 111.92,
-   "end": 112.54,
-   "matched": true,
-   "hits": [
-    5
-   ],
-   "owners": [
-    5
-   ],
-   "seg": 13,
-   "color": null,
-   "line": 1,
-   "cue": 31,
-   "window": [
-    111.92,
-    112.54
-   ],
-   "png": "w255.png"
-  },
-  {
-   "text": "right",
-   "sub0": 6,
-   "subn": 7,
    "start": 112.54,
-   "end": 112.72,
+   "end": 112.66,
    "matched": true,
    "hits": [
-    6
+    5
    ],
    "owners": [
-    6
+    5
    ],
    "seg": 13,
    "color": null,
@@ -15743,7 +15524,30 @@
    "cue": 31,
    "window": [
     112.54,
-    112.72
+    112.66
+   ],
+   "png": "w255.png"
+  },
+  {
+   "text": "right",
+   "sub0": 6,
+   "subn": 7,
+   "start": 112.66,
+   "end": 112.86,
+   "matched": true,
+   "hits": [
+    6
+   ],
+   "owners": [
+    6
+   ],
+   "seg": 13,
+   "color": null,
+   "line": 1,
+   "cue": 31,
+   "window": [
+    112.66,
+    112.86
    ],
    "png": "w256.png"
   },
@@ -15751,8 +15555,8 @@
    "text": "decision,",
    "sub0": 7,
    "subn": 8,
-   "start": 112.72,
-   "end": 113.1,
+   "start": 112.86,
+   "end": 113.22,
    "matched": true,
    "hits": [
     7
@@ -15765,8 +15569,8 @@
    "line": 1,
    "cue": 31,
    "window": [
-    112.72,
-    113.48
+    112.86,
+    113.62
    ],
    "png": "w257.png"
   },
@@ -15774,8 +15578,8 @@
    "text": "the",
    "sub0": 8,
    "subn": 9,
-   "start": 113.48,
-   "end": 113.53,
+   "start": 113.62,
+   "end": 113.68,
    "matched": true,
    "hits": [
     8
@@ -15788,8 +15592,8 @@
    "line": 1,
    "cue": 31,
    "window": [
-    113.48,
-    113.5
+    113.62,
+    113.68
    ],
    "png": "w258.png"
   },
@@ -15797,8 +15601,8 @@
    "text": "right",
    "sub0": 9,
    "subn": 10,
-   "start": 113.5,
-   "end": 113.7,
+   "start": 113.68,
+   "end": 113.88,
    "matched": true,
    "hits": [
     9
@@ -15811,8 +15615,8 @@
    "line": 1,
    "cue": 31,
    "window": [
-    113.5,
-    113.7
+    113.68,
+    113.88
    ],
    "png": "w259.png"
   },
@@ -15820,8 +15624,8 @@
    "text": "rule,",
    "sub0": 10,
    "subn": 11,
-   "start": 113.7,
-   "end": 114.02,
+   "start": 113.88,
+   "end": 114.18,
    "matched": true,
    "hits": [
     10
@@ -15834,8 +15638,8 @@
    "line": 1,
    "cue": 31,
    "window": [
-    113.7,
-    114.13
+    113.88,
+    114.33
    ],
    "png": "w260.png"
   },
@@ -15843,8 +15647,8 @@
    "text": "the",
    "sub0": 11,
    "subn": 12,
-   "start": 114.18,
-   "end": 114.28,
+   "start": 114.38,
+   "end": 114.48,
    "matched": true,
    "hits": [
     11
@@ -15857,8 +15661,8 @@
    "line": 0,
    "cue": 32,
    "window": [
-    114.13,
-    114.28
+    114.33,
+    114.48
    ],
    "png": "w261.png"
   },
@@ -15866,37 +15670,14 @@
    "text": "right",
    "sub0": 12,
    "subn": 13,
-   "start": 114.28,
-   "end": 114.48,
-   "matched": true,
-   "hits": [
-    12
-   ],
-   "owners": [
-    12
-   ],
-   "seg": 13,
-   "color": null,
-   "line": 0,
-   "cue": 32,
-   "window": [
-    114.28,
-    114.48
-   ],
-   "png": "w262.png"
-  },
-  {
-   "text": "evidence.",
-   "sub0": 13,
-   "subn": 14,
    "start": 114.48,
-   "end": 115.0,
+   "end": 114.7,
    "matched": true,
    "hits": [
-    13
+    12
    ],
    "owners": [
-    13
+    12
    ],
    "seg": 13,
    "color": null,
@@ -15904,7 +15685,30 @@
    "cue": 32,
    "window": [
     114.48,
-    115.66
+    114.7
+   ],
+   "png": "w262.png"
+  },
+  {
+   "text": "evidence.",
+   "sub0": 13,
+   "subn": 14,
+   "start": 114.7,
+   "end": 115.14,
+   "matched": true,
+   "hits": [
+    13
+   ],
+   "owners": [
+    13
+   ],
+   "seg": 13,
+   "color": null,
+   "line": 0,
+   "cue": 32,
+   "window": [
+    114.7,
+    115.64
    ],
    "png": "w263.png"
   },
@@ -15912,8 +15716,8 @@
    "text": "Thirty",
    "sub0": 14,
    "subn": 15,
-   "start": 115.66,
-   "end": 115.88,
+   "start": 115.64,
+   "end": 115.98,
    "matched": true,
    "hits": [
     14
@@ -15926,8 +15730,8 @@
    "line": 0,
    "cue": 32,
    "window": [
-    115.66,
-    115.88
+    115.64,
+    115.98
    ],
    "png": "w264.png"
   },
@@ -15935,8 +15739,8 @@
    "text": "out",
    "sub0": 15,
    "subn": 16,
-   "start": 115.88,
-   "end": 116.04,
+   "start": 115.98,
+   "end": 116.16,
    "matched": true,
    "hits": [
     15
@@ -15949,8 +15753,8 @@
    "line": 0,
    "cue": 32,
    "window": [
-    115.88,
-    116.04
+    115.98,
+    116.16
    ],
    "png": "w265.png"
   },
@@ -15958,8 +15762,8 @@
    "text": "of",
    "sub0": 16,
    "subn": 17,
-   "start": 116.04,
-   "end": 116.14,
+   "start": 116.16,
+   "end": 116.24,
    "matched": true,
    "hits": [
     16
@@ -15972,8 +15776,8 @@
    "line": 0,
    "cue": 32,
    "window": [
-    116.04,
-    116.14
+    116.16,
+    116.24
    ],
    "png": "w266.png"
   },
@@ -15981,8 +15785,8 @@
    "text": "thirty.",
    "sub0": 17,
    "subn": 18,
-   "start": 116.14,
-   "end": 116.48,
+   "start": 116.24,
+   "end": 116.56,
    "matched": true,
    "hits": [
     17
@@ -15995,8 +15799,8 @@
    "line": 1,
    "cue": 32,
    "window": [
-    116.14,
-    117.04
+    116.24,
+    117.08
    ],
    "png": "w267.png"
   },
@@ -16004,8 +15808,8 @@
    "text": "The",
    "sub0": 18,
    "subn": 19,
-   "start": 117.04,
-   "end": 117.16,
+   "start": 117.08,
+   "end": 117.26,
    "matched": true,
    "hits": [
     18
@@ -16018,8 +15822,8 @@
    "line": 1,
    "cue": 32,
    "window": [
-    117.04,
-    117.16
+    117.08,
+    117.26
    ],
    "png": "w268.png"
   },
@@ -16027,8 +15831,8 @@
    "text": "classifier",
    "sub0": 19,
    "subn": 20,
-   "start": 117.16,
-   "end": 117.7,
+   "start": 117.26,
+   "end": 117.8,
    "matched": true,
    "hits": [
     19
@@ -16041,8 +15845,8 @@
    "line": 1,
    "cue": 32,
    "window": [
-    117.16,
-    117.7
+    117.26,
+    117.8
    ],
    "png": "w269.png"
   },
@@ -16050,8 +15854,8 @@
    "text": "got",
    "sub0": 20,
    "subn": 21,
-   "start": 117.7,
-   "end": 117.92,
+   "start": 117.8,
+   "end": 118.02,
    "matched": true,
    "hits": [
     20
@@ -16064,8 +15868,8 @@
    "line": 1,
    "cue": 32,
    "window": [
-    117.7,
-    117.92
+    117.8,
+    118.02
    ],
    "png": "w270.png"
   },
@@ -16073,8 +15877,8 @@
    "text": "thirty",
    "sub0": 21,
    "subn": 22,
-   "start": 117.92,
-   "end": 118.32,
+   "start": 118.02,
+   "end": 118.44,
    "matched": true,
    "hits": [
     21
@@ -16087,8 +15891,8 @@
    "line": 1,
    "cue": 32,
    "window": [
-    117.92,
-    118.32
+    118.02,
+    118.44
    ],
    "png": "w271.png"
   },
@@ -16096,8 +15900,8 @@
    "text": "of",
    "sub0": 22,
    "subn": 23,
-   "start": 118.32,
-   "end": 118.48,
+   "start": 118.44,
+   "end": 118.6,
    "matched": true,
    "hits": [
     22
@@ -16110,8 +15914,8 @@
    "line": 1,
    "cue": 32,
    "window": [
-    118.32,
-    118.43
+    118.44,
+    118.55
    ],
    "png": "w272.png"
   },
@@ -16119,8 +15923,8 @@
    "text": "thirty",
    "sub0": 23,
    "subn": 24,
-   "start": 118.48,
-   "end": 118.78,
+   "start": 118.6,
+   "end": 118.9,
    "matched": true,
    "hits": [
     23
@@ -16133,8 +15937,8 @@
    "line": 0,
    "cue": 33,
    "window": [
-    118.43,
-    118.78
+    118.55,
+    118.9
    ],
    "png": "w273.png"
   },
@@ -16142,8 +15946,8 @@
    "text": "files",
    "sub0": 24,
    "subn": 25,
-   "start": 118.78,
-   "end": 119.1,
+   "start": 118.9,
+   "end": 119.22,
    "matched": true,
    "hits": [
     24
@@ -16156,8 +15960,8 @@
    "line": 0,
    "cue": 33,
    "window": [
-    118.78,
-    119.1
+    118.9,
+    119.22
    ],
    "png": "w274.png"
   },
@@ -16165,8 +15969,8 @@
    "text": "right.",
    "sub0": 25,
    "subn": 26,
-   "start": 119.1,
-   "end": 119.42,
+   "start": 119.22,
+   "end": 119.52,
    "matched": true,
    "hits": [
     25
@@ -16179,8 +15983,8 @@
    "line": 0,
    "cue": 33,
    "window": [
-    119.1,
-    119.96
+    119.22,
+    119.98
    ],
    "png": "w275.png"
   },
@@ -16188,8 +15992,8 @@
    "text": "And",
    "sub0": 26,
    "subn": 27,
-   "start": 119.96,
-   "end": 120.04,
+   "start": 119.98,
+   "end": 120.08,
    "matched": true,
    "hits": [
     26
@@ -16202,8 +16006,8 @@
    "line": 0,
    "cue": 33,
    "window": [
-    119.96,
-    120.04
+    119.98,
+    120.08
    ],
    "png": "w276.png"
   },
@@ -16211,8 +16015,8 @@
    "text": "one",
    "sub0": 27,
    "subn": 28,
-   "start": 120.04,
-   "end": 120.157,
+   "start": 120.08,
+   "end": 120.175,
    "matched": true,
    "hits": [
     27
@@ -16226,8 +16030,8 @@
    "line": 0,
    "cue": 33,
    "window": [
-    120.04,
-    120.157
+    120.08,
+    120.175
    ],
    "png": "w277.png"
   },
@@ -16235,8 +16039,8 @@
    "text": "hundred",
    "sub0": 27,
    "subn": 28,
-   "start": 120.157,
-   "end": 120.429,
+   "start": 120.175,
+   "end": 120.398,
    "matched": true,
    "hits": [
     27
@@ -16250,16 +16054,16 @@
    "line": 0,
    "cue": 33,
    "window": [
-    120.157,
-    120.429
+    120.175,
+    120.398
    ],
    "png": "w278.png"
   },
   {
-   "text": "thirty-six",
+   "text": "seventy-three",
    "sub0": 27,
    "subn": 28,
-   "start": 120.429,
+   "start": 120.398,
    "end": 120.78,
    "matched": true,
    "hits": [
@@ -16274,7 +16078,7 @@
    "line": 1,
    "cue": 33,
    "window": [
-    120.429,
+    120.398,
     120.78
    ],
    "png": "w279.png"
@@ -16284,7 +16088,7 @@
    "sub0": 28,
    "subn": 29,
    "start": 120.78,
-   "end": 121.34,
+   "end": 121.38,
    "matched": true,
    "hits": [
     28
@@ -16298,7 +16102,7 @@
    "cue": 33,
    "window": [
     120.78,
-    121.34
+    121.38
    ],
    "png": "w280.png"
   },
@@ -16306,8 +16110,8 @@
    "text": "tests",
    "sub0": 29,
    "subn": 30,
-   "start": 121.34,
-   "end": 121.62,
+   "start": 121.38,
+   "end": 121.68,
    "matched": true,
    "hits": [
     29
@@ -16320,8 +16124,8 @@
    "line": 1,
    "cue": 33,
    "window": [
-    121.34,
-    121.62
+    121.38,
+    121.68
    ],
    "png": "w281.png"
   },
@@ -16329,8 +16133,8 @@
    "text": "pass.",
    "sub0": 30,
    "subn": 31,
-   "start": 121.62,
-   "end": 121.98,
+   "start": 121.68,
+   "end": 122.04,
    "matched": true,
    "hits": [
     30
@@ -16343,8 +16147,8 @@
    "line": 1,
    "cue": 33,
    "window": [
-    121.62,
-    122.13
+    121.68,
+    122.19
    ],
    "png": "w282.png"
   },
@@ -16352,7 +16156,7 @@
    "text": "Who",
    "sub0": 0,
    "subn": 1,
-   "start": 124.26,
+   "start": 124.02,
    "end": 124.4,
    "matched": true,
    "hits": [
@@ -16366,7 +16170,7 @@
    "line": 0,
    "cue": 34,
    "window": [
-    124.21,
+    124.05,
     124.4
    ],
    "png": "w283.png"
@@ -16376,7 +16180,7 @@
    "sub0": 1,
    "subn": 2,
    "start": 124.4,
-   "end": 124.68,
+   "end": 124.66,
    "matched": true,
    "hits": [
     1
@@ -16390,7 +16194,7 @@
    "cue": 34,
    "window": [
     124.4,
-    125.34
+    125.24
    ],
    "png": "w284.png"
   },
@@ -16398,8 +16202,8 @@
    "text": "One-person",
    "sub0": 2,
    "subn": 4,
-   "start": 125.34,
-   "end": 125.84,
+   "start": 125.24,
+   "end": 125.82,
    "matched": true,
    "hits": [
     2,
@@ -16414,8 +16218,8 @@
    "line": 0,
    "cue": 34,
    "window": [
-    125.34,
-    125.84
+    125.24,
+    125.82
    ],
    "png": "w285.png"
   },
@@ -16423,7 +16227,7 @@
    "text": "studios,",
    "sub0": 4,
    "subn": 5,
-   "start": 125.84,
+   "start": 125.82,
    "end": 126.36,
    "matched": true,
    "hits": [
@@ -16437,8 +16241,8 @@
    "line": 0,
    "cue": 34,
    "window": [
-    125.84,
-    126.9
+    125.82,
+    126.84
    ],
    "png": "w286.png"
   },
@@ -16446,8 +16250,8 @@
    "text": "agencies,",
    "sub0": 5,
    "subn": 6,
-   "start": 126.9,
-   "end": 127.24,
+   "start": 126.84,
+   "end": 127.18,
    "matched": true,
    "hits": [
     5
@@ -16460,8 +16264,8 @@
    "line": 1,
    "cue": 34,
    "window": [
-    126.9,
-    127.68
+    126.84,
+    127.64
    ],
    "png": "w287.png"
   },
@@ -16469,8 +16273,8 @@
    "text": "and",
    "sub0": 6,
    "subn": 7,
-   "start": 127.68,
-   "end": 127.74,
+   "start": 127.64,
+   "end": 127.72,
    "matched": true,
    "hits": [
     6
@@ -16483,8 +16287,8 @@
    "line": 1,
    "cue": 34,
    "window": [
-    127.68,
-    127.74
+    127.64,
+    127.72
    ],
    "png": "w288.png"
   },
@@ -16492,8 +16296,8 @@
    "text": "fractional",
    "sub0": 7,
    "subn": 8,
-   "start": 127.74,
-   "end": 128.36,
+   "start": 127.72,
+   "end": 128.3,
    "matched": true,
    "hits": [
     7
@@ -16506,8 +16310,8 @@
    "line": 1,
    "cue": 34,
    "window": [
-    127.74,
-    128.36
+    127.72,
+    128.3
    ],
    "png": "w289.png"
   },
@@ -16515,8 +16319,8 @@
    "text": "ops",
    "sub0": 8,
    "subn": 9,
-   "start": 128.36,
-   "end": 128.5,
+   "start": 128.3,
+   "end": 128.46,
    "matched": true,
    "hits": [
     8
@@ -16529,8 +16333,8 @@
    "line": 1,
    "cue": 34,
    "window": [
-    128.36,
-    128.5
+    128.3,
+    128.46
    ],
    "png": "w290.png"
   },
@@ -16538,8 +16342,8 @@
    "text": "teams \u2014",
    "sub0": 9,
    "subn": 10,
-   "start": 128.5,
-   "end": 128.9,
+   "start": 128.46,
+   "end": 128.86,
    "matched": true,
    "hits": [
     9
@@ -16552,8 +16356,8 @@
    "line": 1,
    "cue": 34,
    "window": [
-    128.5,
-    129.05
+    128.46,
+    129.01
    ],
    "png": "w291.png"
   },
@@ -16561,8 +16365,8 @@
    "text": "people",
    "sub0": 10,
    "subn": 11,
-   "start": 129.54,
-   "end": 129.76,
+   "start": 129.46,
+   "end": 129.7,
    "matched": true,
    "hits": [
     10
@@ -16575,8 +16379,8 @@
    "line": 0,
    "cue": 35,
    "window": [
-    129.49,
-    129.76
+    129.41,
+    129.7
    ],
    "png": "w292.png"
   },
@@ -16584,8 +16388,8 @@
    "text": "who",
    "sub0": 11,
    "subn": 12,
-   "start": 129.76,
-   "end": 129.94,
+   "start": 129.7,
+   "end": 129.88,
    "matched": true,
    "hits": [
     11
@@ -16598,8 +16402,8 @@
    "line": 0,
    "cue": 35,
    "window": [
-    129.76,
-    129.94
+    129.7,
+    129.88
    ],
    "png": "w293.png"
   },
@@ -16607,8 +16411,8 @@
    "text": "let",
    "sub0": 12,
    "subn": 13,
-   "start": 129.94,
-   "end": 130.12,
+   "start": 129.88,
+   "end": 130.06,
    "matched": true,
    "hits": [
     12
@@ -16621,8 +16425,8 @@
    "line": 0,
    "cue": 35,
    "window": [
-    129.94,
-    130.12
+    129.88,
+    130.06
    ],
    "png": "w294.png"
   },
@@ -16630,8 +16434,8 @@
    "text": "agents",
    "sub0": 13,
    "subn": 14,
-   "start": 130.12,
-   "end": 130.58,
+   "start": 130.06,
+   "end": 130.5,
    "matched": true,
    "hits": [
     13
@@ -16644,8 +16448,8 @@
    "line": 0,
    "cue": 35,
    "window": [
-    130.12,
-    130.58
+    130.06,
+    130.5
    ],
    "png": "w295.png"
   },
@@ -16653,8 +16457,8 @@
    "text": "email",
    "sub0": 14,
    "subn": 15,
-   "start": 130.58,
-   "end": 130.88,
+   "start": 130.5,
+   "end": 130.82,
    "matched": true,
    "hits": [
     14
@@ -16667,8 +16471,8 @@
    "line": 0,
    "cue": 35,
    "window": [
-    130.58,
-    130.88
+    130.5,
+    130.82
    ],
    "png": "w296.png"
   },
@@ -16676,8 +16480,8 @@
    "text": "clients",
    "sub0": 15,
    "subn": 16,
-   "start": 130.88,
-   "end": 131.38,
+   "start": 130.82,
+   "end": 131.32,
    "matched": true,
    "hits": [
     15
@@ -16690,8 +16494,8 @@
    "line": 0,
    "cue": 35,
    "window": [
-    130.88,
-    131.38
+    130.82,
+    131.32
    ],
    "png": "w297.png"
   },
@@ -16699,8 +16503,8 @@
    "text": "and",
    "sub0": 16,
    "subn": 17,
-   "start": 131.38,
-   "end": 131.64,
+   "start": 131.32,
+   "end": 131.58,
    "matched": true,
    "hits": [
     16
@@ -16713,8 +16517,8 @@
    "line": 1,
    "cue": 35,
    "window": [
-    131.38,
-    131.64
+    131.32,
+    131.58
    ],
    "png": "w298.png"
   },
@@ -16722,8 +16526,8 @@
    "text": "move",
    "sub0": 17,
    "subn": 18,
-   "start": 131.64,
-   "end": 131.86,
+   "start": 131.58,
+   "end": 131.8,
    "matched": true,
    "hits": [
     17
@@ -16736,8 +16540,8 @@
    "line": 1,
    "cue": 35,
    "window": [
-    131.64,
-    131.86
+    131.58,
+    131.8
    ],
    "png": "w299.png"
   },
@@ -16745,8 +16549,8 @@
    "text": "money,",
    "sub0": 18,
    "subn": 19,
-   "start": 131.86,
-   "end": 132.22,
+   "start": 131.8,
+   "end": 132.14,
    "matched": true,
    "hits": [
     18
@@ -16759,8 +16563,8 @@
    "line": 1,
    "cue": 35,
    "window": [
-    131.86,
-    132.62
+    131.8,
+    132.5
    ],
    "png": "w300.png"
   },
@@ -16768,8 +16572,8 @@
    "text": "but",
    "sub0": 19,
    "subn": 20,
-   "start": 132.62,
-   "end": 132.8,
+   "start": 132.5,
+   "end": 132.72,
    "matched": true,
    "hits": [
     19
@@ -16782,8 +16586,8 @@
    "line": 1,
    "cue": 35,
    "window": [
-    132.62,
-    132.8
+    132.5,
+    132.72
    ],
    "png": "w301.png"
   },
@@ -16791,8 +16595,8 @@
    "text": "can't",
    "sub0": 20,
    "subn": 21,
-   "start": 132.8,
-   "end": 133.12,
+   "start": 132.72,
+   "end": 133.0,
    "matched": true,
    "hits": [
     20
@@ -16805,8 +16609,8 @@
    "line": 1,
    "cue": 35,
    "window": [
-    132.8,
-    133.12
+    132.72,
+    133.0
    ],
    "png": "w302.png"
   },
@@ -16814,8 +16618,8 @@
    "text": "hire",
    "sub0": 21,
    "subn": 22,
-   "start": 133.12,
-   "end": 133.34,
+   "start": 133.0,
+   "end": 133.2,
    "matched": true,
    "hits": [
     21
@@ -16828,8 +16632,8 @@
    "line": 1,
    "cue": 35,
    "window": [
-    133.12,
-    133.34
+    133.0,
+    133.2
    ],
    "png": "w303.png"
   },
@@ -16837,8 +16641,8 @@
    "text": "a",
    "sub0": 22,
    "subn": 23,
-   "start": 133.34,
-   "end": 133.52,
+   "start": 133.2,
+   "end": 133.38,
    "matched": true,
    "hits": [
     22
@@ -16851,8 +16655,8 @@
    "line": 1,
    "cue": 35,
    "window": [
-    133.34,
-    133.47
+    133.2,
+    133.33
    ],
    "png": "w304.png"
   },
@@ -16860,8 +16664,8 @@
    "text": "compliance",
    "sub0": 23,
    "subn": 24,
-   "start": 133.52,
-   "end": 133.96,
+   "start": 133.38,
+   "end": 133.74,
    "matched": true,
    "hits": [
     23
@@ -16874,8 +16678,8 @@
    "line": 0,
    "cue": 36,
    "window": [
-    133.47,
-    133.96
+    133.33,
+    133.74
    ],
    "png": "w305.png"
   },
@@ -16883,8 +16687,8 @@
    "text": "team.",
    "sub0": 24,
    "subn": 25,
-   "start": 133.96,
-   "end": 134.38,
+   "start": 133.74,
+   "end": 134.16,
    "matched": true,
    "hits": [
     24
@@ -16897,17 +16701,17 @@
    "line": 0,
    "cue": 36,
    "window": [
-    133.96,
-    135.0
+    133.74,
+    134.16
    ],
    "png": "w306.png"
   },
   {
-   "text": "Chaperone",
+   "text": "One",
    "sub0": 25,
    "subn": 26,
-   "start": 135.0,
-   "end": 135.38,
+   "start": 134.16,
+   "end": 134.84,
    "matched": true,
    "hits": [
     25
@@ -16920,17 +16724,17 @@
    "line": 0,
    "cue": 36,
    "window": [
-    135.0,
-    135.38
+    134.16,
+    134.84
    ],
    "png": "w307.png"
   },
   {
-   "text": "sits",
+   "text": "person",
    "sub0": 26,
    "subn": 27,
-   "start": 135.38,
-   "end": 135.64,
+   "start": 134.84,
+   "end": 135.22,
    "matched": true,
    "hits": [
     26
@@ -16943,17 +16747,17 @@
    "line": 0,
    "cue": 36,
    "window": [
-    135.38,
-    135.64
+    134.84,
+    135.22
    ],
    "png": "w308.png"
   },
   {
-   "text": "between",
+   "text": "can",
    "sub0": 27,
    "subn": 28,
-   "start": 135.64,
-   "end": 136.02,
+   "start": 135.22,
+   "end": 135.6,
    "matched": true,
    "hits": [
     27
@@ -16963,20 +16767,20 @@
    ],
    "seg": 14,
    "color": null,
-   "line": 1,
+   "line": 0,
    "cue": 36,
    "window": [
-    135.64,
-    136.02
+    135.22,
+    135.6
    ],
    "png": "w309.png"
   },
   {
-   "text": "the",
+   "text": "safely",
    "sub0": 28,
    "subn": 29,
-   "start": 136.02,
-   "end": 136.18,
+   "start": 135.6,
+   "end": 135.94,
    "matched": true,
    "hits": [
     28
@@ -16986,20 +16790,20 @@
    ],
    "seg": 14,
    "color": null,
-   "line": 1,
+   "line": 0,
    "cue": 36,
    "window": [
-    136.02,
-    136.18
+    135.6,
+    135.94
    ],
    "png": "w310.png"
   },
   {
-   "text": "agents",
+   "text": "run",
    "sub0": 29,
    "subn": 30,
-   "start": 136.18,
-   "end": 136.56,
+   "start": 135.94,
+   "end": 136.28,
    "matched": true,
    "hits": [
     29
@@ -17012,17 +16816,17 @@
    "line": 1,
    "cue": 36,
    "window": [
-    136.18,
-    136.56
+    135.94,
+    136.28
    ],
    "png": "w311.png"
   },
   {
-   "text": "and",
+   "text": "a",
    "sub0": 30,
    "subn": 31,
-   "start": 136.56,
-   "end": 136.8,
+   "start": 136.28,
+   "end": 136.46,
    "matched": true,
    "hits": [
     30
@@ -17035,17 +16839,17 @@
    "line": 1,
    "cue": 36,
    "window": [
-    136.56,
-    136.8
+    136.28,
+    136.46
    ],
    "png": "w312.png"
   },
   {
-   "text": "the",
+   "text": "whole",
    "sub0": 31,
    "subn": 32,
-   "start": 136.8,
-   "end": 136.9,
+   "start": 136.46,
+   "end": 136.68,
    "matched": true,
    "hits": [
     31
@@ -17058,17 +16862,17 @@
    "line": 1,
    "cue": 36,
    "window": [
-    136.8,
-    136.9
+    136.46,
+    136.68
    ],
    "png": "w313.png"
   },
   {
-   "text": "world,",
+   "text": "team",
    "sub0": 32,
    "subn": 33,
-   "start": 136.9,
-   "end": 137.24,
+   "start": 136.68,
+   "end": 136.94,
    "matched": true,
    "hits": [
     32
@@ -17081,17 +16885,17 @@
    "line": 1,
    "cue": 36,
    "window": [
-    136.9,
-    137.51
+    136.68,
+    136.94
    ],
    "png": "w314.png"
   },
   {
-   "text": "so",
+   "text": "of",
    "sub0": 33,
    "subn": 34,
-   "start": 137.56,
-   "end": 137.82,
+   "start": 136.94,
+   "end": 137.14,
    "matched": true,
    "hits": [
     33
@@ -17101,20 +16905,20 @@
    ],
    "seg": 14,
    "color": null,
-   "line": 0,
-   "cue": 37,
+   "line": 1,
+   "cue": 36,
    "window": [
-    137.51,
-    137.82
+    136.94,
+    137.14
    ],
    "png": "w315.png"
   },
   {
-   "text": "one",
+   "text": "agents.",
    "sub0": 34,
    "subn": 35,
-   "start": 137.82,
-   "end": 138.08,
+   "start": 137.14,
+   "end": 137.52,
    "matched": true,
    "hits": [
     34
@@ -17124,322 +16928,23 @@
    ],
    "seg": 14,
    "color": null,
-   "line": 0,
-   "cue": 37,
+   "line": 1,
+   "cue": 36,
    "window": [
-    137.82,
-    138.08
+    137.14,
+    137.67
    ],
    "png": "w316.png"
   },
   {
-   "text": "person",
-   "sub0": 35,
-   "subn": 36,
-   "start": 138.08,
-   "end": 138.42,
-   "matched": true,
-   "hits": [
-    35
-   ],
-   "owners": [
-    35
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 0,
-   "cue": 37,
-   "window": [
-    138.08,
-    138.42
-   ],
-   "png": "w317.png"
-  },
-  {
-   "text": "can",
-   "sub0": 36,
-   "subn": 37,
-   "start": 138.42,
-   "end": 138.66,
-   "matched": true,
-   "hits": [
-    36
-   ],
-   "owners": [
-    36
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 0,
-   "cue": 37,
-   "window": [
-    138.42,
-    138.66
-   ],
-   "png": "w318.png"
-  },
-  {
-   "text": "safely",
-   "sub0": 37,
-   "subn": 38,
-   "start": 138.66,
-   "end": 139.02,
-   "matched": true,
-   "hits": [
-    37
-   ],
-   "owners": [
-    37
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 0,
-   "cue": 37,
-   "window": [
-    138.66,
-    139.02
-   ],
-   "png": "w319.png"
-  },
-  {
-   "text": "run",
-   "sub0": 38,
-   "subn": 39,
-   "start": 139.02,
-   "end": 139.34,
-   "matched": true,
-   "hits": [
-    38
-   ],
-   "owners": [
-    38
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 0,
-   "cue": 37,
-   "window": [
-    139.02,
-    139.34
-   ],
-   "png": "w320.png"
-  },
-  {
-   "text": "a",
-   "sub0": 39,
-   "subn": 40,
-   "start": 139.34,
-   "end": 139.52,
-   "matched": true,
-   "hits": [
-    39
-   ],
-   "owners": [
-    39
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 0,
-   "cue": 37,
-   "window": [
-    139.34,
-    139.52
-   ],
-   "png": "w321.png"
-  },
-  {
-   "text": "whole",
-   "sub0": 40,
-   "subn": 41,
-   "start": 139.52,
-   "end": 139.76,
-   "matched": true,
-   "hits": [
-    40
-   ],
-   "owners": [
-    40
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 0,
-   "cue": 37,
-   "window": [
-    139.52,
-    139.76
-   ],
-   "png": "w322.png"
-  },
-  {
-   "text": "team",
-   "sub0": 41,
-   "subn": 42,
-   "start": 139.76,
-   "end": 140.06,
-   "matched": true,
-   "hits": [
-    41
-   ],
-   "owners": [
-    41
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 1,
-   "cue": 37,
-   "window": [
-    139.76,
-    140.06
-   ],
-   "png": "w323.png"
-  },
-  {
-   "text": "of",
-   "sub0": 42,
-   "subn": 43,
-   "start": 140.06,
-   "end": 140.24,
-   "matched": true,
-   "hits": [
-    42
-   ],
-   "owners": [
-    42
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 1,
-   "cue": 37,
-   "window": [
-    140.06,
-    140.24
-   ],
-   "png": "w324.png"
-  },
-  {
-   "text": "them.",
-   "sub0": 43,
-   "subn": 44,
-   "start": 140.24,
-   "end": 140.4,
-   "matched": true,
-   "hits": [
-    43
-   ],
-   "owners": [
-    43
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 1,
-   "cue": 37,
-   "window": [
-    140.24,
-    140.4
-   ],
-   "png": "w325.png"
-  },
-  {
-   "text": "Pricing",
-   "sub0": 44,
-   "subn": 45,
-   "start": 140.4,
-   "end": 141.06,
-   "matched": true,
-   "hits": [
-    44
-   ],
-   "owners": [
-    44
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 1,
-   "cue": 37,
-   "window": [
-    140.4,
-    141.06
-   ],
-   "png": "w326.png"
-  },
-  {
-   "text": "is",
-   "sub0": 45,
-   "subn": 46,
-   "start": 141.06,
-   "end": 141.44,
-   "matched": true,
-   "hits": [
-    45
-   ],
-   "owners": [
-    45
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 1,
-   "cue": 37,
-   "window": [
-    141.06,
-    141.44
-   ],
-   "png": "w327.png"
-  },
-  {
-   "text": "being",
-   "sub0": 46,
-   "subn": 47,
-   "start": 141.44,
-   "end": 141.64,
-   "matched": true,
-   "hits": [
-    46
-   ],
-   "owners": [
-    46
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 1,
-   "cue": 37,
-   "window": [
-    141.44,
-    141.59
-   ],
-   "png": "w328.png"
-  },
-  {
-   "text": "confirmed.",
-   "sub0": 47,
-   "subn": 48,
-   "start": 141.64,
-   "end": 142.28,
-   "matched": true,
-   "hits": [
-    47
-   ],
-   "owners": [
-    47
-   ],
-   "seg": 14,
-   "color": null,
-   "line": 0,
-   "cue": 38,
-   "window": [
-    141.59,
-    142.49
-   ],
-   "png": "w329.png"
-  },
-  {
    "text": "QwenWork",
    "sub0": 0,
-   "subn": 1,
-   "start": 144.44,
-   "end": 144.88,
+   "subn": 2,
+   "start": 138.42,
+   "end": 138.68,
    "matched": true,
    "hits": [
-    1
+    0
    ],
    "owners": [
     0
@@ -17447,22 +16952,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    144.39,
-    144.88
+    138.37,
+    138.68
    ],
-   "png": "w330.png"
+   "png": "w317.png"
   },
   {
    "text": "built",
-   "sub0": 1,
-   "subn": 2,
-   "start": 144.88,
-   "end": 145.14,
+   "sub0": 2,
+   "subn": 3,
+   "start": 138.68,
+   "end": 138.96,
    "matched": true,
    "hits": [
-    2
+    1
    ],
    "owners": [
     1
@@ -17470,22 +16975,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    144.88,
-    145.14
+    138.68,
+    138.96
    ],
-   "png": "w331.png"
+   "png": "w318.png"
   },
   {
    "text": "this",
-   "sub0": 2,
-   "subn": 3,
-   "start": 145.14,
-   "end": 145.4,
+   "sub0": 3,
+   "subn": 4,
+   "start": 138.96,
+   "end": 139.22,
    "matched": true,
    "hits": [
-    3
+    2
    ],
    "owners": [
     2
@@ -17493,22 +16998,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    145.14,
-    145.4
+    138.96,
+    139.22
    ],
-   "png": "w332.png"
+   "png": "w319.png"
   },
   {
    "text": "project:",
-   "sub0": 3,
-   "subn": 4,
-   "start": 145.4,
-   "end": 145.84,
+   "sub0": 4,
+   "subn": 5,
+   "start": 139.22,
+   "end": 139.66,
    "matched": true,
    "hits": [
-    4
+    3
    ],
    "owners": [
     3
@@ -17516,22 +17021,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    145.4,
-    146.48
+    139.22,
+    140.3
    ],
-   "png": "w333.png"
+   "png": "w320.png"
   },
   {
    "text": "the",
-   "sub0": 4,
-   "subn": 5,
-   "start": 146.48,
-   "end": 146.53,
+   "sub0": 5,
+   "subn": 6,
+   "start": 140.3,
+   "end": 140.35,
    "matched": true,
    "hits": [
-    5
+    4
    ],
    "owners": [
     4
@@ -17539,22 +17044,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    146.48,
-    146.5
+    140.3,
+    140.3
    ],
-   "png": "w334.png"
+   "png": "w321.png"
   },
   {
    "text": "video,",
-   "sub0": 5,
-   "subn": 6,
-   "start": 146.5,
-   "end": 146.8,
+   "sub0": 6,
+   "subn": 7,
+   "start": 140.3,
+   "end": 140.62,
    "matched": true,
    "hits": [
-    6
+    5
    ],
    "owners": [
     5
@@ -17562,22 +17067,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    146.5,
-    147.08
+    140.3,
+    140.9
    ],
-   "png": "w335.png"
+   "png": "w322.png"
   },
   {
    "text": "the",
-   "sub0": 6,
-   "subn": 7,
-   "start": 147.08,
-   "end": 147.13,
+   "sub0": 7,
+   "subn": 8,
+   "start": 140.9,
+   "end": 140.95,
    "matched": true,
    "hits": [
-    7
+    6
    ],
    "owners": [
     6
@@ -17585,22 +17090,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    147.08,
-    147.12
+    140.9,
+    140.92
    ],
-   "png": "w336.png"
+   "png": "w323.png"
   },
   {
    "text": "music,",
-   "sub0": 7,
-   "subn": 8,
-   "start": 147.12,
-   "end": 147.42,
+   "sub0": 8,
+   "subn": 9,
+   "start": 140.92,
+   "end": 141.24,
    "matched": true,
    "hits": [
-    8
+    7
    ],
    "owners": [
     7
@@ -17608,22 +17113,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    147.12,
-    147.76
+    140.92,
+    141.6
    ],
-   "png": "w337.png"
+   "png": "w324.png"
   },
   {
    "text": "the",
-   "sub0": 8,
-   "subn": 9,
-   "start": 147.76,
-   "end": 147.81,
+   "sub0": 9,
+   "subn": 10,
+   "start": 141.6,
+   "end": 141.65,
    "matched": true,
    "hits": [
-    9
+    8
    ],
    "owners": [
     8
@@ -17631,22 +17136,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    147.76,
-    147.8
+    141.6,
+    141.64
    ],
-   "png": "w338.png"
+   "png": "w325.png"
   },
   {
    "text": "title",
-   "sub0": 9,
-   "subn": 10,
-   "start": 147.8,
-   "end": 148.1,
+   "sub0": 10,
+   "subn": 11,
+   "start": 141.64,
+   "end": 141.94,
    "matched": true,
    "hits": [
-    10
+    9
    ],
    "owners": [
     9
@@ -17654,22 +17159,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    147.8,
-    148.1
+    141.64,
+    141.94
    ],
-   "png": "w339.png"
+   "png": "w326.png"
   },
   {
    "text": "art,",
-   "sub0": 10,
-   "subn": 11,
-   "start": 148.1,
-   "end": 148.42,
+   "sub0": 11,
+   "subn": 12,
+   "start": 141.94,
+   "end": 142.24,
    "matched": true,
    "hits": [
-    11
+    10
    ],
    "owners": [
     10
@@ -17677,22 +17182,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 39,
+   "cue": 37,
    "window": [
-    148.1,
-    148.55
+    141.94,
+    142.43
    ],
-   "png": "w340.png"
+   "png": "w327.png"
   },
   {
    "text": "the",
-   "sub0": 11,
-   "subn": 12,
-   "start": 148.6,
-   "end": 148.68,
+   "sub0": 12,
+   "subn": 13,
+   "start": 142.48,
+   "end": 142.53,
    "matched": true,
    "hits": [
-    12
+    11
    ],
    "owners": [
     11
@@ -17700,22 +17205,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 40,
+   "cue": 38,
    "window": [
-    148.55,
-    148.68
+    142.43,
+    142.52
    ],
-   "png": "w341.png"
+   "png": "w328.png"
   },
   {
    "text": "integration,",
-   "sub0": 12,
-   "subn": 13,
-   "start": 148.68,
-   "end": 149.12,
+   "sub0": 13,
+   "subn": 14,
+   "start": 142.52,
+   "end": 142.98,
    "matched": true,
    "hits": [
-    13
+    12
    ],
    "owners": [
     12
@@ -17723,22 +17228,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 40,
+   "cue": 38,
    "window": [
-    148.68,
-    149.52
+    142.52,
+    143.4
    ],
-   "png": "w342.png"
+   "png": "w329.png"
   },
   {
    "text": "and",
-   "sub0": 13,
-   "subn": 14,
-   "start": 149.52,
-   "end": 149.66,
+   "sub0": 14,
+   "subn": 15,
+   "start": 143.4,
+   "end": 143.52,
    "matched": true,
    "hits": [
-    14
+    13
    ],
    "owners": [
     13
@@ -17746,22 +17251,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 40,
+   "cue": 38,
    "window": [
-    149.52,
-    149.66
+    143.4,
+    143.52
    ],
-   "png": "w343.png"
+   "png": "w330.png"
   },
   {
    "text": "the",
-   "sub0": 14,
-   "subn": 15,
-   "start": 149.66,
-   "end": 149.76,
+   "sub0": 15,
+   "subn": 16,
+   "start": 143.52,
+   "end": 143.62,
    "matched": true,
    "hits": [
-    15
+    14
    ],
    "owners": [
     14
@@ -17769,22 +17274,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 40,
+   "cue": 38,
    "window": [
-    149.66,
-    149.76
+    143.52,
+    143.62
    ],
-   "png": "w344.png"
+   "png": "w331.png"
   },
   {
    "text": "deploy.",
-   "sub0": 15,
-   "subn": 16,
-   "start": 149.76,
-   "end": 150.14,
+   "sub0": 16,
+   "subn": 17,
+   "start": 143.62,
+   "end": 144.0,
    "matched": true,
    "hits": [
-    16
+    15
    ],
    "owners": [
     15
@@ -17792,22 +17297,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 40,
+   "cue": 38,
    "window": [
-    149.76,
-    150.29
+    143.62,
+    144.15
    ],
-   "png": "w345.png"
+   "png": "w332.png"
   },
   {
    "text": "The",
-   "sub0": 16,
-   "subn": 17,
-   "start": 150.68,
-   "end": 150.84,
+   "sub0": 17,
+   "subn": 18,
+   "start": 144.62,
+   "end": 144.74,
    "matched": true,
    "hits": [
-    17
+    16
    ],
    "owners": [
     16
@@ -17815,22 +17320,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 41,
+   "cue": 39,
    "window": [
-    150.63,
-    150.84
+    144.57,
+    144.74
    ],
-   "png": "w346.png"
+   "png": "w333.png"
   },
   {
    "text": "app",
-   "sub0": 17,
-   "subn": 18,
-   "start": 150.84,
-   "end": 151.08,
+   "sub0": 18,
+   "subn": 19,
+   "start": 144.74,
+   "end": 145.0,
    "matched": true,
    "hits": [
-    18
+    17
    ],
    "owners": [
     17
@@ -17838,22 +17343,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 41,
+   "cue": 39,
    "window": [
-    150.84,
-    151.08
+    144.74,
+    145.0
    ],
-   "png": "w347.png"
+   "png": "w334.png"
   },
   {
    "text": "runs",
-   "sub0": 18,
-   "subn": 19,
-   "start": 151.08,
-   "end": 151.38,
+   "sub0": 19,
+   "subn": 20,
+   "start": 145.0,
+   "end": 145.3,
    "matched": true,
    "hits": [
-    19
+    18
    ],
    "owners": [
     18
@@ -17861,22 +17366,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 41,
+   "cue": 39,
    "window": [
-    151.08,
-    151.38
+    145.0,
+    145.3
    ],
-   "png": "w348.png"
+   "png": "w335.png"
   },
   {
    "text": "on",
-   "sub0": 19,
-   "subn": 20,
-   "start": 151.38,
-   "end": 151.64,
+   "sub0": 20,
+   "subn": 21,
+   "start": 145.3,
+   "end": 145.52,
    "matched": true,
    "hits": [
-    20
+    19
    ],
    "owners": [
     19
@@ -17884,22 +17389,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 41,
+   "cue": 39,
    "window": [
-    151.38,
-    151.64
+    145.3,
+    145.52
    ],
-   "png": "w349.png"
+   "png": "w336.png"
   },
   {
    "text": "QwenWork",
-   "sub0": 20,
-   "subn": 21,
-   "start": 151.64,
-   "end": 152.2,
+   "sub0": 21,
+   "subn": 23,
+   "start": 145.52,
+   "end": 145.92,
    "matched": true,
    "hits": [
-    22
+    20
    ],
    "owners": [
     20
@@ -17907,22 +17412,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 41,
+   "cue": 39,
    "window": [
-    151.64,
-    152.2
+    145.52,
+    145.92
    ],
-   "png": "w350.png"
+   "png": "w337.png"
   },
   {
    "text": "Pages.",
-   "sub0": 21,
-   "subn": 22,
-   "start": 152.2,
-   "end": 152.62,
+   "sub0": 23,
+   "subn": 24,
+   "start": 145.92,
+   "end": 146.38,
    "matched": true,
    "hits": [
-    23
+    21
    ],
    "owners": [
     21
@@ -17930,22 +17435,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 41,
+   "cue": 39,
    "window": [
-    152.2,
-    152.77
+    145.92,
+    146.53
    ],
-   "png": "w351.png"
+   "png": "w338.png"
   },
   {
    "text": "And",
-   "sub0": 22,
-   "subn": 23,
-   "start": 153.18,
-   "end": 153.3,
+   "sub0": 24,
+   "subn": 25,
+   "start": 146.92,
+   "end": 147.06,
    "matched": true,
    "hits": [
-    24
+    22
    ],
    "owners": [
     22
@@ -17953,22 +17458,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    153.13,
-    153.3
+    146.87,
+    147.06
    ],
-   "png": "w352.png"
+   "png": "w339.png"
   },
   {
    "text": "live",
-   "sub0": 23,
-   "subn": 24,
-   "start": 153.3,
-   "end": 153.52,
+   "sub0": 25,
+   "subn": 26,
+   "start": 147.06,
+   "end": 147.3,
    "matched": true,
    "hits": [
-    25
+    23
    ],
    "owners": [
     23
@@ -17976,22 +17481,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    153.3,
-    153.52
+    147.06,
+    147.3
    ],
-   "png": "w353.png"
+   "png": "w340.png"
   },
   {
-   "text": "Qwen",
-   "sub0": 24,
-   "subn": 25,
-   "start": 153.52,
-   "end": 153.94,
+   "text": "QwenWork",
+   "sub0": 26,
+   "subn": 28,
+   "start": 147.3,
+   "end": 147.8,
    "matched": true,
    "hits": [
-    26
+    24
    ],
    "owners": [
     24
@@ -17999,22 +17504,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    153.52,
-    153.94
+    147.3,
+    147.8
    ],
-   "png": "w354.png"
+   "png": "w341.png"
   },
   {
    "text": "agents",
-   "sub0": 25,
-   "subn": 26,
-   "start": 153.94,
-   "end": 154.36,
+   "sub0": 28,
+   "subn": 29,
+   "start": 147.8,
+   "end": 148.24,
    "matched": true,
    "hits": [
-    27
+    25
    ],
    "owners": [
     25
@@ -18022,22 +17527,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    153.94,
-    154.36
+    147.8,
+    148.24
    ],
-   "png": "w355.png"
+   "png": "w342.png"
   },
   {
    "text": "run",
-   "sub0": 26,
-   "subn": 27,
-   "start": 154.36,
-   "end": 154.86,
+   "sub0": 29,
+   "subn": 30,
+   "start": 148.24,
+   "end": 148.72,
    "matched": true,
    "hits": [
-    28
+    26
    ],
    "owners": [
     26
@@ -18045,22 +17550,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    154.36,
-    154.86
+    148.24,
+    148.72
    ],
-   "png": "w356.png"
+   "png": "w343.png"
   },
   {
    "text": "through",
-   "sub0": 27,
-   "subn": 28,
-   "start": 154.86,
-   "end": 155.08,
+   "sub0": 30,
+   "subn": 31,
+   "start": 148.72,
+   "end": 148.94,
    "matched": true,
    "hits": [
-    29
+    27
    ],
    "owners": [
     27
@@ -18068,45 +17573,45 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    154.86,
-    155.08
+    148.72,
+    148.94
    ],
-   "png": "w357.png"
+   "png": "w344.png"
   },
   {
    "text": "the",
-   "sub0": 28,
-   "subn": 29,
-   "start": 155.08,
-   "end": 155.2,
+   "sub0": 31,
+   "subn": 32,
+   "start": 148.94,
+   "end": 149.08,
    "matched": true,
    "hits": [
-    30
+    28
    ],
    "owners": [
     28
    ],
    "seg": 15,
    "color": null,
-   "line": 0,
-   "cue": 42,
+   "line": 1,
+   "cue": 40,
    "window": [
-    155.08,
-    155.2
+    148.94,
+    149.08
    ],
-   "png": "w358.png"
+   "png": "w345.png"
   },
   {
    "text": "gate",
-   "sub0": 29,
-   "subn": 30,
-   "start": 155.2,
-   "end": 155.42,
+   "sub0": 32,
+   "subn": 33,
+   "start": 149.08,
+   "end": 149.3,
    "matched": true,
    "hits": [
-    31
+    29
    ],
    "owners": [
     29
@@ -18114,22 +17619,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    155.2,
-    155.42
+    149.08,
+    149.3
    ],
-   "png": "w359.png"
+   "png": "w346.png"
   },
   {
    "text": "right",
-   "sub0": 30,
-   "subn": 31,
-   "start": 155.42,
-   "end": 155.72,
+   "sub0": 33,
+   "subn": 34,
+   "start": 149.3,
+   "end": 149.62,
    "matched": true,
    "hits": [
-    32
+    30
    ],
    "owners": [
     30
@@ -18137,22 +17642,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    155.42,
-    155.72
+    149.3,
+    149.62
    ],
-   "png": "w360.png"
+   "png": "w347.png"
   },
   {
    "text": "now.",
-   "sub0": 31,
-   "subn": 32,
-   "start": 155.72,
-   "end": 156.06,
+   "sub0": 34,
+   "subn": 35,
+   "start": 149.62,
+   "end": 150.04,
    "matched": true,
    "hits": [
-    33
+    31
    ],
    "owners": [
     31
@@ -18160,22 +17665,22 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    155.72,
-    156.54
+    149.62,
+    150.6
    ],
-   "png": "w361.png"
+   "png": "w348.png"
   },
   {
-   "text": "A",
-   "sub0": 32,
-   "subn": 33,
-   "start": 156.54,
-   "end": 156.66,
+   "text": "Watch:",
+   "sub0": 35,
+   "subn": 36,
+   "start": 150.6,
+   "end": 150.74,
    "matched": true,
    "hits": [
-    34
+    32
    ],
    "owners": [
     32
@@ -18183,114 +17688,114 @@
    "seg": 15,
    "color": null,
    "line": 1,
-   "cue": 42,
+   "cue": 40,
    "window": [
-    156.54,
-    156.66
+    150.6,
+    151.03
    ],
-   "png": "w362.png"
+   "png": "w349.png"
   },
   {
-   "text": "sales",
-   "sub0": 33,
-   "subn": 34,
-   "start": 156.66,
-   "end": 156.92,
+   "text": "an",
+   "sub0": 36,
+   "subn": 37,
+   "start": 151.08,
+   "end": 151.13,
    "matched": true,
    "hits": [
-    35
+    33
    ],
    "owners": [
     33
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 42,
+   "line": 0,
+   "cue": 41,
    "window": [
-    156.66,
-    156.92
+    151.03,
+    151.12
    ],
-   "png": "w363.png"
+   "png": "w350.png"
   },
   {
    "text": "agent",
-   "sub0": 34,
-   "subn": 35,
-   "start": 156.92,
-   "end": 157.32,
+   "sub0": 37,
+   "subn": 38,
+   "start": 151.12,
+   "end": 151.42,
    "matched": true,
    "hits": [
-    36
+    34
    ],
    "owners": [
     34
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 42,
+   "line": 0,
+   "cue": 41,
    "window": [
-    156.92,
-    157.32
+    151.12,
+    151.42
    ],
-   "png": "w364.png"
+   "png": "w351.png"
   },
   {
    "text": "tries",
-   "sub0": 35,
-   "subn": 36,
-   "start": 157.32,
-   "end": 157.66,
+   "sub0": 38,
+   "subn": 39,
+   "start": 151.42,
+   "end": 151.72,
    "matched": true,
    "hits": [
-    37
+    35
    ],
    "owners": [
     35
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 42,
+   "line": 0,
+   "cue": 41,
    "window": [
-    157.32,
-    157.66
+    151.42,
+    151.72
    ],
-   "png": "w365.png"
+   "png": "w352.png"
   },
   {
    "text": "to",
-   "sub0": 36,
-   "subn": 37,
-   "start": 157.66,
-   "end": 157.88,
+   "sub0": 39,
+   "subn": 40,
+   "start": 151.72,
+   "end": 151.94,
    "matched": true,
    "hits": [
-    38
+    36
    ],
    "owners": [
     36
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 42,
+   "line": 0,
+   "cue": 41,
    "window": [
-    157.66,
-    157.83
+    151.72,
+    151.94
    ],
-   "png": "w366.png"
+   "png": "w353.png"
   },
   {
-   "text": "email",
-   "sub0": 37,
-   "subn": 38,
-   "start": 157.88,
-   "end": 158.16,
+   "text": "read",
+   "sub0": 40,
+   "subn": 41,
+   "start": 151.94,
+   "end": 152.12,
    "matched": true,
    "hits": [
-    39
+    37
    ],
    "owners": [
     37
@@ -18298,22 +17803,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 43,
+   "cue": 41,
    "window": [
-    157.83,
-    158.16
+    151.94,
+    152.12
    ],
-   "png": "w367.png"
+   "png": "w354.png"
   },
   {
-   "text": "the",
-   "sub0": 38,
-   "subn": 39,
-   "start": 158.16,
-   "end": 158.38,
+   "text": "bank",
+   "sub0": 41,
+   "subn": 42,
+   "start": 152.12,
+   "end": 152.32,
    "matched": true,
    "hits": [
-    40
+    38
    ],
    "owners": [
     38
@@ -18321,22 +17826,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 43,
+   "cue": 41,
    "window": [
-    158.16,
-    158.38
+    152.12,
+    152.32
    ],
-   "png": "w368.png"
+   "png": "w355.png"
   },
   {
-   "text": "client",
-   "sub0": 39,
-   "subn": 40,
-   "start": 158.38,
-   "end": 158.66,
+   "text": "details",
+   "sub0": 42,
+   "subn": 43,
+   "start": 152.32,
+   "end": 152.74,
    "matched": true,
    "hits": [
-    41
+    39
    ],
    "owners": [
     39
@@ -18344,22 +17849,22 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 43,
+   "cue": 41,
    "window": [
-    158.38,
-    158.66
+    152.32,
+    152.74
    ],
-   "png": "w369.png"
+   "png": "w356.png"
   },
   {
-   "text": "list",
-   "sub0": 40,
-   "subn": 41,
-   "start": 158.66,
-   "end": 158.88,
+   "text": "it",
+   "sub0": 43,
+   "subn": 44,
+   "start": 152.74,
+   "end": 153.04,
    "matched": true,
    "hits": [
-    42
+    40
    ],
    "owners": [
     40
@@ -18367,206 +17872,206 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 43,
+   "cue": 41,
    "window": [
-    158.66,
-    158.88
+    152.74,
+    153.04
    ],
-   "png": "w370.png"
+   "png": "w357.png"
   },
   {
-   "text": "outside \u2014",
-   "sub0": 41,
-   "subn": 42,
-   "start": 158.88,
-   "end": 159.44,
+   "text": "doesn't",
+   "sub0": 44,
+   "subn": 45,
+   "start": 153.04,
+   "end": 153.3,
    "matched": true,
    "hits": [
-    43
+    41
    ],
    "owners": [
     41
    ],
    "seg": 15,
    "color": null,
-   "line": 0,
-   "cue": 43,
+   "line": 1,
+   "cue": 41,
    "window": [
-    158.88,
-    159.96
+    153.04,
+    153.3
    ],
-   "png": "w371.png"
+   "png": "w358.png"
   },
   {
-   "text": "blocked.",
-   "sub0": 42,
-   "subn": 43,
-   "start": 159.96,
-   "end": 160.18,
+   "text": "need \u2014",
+   "sub0": 45,
+   "subn": 46,
+   "start": 153.3,
+   "end": 153.66,
    "matched": true,
    "hits": [
-    44
+    42
    ],
    "owners": [
     42
    ],
    "seg": 15,
-   "color": "#EDA69C",
+   "color": null,
    "line": 1,
-   "cue": 43,
+   "cue": 41,
    "window": [
-    159.96,
-    160.72
+    153.3,
+    154.06
    ],
-   "png": "w372.png"
+   "png": "w359.png"
   },
   {
-   "text": "An",
-   "sub0": 43,
-   "subn": 44,
-   "start": 160.72,
-   "end": 160.86,
+   "text": "blocked.",
+   "sub0": 46,
+   "subn": 47,
+   "start": 154.06,
+   "end": 154.26,
    "matched": true,
    "hits": [
-    45
+    43
    ],
    "owners": [
     43
    ],
    "seg": 15,
-   "color": null,
+   "color": "#EDA69C",
    "line": 1,
-   "cue": 43,
+   "cue": 41,
    "window": [
-    160.72,
-    160.86
+    154.06,
+    154.41
    ],
-   "png": "w373.png"
+   "png": "w360.png"
   },
   {
-   "text": "ops",
-   "sub0": 44,
-   "subn": 45,
-   "start": 160.86,
-   "end": 161.08,
+   "text": "It",
+   "sub0": 47,
+   "subn": 48,
+   "start": 154.92,
+   "end": 155.02,
    "matched": true,
    "hits": [
-    46
+    44
    ],
    "owners": [
     44
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 43,
+   "line": 0,
+   "cue": 42,
    "window": [
-    160.86,
-    161.08
+    154.87,
+    155.02
    ],
-   "png": "w374.png"
+   "png": "w361.png"
   },
   {
-   "text": "agent",
-   "sub0": 45,
-   "subn": 46,
-   "start": 161.08,
-   "end": 161.5,
+   "text": "tries",
+   "sub0": 48,
+   "subn": 49,
+   "start": 155.02,
+   "end": 155.26,
    "matched": true,
    "hits": [
-    47
+    45
    ],
    "owners": [
     45
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 43,
+   "line": 0,
+   "cue": 42,
    "window": [
-    161.08,
-    161.5
+    155.02,
+    155.26
    ],
-   "png": "w375.png"
+   "png": "w362.png"
   },
   {
-   "text": "tries",
-   "sub0": 46,
-   "subn": 47,
-   "start": 161.5,
-   "end": 161.8,
+   "text": "to",
+   "sub0": 49,
+   "subn": 50,
+   "start": 155.26,
+   "end": 155.48,
    "matched": true,
    "hits": [
-    48
+    46
    ],
    "owners": [
     46
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 43,
+   "line": 0,
+   "cue": 42,
    "window": [
-    161.5,
-    161.8
+    155.26,
+    155.48
    ],
-   "png": "w376.png"
+   "png": "w363.png"
   },
   {
-   "text": "to",
-   "sub0": 47,
-   "subn": 48,
-   "start": 161.8,
-   "end": 162.02,
+   "text": "delete",
+   "sub0": 50,
+   "subn": 51,
+   "start": 155.48,
+   "end": 155.72,
    "matched": true,
    "hits": [
-    49
+    47
    ],
    "owners": [
     47
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 43,
+   "line": 0,
+   "cue": 42,
    "window": [
-    161.8,
-    162.02
+    155.48,
+    155.72
    ],
-   "png": "w377.png"
+   "png": "w364.png"
   },
   {
-   "text": "delete",
-   "sub0": 48,
-   "subn": 49,
-   "start": 162.02,
-   "end": 162.22,
+   "text": "an",
+   "sub0": 51,
+   "subn": 52,
+   "start": 155.72,
+   "end": 155.9,
    "matched": true,
    "hits": [
-    50
+    48
    ],
    "owners": [
     48
    ],
    "seg": 15,
    "color": null,
-   "line": 1,
-   "cue": 43,
+   "line": 0,
+   "cue": 42,
    "window": [
-    162.02,
-    162.17
+    155.72,
+    155.9
    ],
-   "png": "w378.png"
+   "png": "w365.png"
   },
   {
-   "text": "records \u2014",
-   "sub0": 49,
-   "subn": 50,
-   "start": 162.22,
-   "end": 162.76,
+   "text": "unpaid",
+   "sub0": 52,
+   "subn": 53,
+   "start": 155.9,
+   "end": 156.28,
    "matched": true,
    "hits": [
-    51
+    49
    ],
    "owners": [
     49
@@ -18574,88 +18079,111 @@
    "seg": 15,
    "color": null,
    "line": 0,
-   "cue": 44,
+   "cue": 42,
    "window": [
-    162.17,
-    163.14
+    155.9,
+    156.28
    ],
-   "png": "w379.png"
+   "png": "w366.png"
   },
   {
-   "text": "held",
-   "sub0": 50,
-   "subn": 51,
-   "start": 163.14,
-   "end": 163.22,
+   "text": "invoice \u2014",
+   "sub0": 53,
+   "subn": 54,
+   "start": 156.28,
+   "end": 156.88,
    "matched": true,
    "hits": [
-    52
+    50
    ],
    "owners": [
     50
    ],
    "seg": 15,
-   "color": "#E8C988",
+   "color": null,
    "line": 0,
-   "cue": 44,
+   "cue": 42,
    "window": [
-    163.14,
-    163.22
+    156.28,
+    156.88
    ],
-   "png": "w380.png"
+   "png": "w367.png"
   },
   {
-   "text": "for",
-   "sub0": 51,
-   "subn": 52,
-   "start": 163.22,
-   "end": 163.44,
+   "text": "held",
+   "sub0": 54,
+   "subn": 55,
+   "start": 156.88,
+   "end": 157.34,
    "matched": true,
    "hits": [
-    53
+    51
    ],
    "owners": [
     51
    ],
    "seg": 15,
-   "color": null,
-   "line": 0,
-   "cue": 44,
+   "color": "#E8C988",
+   "line": 1,
+   "cue": 42,
    "window": [
-    163.22,
-    163.44
+    156.88,
+    157.34
    ],
-   "png": "w381.png"
+   "png": "w368.png"
   },
   {
-   "text": "Mei.",
-   "sub0": 52,
-   "subn": 53,
-   "start": 163.44,
-   "end": 163.7,
+   "text": "for",
+   "sub0": 55,
+   "subn": 56,
+   "start": 157.34,
+   "end": 157.58,
    "matched": true,
    "hits": [
-    54
+    52
    ],
    "owners": [
     52
    ],
    "seg": 15,
    "color": null,
-   "line": 0,
-   "cue": 44,
+   "line": 1,
+   "cue": 42,
    "window": [
-    163.44,
-    163.85
+    157.34,
+    157.58
    ],
-   "png": "w382.png"
+   "png": "w369.png"
+  },
+  {
+   "text": "Mei.",
+   "sub0": 56,
+   "subn": 57,
+   "start": 157.58,
+   "end": 157.82,
+   "matched": true,
+   "hits": [
+    53
+   ],
+   "owners": [
+    53
+   ],
+   "seg": 15,
+   "color": null,
+   "line": 1,
+   "cue": 42,
+   "window": [
+    157.58,
+    157.97
+   ],
+   "png": "w370.png"
   },
   {
    "text": "See",
    "sub0": 0,
    "subn": 1,
-   "start": 165.88,
-   "end": 166.44,
+   "start": 161.94,
+   "end": 162.46,
    "matched": true,
    "hits": [
     0
@@ -18666,19 +18194,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    166.05,
-    166.44
+    162.05,
+    162.46
    ],
-   "png": "w383.png"
+   "png": "w371.png"
   },
   {
    "text": "it",
    "sub0": 1,
    "subn": 2,
-   "start": 166.44,
-   "end": 166.56,
+   "start": 162.46,
+   "end": 162.58,
    "matched": true,
    "hits": [
     1
@@ -18689,19 +18217,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    166.44,
-    166.56
+    162.46,
+    162.58
    ],
-   "png": "w384.png"
+   "png": "w372.png"
   },
   {
    "text": "live \u2014",
    "sub0": 2,
    "subn": 3,
-   "start": 166.56,
-   "end": 166.84,
+   "start": 162.58,
+   "end": 162.84,
    "matched": true,
    "hits": [
     2
@@ -18712,19 +18240,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    166.56,
-    167.22
+    162.58,
+    163.2
    ],
-   "png": "w385.png"
+   "png": "w373.png"
   },
   {
    "text": "the",
    "sub0": 3,
    "subn": 4,
-   "start": 167.22,
-   "end": 167.28,
+   "start": 163.2,
+   "end": 163.28,
    "matched": true,
    "hits": [
     3
@@ -18735,19 +18263,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    167.22,
-    167.28
+    163.2,
+    163.28
    ],
-   "png": "w386.png"
+   "png": "w374.png"
   },
   {
    "text": "links",
    "sub0": 4,
    "subn": 5,
-   "start": 167.28,
-   "end": 167.48,
+   "start": 163.28,
+   "end": 163.5,
    "matched": true,
    "hits": [
     4
@@ -18758,19 +18286,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    167.28,
-    167.48
+    163.28,
+    163.5
    ],
-   "png": "w387.png"
+   "png": "w375.png"
   },
   {
    "text": "are",
    "sub0": 5,
    "subn": 6,
-   "start": 167.48,
-   "end": 167.72,
+   "start": 163.5,
+   "end": 163.74,
    "matched": true,
    "hits": [
     5
@@ -18781,19 +18309,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    167.48,
-    167.72
+    163.5,
+    163.74
    ],
-   "png": "w388.png"
+   "png": "w376.png"
   },
   {
    "text": "in",
    "sub0": 6,
    "subn": 7,
-   "start": 167.72,
-   "end": 167.82,
+   "start": 163.74,
+   "end": 163.84,
    "matched": true,
    "hits": [
     6
@@ -18804,19 +18332,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    167.72,
-    167.82
+    163.74,
+    163.84
    ],
-   "png": "w389.png"
+   "png": "w377.png"
   },
   {
    "text": "the",
    "sub0": 7,
    "subn": 8,
-   "start": 167.82,
-   "end": 167.9,
+   "start": 163.84,
+   "end": 163.92,
    "matched": true,
    "hits": [
     7
@@ -18827,19 +18355,19 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    167.82,
-    167.9
+    163.84,
+    163.92
    ],
-   "png": "w390.png"
+   "png": "w378.png"
   },
   {
    "text": "description.",
    "sub0": 8,
    "subn": 9,
-   "start": 167.9,
-   "end": 168.28,
+   "start": 163.92,
+   "end": 164.36,
    "matched": true,
    "hits": [
     8
@@ -18850,19 +18378,19 @@
    "seg": 16,
    "color": null,
    "line": 1,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    167.9,
-    169.0
+    163.92,
+    165.0
    ],
-   "png": "w391.png"
+   "png": "w379.png"
   },
   {
-   "text": "Chaperone,",
+   "text": "Chaperone.",
    "sub0": 9,
    "subn": 10,
-   "start": 169.0,
-   "end": 169.58,
+   "start": 165.0,
+   "end": 165.52,
    "matched": true,
    "hits": [
     9
@@ -18873,19 +18401,19 @@
    "seg": 16,
    "color": null,
    "line": 1,
-   "cue": 45,
+   "cue": 43,
    "window": [
-    169.0,
-    169.53
+    165.0,
+    165.67
    ],
-   "png": "w392.png"
+   "png": "w380.png"
   },
   {
-   "text": "from",
+   "text": "Built",
    "sub0": 10,
    "subn": 11,
-   "start": 169.58,
-   "end": 169.78,
+   "start": 166.0,
+   "end": 166.2,
    "matched": true,
    "hits": [
     10
@@ -18896,150 +18424,242 @@
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 46,
+   "cue": 44,
    "window": [
-    169.53,
-    169.78
+    165.95,
+    166.2
    ],
-   "png": "w393.png"
+   "png": "w381.png"
+  },
+  {
+   "text": "with",
+   "sub0": 11,
+   "subn": 12,
+   "start": 166.2,
+   "end": 166.46,
+   "matched": true,
+   "hits": [
+    11
+   ],
+   "owners": [
+    11
+   ],
+   "seg": 16,
+   "color": null,
+   "line": 0,
+   "cue": 44,
+   "window": [
+    166.2,
+    166.46
+   ],
+   "png": "w382.png"
+  },
+  {
+   "text": "QwenWork,",
+   "sub0": 12,
+   "subn": 14,
+   "start": 166.46,
+   "end": 166.96,
+   "matched": true,
+   "hits": [
+    12
+   ],
+   "owners": [
+    12
+   ],
+   "seg": 16,
+   "color": null,
+   "line": 0,
+   "cue": 44,
+   "window": [
+    166.46,
+    167.22
+   ],
+   "png": "w383.png"
+  },
+  {
+   "text": "live",
+   "sub0": 14,
+   "subn": 15,
+   "start": 167.22,
+   "end": 167.48,
+   "matched": true,
+   "hits": [
+    13
+   ],
+   "owners": [
+    13
+   ],
+   "seg": 16,
+   "color": null,
+   "line": 0,
+   "cue": 44,
+   "window": [
+    167.22,
+    167.48
+   ],
+   "png": "w384.png"
+  },
+  {
+   "text": "on",
+   "sub0": 15,
+   "subn": 16,
+   "start": 167.48,
+   "end": 167.68,
+   "matched": true,
+   "hits": [
+    14
+   ],
+   "owners": [
+    14
+   ],
+   "seg": 16,
+   "color": null,
+   "line": 0,
+   "cue": 44,
+   "window": [
+    167.48,
+    167.68
+   ],
+   "png": "w385.png"
   },
   {
    "text": "Hashmeta.",
-   "sub0": 11,
-   "subn": 12,
-   "start": 169.78,
-   "end": 170.26,
+   "sub0": 16,
+   "subn": 17,
+   "start": 167.68,
+   "end": 168.1,
    "matched": true,
    "hits": [
-    11
+    15
    ],
    "owners": [
-    11
+    15
    ],
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 46,
+   "cue": 44,
    "window": [
-    169.78,
-    170.88
+    167.68,
+    168.25
    ],
-   "png": "w394.png"
+   "png": "w386.png"
   },
   {
    "text": "Give",
-   "sub0": 12,
-   "subn": 13,
-   "start": 170.88,
-   "end": 170.98,
+   "sub0": 17,
+   "subn": 18,
+   "start": 168.76,
+   "end": 168.84,
    "matched": true,
    "hits": [
-    12
+    16
    ],
    "owners": [
-    12
+    16
    ],
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 46,
+   "cue": 45,
    "window": [
-    170.88,
-    170.98
+    168.71,
+    168.84
    ],
-   "png": "w395.png"
+   "png": "w387.png"
   },
   {
    "text": "your",
-   "sub0": 13,
-   "subn": 14,
-   "start": 170.98,
-   "end": 171.16,
+   "sub0": 18,
+   "subn": 19,
+   "start": 168.84,
+   "end": 169.02,
    "matched": true,
    "hits": [
-    13
+    17
    ],
    "owners": [
-    13
+    17
    ],
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 46,
+   "cue": 45,
    "window": [
-    170.98,
-    171.16
+    168.84,
+    169.02
    ],
-   "png": "w396.png"
+   "png": "w388.png"
   },
   {
    "text": "agents",
-   "sub0": 14,
-   "subn": 15,
-   "start": 171.16,
-   "end": 171.5,
+   "sub0": 19,
+   "subn": 20,
+   "start": 169.02,
+   "end": 169.34,
    "matched": true,
    "hits": [
-    14
+    18
    ],
    "owners": [
-    14
+    18
    ],
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 46,
+   "cue": 45,
    "window": [
-    171.16,
-    171.5
+    169.02,
+    169.34
    ],
-   "png": "w397.png"
+   "png": "w389.png"
   },
   {
    "text": "a",
-   "sub0": 15,
-   "subn": 16,
-   "start": 171.5,
-   "end": 171.7,
+   "sub0": 20,
+   "subn": 21,
+   "start": 169.34,
+   "end": 169.54,
    "matched": true,
    "hits": [
-    15
+    19
    ],
    "owners": [
-    15
+    19
    ],
    "seg": 16,
    "color": null,
    "line": 0,
-   "cue": 46,
+   "cue": 45,
    "window": [
-    171.5,
-    171.7
+    169.34,
+    169.54
    ],
-   "png": "w398.png"
+   "png": "w390.png"
   },
   {
    "text": "chaperone.",
-   "sub0": 16,
-   "subn": 17,
-   "start": 171.7,
-   "end": 172.24,
+   "sub0": 21,
+   "subn": 22,
+   "start": 169.54,
+   "end": 170.06,
    "matched": true,
    "hits": [
-    16
+    20
    ],
    "owners": [
-    16
+    20
    ],
    "seg": 16,
    "color": null,
-   "line": 1,
-   "cue": 46,
+   "line": 0,
+   "cue": 45,
    "window": [
-    171.7,
-    172.39
+    169.54,
+    170.21
    ],
-   "png": "w399.png"
+   "png": "w391.png"
   }
  ]
 }

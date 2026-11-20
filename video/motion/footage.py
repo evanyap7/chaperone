@@ -283,9 +283,11 @@ _clip_frames = {}
 
 
 def _extract_clip(clip):
-    """One ffmpeg pass -> JPEG frames at 30 fps, 1920x1080 letterboxed, on disk.
+    """One ffmpeg pass -> JPEG frames at 30 fps at the clip's NATIVE resolution.
 
-    The cache invalidates automatically when the source file changes (V1 retakes).
+    DPR2 retakes are 1920x1560; we keep native detail (no downscale to 1080) so
+    the compositor can crop the content column and still render >=28px body text.
+    The cache invalidates automatically when the source file changes.
     """
     key = clip['key']
     src = clip['path']
@@ -308,10 +310,8 @@ def _extract_clip(clip):
         vf = []
         if clip['speed'] != 1.0:
             vf.append(f"setpts=PTS/{clip['speed']}")
-        vf += ['fps=30',
-               'scale=1920:1080:force_original_aspect_ratio=decrease',
-               'pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x0B1120']
-        cmd += ['-vf', ','.join(vf), '-q:v', '3', os.path.join(outdir, 'f%05d.jpg')]
+        vf += ['fps=30']
+        cmd += ['-vf', ','.join(vf), '-q:v', '2', os.path.join(outdir, 'f%05d.jpg')]
         subprocess.run(cmd, check=True)
         n = len(glob.glob(os.path.join(outdir, 'f*.jpg')))
         with open(done, 'w') as fh:
@@ -366,15 +366,13 @@ def get_frame(beat, t_local, directory=None, manifest=None, window=None, seg_dur
 
 
 def composite_footage(base, img, box, t, dur, push=0.06, radius=18, shadow=True,
-                      caption_safe=True, fit='cover'):
+                      caption_safe=True, fit='cover', crop=None):
     """Rounded frame + soft shadow on the dark backdrop, slow push-in 1.00->1+push.
 
-    fit='cover': scale to cover the box and centre-crop (default, for UI footage
-                 whose layout fills the frame; highlights map via footage_mapper).
-    fit='contain': letterbox — the WHOLE source stays visible at all times,
-                 centred on a DARK_FADE panel. The push-in grows the fitted image
-                 from 1/(1+push) to exactly full-fit, so it never crops. Use for
-                 full-screen recordings with sparse content (e.g. the terminal).
+    crop: optional (x0,y0,x1,y1) in the source's native pixels — the content band
+          to show (DPR2 retakes). Applied before the fit so body text stays >=28px.
+    fit='cover': scale to cover the box and centre-crop (default).
+    fit='contain': letterbox — the WHOLE (cropped) source stays visible.
     Returns the box actually used (clamped to the caption-safe zone).
     """
     x0, y0, x1, y1 = [int(v) for v in box]
@@ -383,8 +381,13 @@ def composite_footage(base, img, box, t, dur, push=0.06, radius=18, shadow=True,
     bw, bh = x1 - x0, y1 - y0
     if bw <= 0 or bh <= 0:
         return (x0, y0, x1, y1)
-    scale = 1.0 + push * ds.ease_standard(min(1.0, t / max(0.001, dur)))
     src = img.convert('RGB')
+    if crop:
+        cx0, cy0, cx1, cy1 = [int(v) for v in crop]
+        cx0 = max(0, min(cx0, src.width)); cx1 = max(cx0 + 1, min(cx1, src.width))
+        cy0 = max(0, min(cy0, src.height)); cy1 = max(cy0 + 1, min(cy1, src.height))
+        src = src.crop((cx0, cy0, cx1, cy1))
+    scale = 1.0 + push * ds.ease_standard(min(1.0, t / max(0.001, dur)))
     if fit == 'contain':
         r = min(bw / src.width, bh / src.height) * scale / (1.0 + push)
         rw, rh = max(1, int(src.width * r)), max(1, int(src.height * r))
@@ -393,7 +396,6 @@ def composite_footage(base, img, box, t, dur, push=0.06, radius=18, shadow=True,
         frame.paste(rs, ((bw - rw) // 2, (bh - rh) // 2))
     else:
         sw, sh = int(bw * scale), int(bh * scale)
-        # cover-fit the source into the scaled box, then centre-crop (the push-in)
         r = max(sw / src.width, sh / src.height)
         rs = src.resize((max(sw, int(src.width * r)), max(sh, int(src.height * r))),
                         Image.LANCZOS)
@@ -438,6 +440,81 @@ def footage_mapper(box, t, dur, push=0.06):
 
     def m(fx, fy):
         return (x0 + (fx * r - left) / scale, y0 + (fy * r - top) / scale)
+    return m
+
+
+# ------------------------------------------------------------------ DPR2 rects
+_rects_cache = None
+
+
+def load_rects():
+    """video/work_footage/rects.json — measured DOM rects in native device px."""
+    global _rects_cache
+    if _rects_cache is not None:
+        return _rects_cache
+    path = os.path.join(FOOTAGE_DIR, 'rects.json')
+    try:
+        _rects_cache = json.load(open(path)).get('beats', {})
+    except Exception:
+        _rects_cache = {}
+    return _rects_cache
+
+
+def content_rect(beat):
+    e = load_rects().get(beat) or {}
+    return tuple(e['content']) if e.get('content') else None
+
+
+def target_rect(beat, name):
+    e = load_rects().get(beat) or {}
+    t = (e.get('targets') or {}).get(name)
+    return tuple(t) if t else None
+
+
+# Per-beat content band: x spans the content column; a ~560px-tall window pans
+# from y0 to y1 across the segment so the key targets stay in frame at >=28px.
+# Native frame is 1920x1560; content column x 64..1856 (1792 wide). Box 1640 wide
+# -> scale ~0.915 -> 16px CSS body text * 2 DPR * 0.915 ~= 29px on the 1080p frame.
+CROP_PLAN = {
+    'run-demo': {'x0': 64, 'x1': 1856, 'y0': 430, 'y1': 430, 'h': 560},
+    'briefing': {'x0': 64, 'x1': 1856, 'y0': 360, 'y1': 360, 'h': 560},
+    's1':       {'x0': 64, 'x1': 1856, 'y0': 360, 'y1': 690, 'h': 560},
+    's7':       {'x0': 64, 'x1': 1856, 'y0': 380, 'y1': 760, 'h': 560},
+    's4':       {'x0': 64, 'x1': 1856, 'y0': 400, 'y1': 720, 'h': 560},
+    's5':       {'x0': 64, 'x1': 1856, 'y0': 400, 'y1': 400, 'h': 560},
+    's8':       {'x0': 64, 'x1': 1856, 'y0': 880, 'y1': 880, 'h': 560},
+    's9':       {'x0': 64, 'x1': 1856, 'y0': 380, 'y1': 560, 'h': 560},
+    's10':      {'x0': 64, 'x1': 1856, 'y0': 400, 'y1': 400, 'h': 560},
+    'scorecard':{'x0': 64, 'x1': 1856, 'y0': 600, 'y1': 600, 'h': 560},
+    's3-deny':  {'x0': 64, 'x1': 1856, 'y0': 380, 'y1': 380, 'h': 560},
+}
+
+
+def crop_at(beat, t, dur):
+    """The content band shown at segment-local t (panning y0->y1 with the push)."""
+    plan = CROP_PLAN.get(beat)
+    if not plan:
+        return content_rect(beat)
+    p = ds.ease_standard(min(1.0, t / max(0.001, dur)))
+    y0 = ds.lerp(plan['y0'], plan['y1'], p)
+    return (plan['x0'], y0, plan['x1'], y0 + plan['h'])
+
+
+def rect_mapper(box, t, dur, crop, src_size, push=0.06):
+    """Map native-source pixels -> composited box coords through crop + cover-fit
+    + push-in. crop is the band used at time t (same as composite_footage)."""
+    x0, y0, x1, y1 = box
+    bw, bh = x1 - x0, y1 - y0
+    cx0, cy0, cx1, cy1 = crop
+    cw, ch = max(1, cx1 - cx0), max(1, cy1 - cy0)
+    scale = 1.0 + push * ds.ease_standard(min(1.0, t / max(0.001, dur)))
+    r = max(bw * scale / cw, bh * scale / ch)
+    left = (cw * r - bw * scale) / 2
+    top = (ch * r - bh * scale) / 2
+
+    def m(fx, fy):
+        return (x0 + ((fx - cx0) * r - left) / scale,
+                y0 + ((fy - cy0) * r - top) / scale)
     return m
 
 
@@ -520,23 +597,23 @@ def s8_maths(base, box, t, t0):
     """750 + 750 = 1,500 > 1,000 — chips slide in, running total, limit flip, HOLD.
 
     All figures are the engine's: invoice QP-88901 totals SGD 1,500 against the
-    owner's SGD 1,000 approval limit. The HOLD stamp lands below the maths.
+    owner's SGD 1,000 approval limit. Compact layout fits the 210..720 box so the
+    HOLD stamp never reaches the caption pill.
     """
     x0, y0, x1, y1 = box
     cx = (x0 + x1) / 2
     d = ImageDraw.Draw(base)
     ds.paste_card(base, box, fill=ds.ON_DARK_LINE, border=ds.BORDER_ST, radius=18, width=1)
-    f_k = ds.font('heading', 600, 24)
+    f_k = ds.font('heading', 600, 22)
     kick = 'S8 · SPLIT PAYMENT · INVOICE QP-88901'
     kw = ds.tracked_w(d, kick, f_k, 0.10)
-    ds.tracked(d, (cx - kw / 2, y0 + 28), kick, f_k, ds.rgba(ds.ON_DARK_3, 255), 0.10)
-    # two amount chips slide in, plus sign between
-    f_amt = ds.font('mono', 600, 46)
-    chip_w, chip_h = 220, 76
-    gap = 60
+    ds.tracked(d, (cx - kw / 2, y0 + 20), kick, f_k, ds.rgba(ds.ON_DARK_3, 255), 0.10)
+    f_amt = ds.font('mono', 600, 40)
+    chip_w, chip_h = 210, 60
+    gap = 56
     total_w = chip_w * 2 + gap
     lx = cx - total_w / 2
-    row_y = y0 + 96
+    row_y = y0 + 60
     for i, delay in enumerate((0.0, 0.4)):
         p = ds.anim(t, t0 + delay, 0.35)
         if p <= 0:
@@ -548,46 +625,43 @@ def s8_maths(base, box, t, t0):
             p, box=(int(x) - 2, row_y - 2, int(x) + chip_w + 2, row_y + chip_h + 2))
         tw = d.textlength('SGD 750', font=f_amt)
         ds.fade_layer(base, lambda dd, off, x=x: dd.text(
-            (x + chip_w / 2 - tw / 2 - off[0], row_y + 14 - off[1]), 'SGD 750',
+            (x + chip_w / 2 - tw / 2 - off[0], row_y + 12 - off[1]), 'SGD 750',
             font=f_amt, fill=ds.rgba(ds.ON_DARK, 255)), p,
             box=(int(x), row_y, int(x) + chip_w, row_y + chip_h))
     pp = ds.anim(t, t0 + 0.25, 0.3)
     if pp > 0:
-        f_plus = ds.font('heading', 600, 52)
+        f_plus = ds.font('heading', 600, 44)
         pw = d.textlength('+', font=f_plus)
         ds.fade_layer(base, lambda dd, off: dd.text(
-            (cx - pw / 2 - off[0], row_y + 8 - off[1]), '+', font=f_plus,
+            (cx - pw / 2 - off[0], row_y + 6 - off[1]), '+', font=f_plus,
             fill=ds.rgba(ds.ON_DARK_2, 255)), pp,
             box=(int(cx - pw / 2) - 4, row_y, int(cx + pw / 2) + 4, row_y + chip_h))
-    # rule line, then running total
     pr = ds.anim(t, t0 + 0.8, 0.3)
     if pr > 0:
-        ds.poly_partial(d, [(lx, row_y + chip_h + 26), (lx + total_w, row_y + chip_h + 26)],
+        ds.poly_partial(d, [(lx, row_y + chip_h + 14), (lx + total_w, row_y + chip_h + 14)],
                         pr, fill=ds.rgba(ds.BORDER_ST, 255), width=2)
     p_tot = ds.anim(t, t0 + 1.0, 0.6)
     if p_tot > 0:
-        f_tot = ds.font('mono', 700, 92)
+        f_tot = ds.font('mono', 700, 76)
         shown = ds.count_up(1500, p_tot)
         tw = d.textlength(shown, font=f_tot)
-        d.text((cx - tw / 2, row_y + chip_h + 44), shown, font=f_tot,
+        d.text((cx - tw / 2, row_y + chip_h + 24), shown, font=f_tot,
                fill=ds.rgba(ds.ON_DARK, 255))
-        f_cur = ds.font('mono', 500, 28)
-        d.text((cx - d.textlength('SGD', font=f_cur) / 2, row_y + chip_h + 148), 'SGD',
+        f_cur = ds.font('mono', 500, 24)
+        d.text((cx - d.textlength('SGD', font=f_cur) / 2, row_y + chip_h + 104), 'SGD',
                font=f_cur, fill=ds.rgba(ds.ON_DARK_3, 255))
-    # comparison flips amber once the total lands
     p_cmp = ds.anim(t, t0 + 1.8, 0.35)
     if p_cmp > 0:
-        cmp_y = row_y + chip_h + 196
-        f_cmp = ds.font('mono', 600, 44)
+        cmp_y = row_y + chip_h + 142
+        f_cmp = ds.font('mono', 600, 38)
         txt = '> 1,000 limit'
         tw = d.textlength(txt, font=f_cmp)
         c = ds.mix(ds.ON_DARK_2, ds.WAIT_BORDER, p_cmp)
         d.text((cx - tw / 2, cmp_y), txt, font=f_cmp, fill=ds.rgba(c, 255))
-        # sum bar grows past the dashed limit line
-        bar_y = cmp_y + 76
+        bar_y = cmp_y + 50
         bar_w = total_w
         lim_x = lx + bar_w * (1000 / 1500)
-        ds.dashed_line(d, (lim_x, bar_y - 14), (lim_x, bar_y + 26),
+        ds.dashed_line(d, (lim_x, bar_y - 12), (lim_x, bar_y + 22),
                        ds.rgba(ds.ON_DARK_3, 255), width=2, dash=6, gap=6)
         p_bar = ds.anim(t, t0 + 2.0, 0.7)
         fill_w = bar_w * p_bar
@@ -596,9 +670,8 @@ def s8_maths(base, box, t, t0):
         if fill_w > 1:
             d.rounded_rectangle([lx, bar_y, lx + fill_w, bar_y + 12], radius=6,
                                 fill=ds.rgba(bc, 255))
-    # HOLD stamp lands below everything (never over the numbers)
-    decision_stamp(base, (cx, y1 - 74), 'hold', t, t0 + 2.6, size=46,
-                   subscript='HOLD_FOR_APPROVAL')
+    # HOLD stamp lands below the maths, clear of the caption pill (no subscript)
+    decision_stamp(base, (cx, y1 - 46), 'hold', t, t0 + 2.6, size=40, subscript=None)
 
 
 # ------------------------------------------------------------------ counters

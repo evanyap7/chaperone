@@ -19,8 +19,8 @@ Chapters
 0:26 Live demo
 1:50 Proof
 2:04 Who pays
-2:24 Built with QwenWork
-2:46 Try it live
+2:18 Built with QwenWork
+2:42 Try it live
 
 (Note: YouTube requires every chapter to be at least 10 s; merge the first two if chapters do not render.)
 

@@ -13,7 +13,7 @@ Nothing was sent.
 Mei runs Lumen Studio alone.
 
 4
-00:00:10,430 --> 00:00:14,710
+00:00:10,410 --> 00:00:14,710
 Five AI agents email clients,
 pay suppliers, and delete files —
 
@@ -41,7 +41,7 @@ ten real situations from Mei's own
 files.
 
 10
-00:00:32,590 --> 00:00:36,950
+00:00:32,570 --> 00:00:36,950
 The morning briefing: six risky
 actions stopped, four waiting for your
 
@@ -108,17 +108,17 @@ one-thousand limit. Chaperone adds
 them up, and holds both payments.
 
 24
-00:01:29,290 --> 00:01:32,350
+00:01:29,130 --> 00:01:32,350
 An email, supposedly from Mei,
 approved fifty-eight hundred.
 
 25
-00:01:32,890 --> 00:01:36,910
+00:01:32,890 --> 00:01:36,930
 Her written floor is sixty-five
 hundred. An email is not an approval.
 
 26
-00:01:37,370 --> 00:01:38,270
+00:01:37,750 --> 00:01:38,450
 Blocked.
 
 27
@@ -126,11 +126,11 @@ Blocked.
 Ops wants to delete an unpaid invoice.
 
 28
-00:01:41,970 --> 00:01:43,690
+00:01:41,990 --> 00:01:43,690
 Held. Mei says no.
 
 29
-00:01:44,190 --> 00:01:47,790
+00:01:44,150 --> 00:01:47,790
 And when the contract says delete,
 Chaperone allows it — and sends the
 
@@ -139,78 +139,73 @@ Chaperone allows it — and sends the
 notices.
 
 31
-00:01:50,130 --> 00:01:54,130
+00:01:50,050 --> 00:01:54,330
 Ten scenarios, three checks each:
 the right decision, the right rule,
 
 32
-00:01:54,130 --> 00:01:58,430
+00:01:54,330 --> 00:01:58,550
 the right evidence. Thirty out of
 thirty. The classifier got thirty of
 
 33
-00:01:58,430 --> 00:02:02,130
+00:01:58,550 --> 00:02:02,190
 thirty files right. And one hundred
-thirty-six unit tests pass.
+seventy-three unit tests pass.
 
 34
-00:02:04,210 --> 00:02:09,050
+00:02:04,050 --> 00:02:09,010
 Who pays? One-person studios,
 agencies, and fractional ops teams —
 
 35
-00:02:09,490 --> 00:02:13,470
+00:02:09,410 --> 00:02:13,330
 people who let agents email clients
 and move money, but can't hire a
 
 36
-00:02:13,470 --> 00:02:17,510
-compliance team. Chaperone sits
-between the agents and the world,
+00:02:13,330 --> 00:02:17,670
+compliance team. One person can safely
+run a whole team of agents.
 
 37
-00:02:17,510 --> 00:02:21,590
-so one person can safely run a whole
-team of them. Pricing is being
-
-38
-00:02:21,590 --> 00:02:22,490
-confirmed.
-
-39
-00:02:24,390 --> 00:02:28,550
+00:02:18,370 --> 00:02:22,430
 QwenWork built this project:
 the video, the music, the title art,
 
-40
-00:02:28,550 --> 00:02:30,290
+38
+00:02:22,430 --> 00:02:24,150
 the integration, and the deploy.
 
-41
-00:02:30,630 --> 00:02:32,770
+39
+00:02:24,570 --> 00:02:26,530
 The app runs on QwenWork Pages.
 
+40
+00:02:26,870 --> 00:02:31,030
+And live QwenWork agents run through
+the gate right now. Watch:
+
+41
+00:02:31,030 --> 00:02:34,410
+an agent tries to read bank details it
+doesn't need — blocked.
+
 42
-00:02:33,130 --> 00:02:37,830
-And live Qwen agents run through the
-gate right now. A sales agent tries to
+00:02:34,870 --> 00:02:37,970
+It tries to delete an unpaid invoice —
+held for Mei.
 
 43
-00:02:37,830 --> 00:02:42,170
-email the client list outside —
-blocked. An ops agent tries to delete
+00:02:42,050 --> 00:02:45,670
+See it live — the links are in the
+description. Chaperone.
 
 44
-00:02:42,170 --> 00:02:43,850
-records — held for Mei.
+00:02:45,950 --> 00:02:48,250
+Built with QwenWork, live on Hashmeta.
 
 45
-00:02:46,050 --> 00:02:49,530
-See it live — the links are in the
-description. Chaperone,
-
-46
-00:02:49,530 --> 00:02:52,390
-from Hashmeta. Give your agents a
-chaperone.
+00:02:48,710 --> 00:02:50,210
+Give your agents a chaperone.
 

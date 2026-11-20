@@ -31,6 +31,7 @@ SR = 24000
 # (demo-script.json, captions.json, SRT, ASS) still says "Mei".
 SAY_AS = {
     r'\bMei\b': 'May',
+    r'\bQwenWork\b': 'Kwen Work',   # sound like "Kwen Work", never "QN Work"
     r'\bcashflow\b': 'cash-flow',
     r'\bQuickPrint\b': 'Quick Print',
     r'\bokay\b': 'okay',

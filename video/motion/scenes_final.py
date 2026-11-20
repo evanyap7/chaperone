@@ -84,61 +84,65 @@ BEATS = {
 FOOTAGE_ORDER = ['run-demo', 'briefing', 's1', 's4', 's5', 's6', 's8', 's9',
                  's3-deny', 's10']
 
-# Clip windows (seconds in the SOURCE clip) chosen from frame inspection so the
-# annotated UI state is on screen for the whole segment. V5 can override per beat
-# via ctx['footage_window'][beat] = {'in': s, 'out': s}. If the window span differs
-# from the segment duration it is fit (time-stretched) across the segment.
-#   s1: the S1 row expands at clip 7.0 s; layout stable 7.0-11.5 s
-#   s4: the comparison table settles by clip ~6 s; stable 7.0-10.7 s
-#   s5: the three blocked-read rows settle by clip 3.5 s (stream ends 6.88 s)
-#   s9: expanded S9 row + floor evidence stable from clip 4.0 s (footage phase)
+# Clip windows (seconds in the SOURCE clip). For annotated beats the window holds
+# the FINAL stable layout (where rects.json was measured) and is fit across the
+# segment, so highlights drawn from DOM rects stay on target; the content-band pan
+# (footage.CROP_PLAN) + push-in provide the motion. run-demo / s3-deny play real
+# action. V5 can override per beat via ctx['footage_window'][beat].
 DEFAULT_WINDOWS = {
-    's1': {'in': 7.0, 'out': 11.5},
-    's4': {'in': 7.0, 'out': 10.7},
-    's5': {'in': 3.5, 'out': 6.8},
-    's9': {'in': 4.0, 'out': 9.0},
+    'run-demo': {'in': 0.0, 'out': 13.2},
+    'briefing': {'in': 6.5, 'out': 7.1},
+    's1': {'in': 11.5, 'out': 12.03},
+    's4': {'in': 7.3, 'out': 7.8},
+    's5': {'in': 5.0, 'out': 6.0},
+    's7': {'in': 10.7, 'out': 11.25},
+    's8': {'in': 10.5, 'out': 11.75},
+    's9': {'in': 12.8, 'out': 13.37},
+    's10': {'in': 12.6, 'out': 13.2},
+    'scorecard': {'in': 11.0, 'out': 12.17},
+    's3-deny': {'in': 2.5, 'out': 8.0},
 }
 
-# Highlight boxes measured on the REAL 1920x1080 footage (grid-overlay inspection
-# of video/work_footage/*.mp4). Coordinates are footage-space pixels; they are
-# mapped through the compositor's cover-fit + push-in transform every frame via
-# footage.footage_mapper, so they track the footage exactly. Timing is segment-
-# local. t_exit=None holds to the segment end.
-EXACT_HIGHLIGHTS = {
-    's1': [  # decision first 40%, evidence last 60% (segment dur 8.5 s)
-        {'t': 0.2, 'exit': 3.4, 'box': (200, 480, 1540, 540), 'label': 'the decision'},
-        {'t': 3.6, 'exit': 6.0, 'box': (220, 600, 1520, 720),
-         'label': 'client_list.csv · line 1'},
-        {'t': 6.0, 'exit': None, 'box': (220, 740, 1520, 860),
-         'label': 'client_list.README.md · line 6'},
+# Highlights drawn from MEASURED DOM rects (video/work_footage/rects.json, native
+# device px). Each entry: target name (or explicit source-space box), segment-local
+# t / exit, label. Mapped through the content-band crop + cover-fit + push-in via
+# footage.rect_mapper, so they track the footage exactly. Timing is segment-local.
+HIGHLIGHT_PLAN = {
+    'briefing': [
+        {'target': 'headline', 't': 1.0, 'exit': 4.2, 'label': 'the real headline'},
+        {'target': 'stat_row', 't': 4.5, 'exit': None, 'label': '6 · 4 · 10,260 · 15'},
     ],
-    's4': [  # table layout settles by clip ~6 s; window starts at 7 s
-        {'t': 0.8, 'exit': None, 'box': (390, 400, 1510, 765),
-         'label': 'agent wrote \u2192 file says', 'label_pos': 'below'},
+    's1': [
+        {'box': (66, 394, 1854, 520), 't': 0.2, 'exit': 3.4, 'label': 'the decision'},
+        {'target': 'evidence_csv', 't': 3.6, 'exit': 6.0, 'label': 'client_list.csv · line 1'},
+        {'target': 'evidence_readme', 't': 6.0, 'exit': None, 'label': 'client_list.README.md · line 6'},
     ],
-    's3-deny': [  # recommendation banner, stable before the deny click
-        {'t': 2.0, 'exit': None, 'box': (410, 382, 1170, 426), 'label': None},
+    's4': [  # synced to narration: 25% @3.37, 5 days @6.40, 5,250 @8.05 (local)
+        {'target': 'row_percent', 't': 3.37, 'exit': 6.3, 'label': '25% \u2192 20%'},
+        {'target': 'row_days', 't': 6.40, 'exit': 8.0, 'label': '5 days \u2192 2'},
+        {'target': 'row_amount', 't': 8.05, 'exit': None, 'label': '5,250 \u2192 5,040'},
     ],
-    's5': [  # three blocked-read rows, stable positions (window starts 3.5 s)
-        {'t': 0.8, 'exit': None, 'box': (190, 730, 1530, 790),
-         'label': 'off-limits reads'},
-        {'t': 1.8, 'exit': None, 'box': (190, 810, 1530, 870), 'label': None},
-        {'t': 3.0, 'exit': None, 'box': (190, 890, 1530, 950), 'label': None},
+    's5': [
+        {'target': 'read_row_1', 't': 0.6, 'exit': None, 'label': 'off-limits reads'},
+        {'target': 'read_row_2', 't': 1.6, 'exit': None, 'label': None},
+        {'target': 'read_row_3', 't': 2.6, 'exit': None, 'label': None},
     ],
-    's9': [  # footage phase only (local time already shifted by the inset)
-        {'t': 0.5, 'exit': 2.1, 'box': (190, 590, 1350, 650),
-         'label': 'the blocked row'},
-        {'t': 2.3, 'exit': None, 'box': (230, 710, 1530, 810),
-         'label': 'the 6,500 floor'},
+    's9': [  # footage-phase local time (after the 4.5 s email inset)
+        {'box': (66, 394, 1854, 520), 't': 0.5, 'exit': 2.1, 'label': 'the blocked row'},
+        {'target': 'floor_quote', 't': 2.3, 'exit': None, 'label': 'the 6,500 floor'},
     ],
-    's10': [  # rows finish scrolling ~3.5 s; annotate the completed state
-        {'t': 4.0, 'exit': None, 'box': (190, 790, 1530, 840),
-         'label': 'per their contract'},
+    's10': [
+        {'target': 'delete_row', 't': 1.0, 'exit': None, 'label': 'per their contract'},
+    ],
+    's3-deny': [
+        {'target': 'rec_banner', 't': 0.8, 'exit': 3.0, 'label': 'recommends: no'},
     ],
 }
 
-# stamp landing times (segment-local); s10 waits for the rows to settle (~108 s global)
-STAMP_T0 = {'s10': 4.0}
+# stamp landing times (segment-local). s4 waits for the spoken "Stopped" (~12.57);
+# s10 annotates the settled Done-filter state.
+STAMP_T0 = {'s10': 1.0, 's4': 12.4}
+BEAT_PUSH = 0.10
 
 # fallback timing = the brief's chapter boundaries with the current per-beat
 # durations (matches video/script/demo-script.json schema_version 2)
@@ -250,8 +254,20 @@ def _live_tag(base, real):
     label = 'LIVE · uq2xhx6u.qwenwork.page'
     tw = d.textlength(label, font=f)
     x1 = W - 140
-    ds.chip_mono(base, (x1 - tw - 34, 118), label, size=22,
+    ds.chip_mono(base, (x1 - tw - 34, 64), label, size=22,
                  fg=ds.ON_DARK_2, bg=ds.INK, border=ds.ON_DARK_LINE)
+
+
+def _note_line(base, text, t, t0=1.1, size=28):
+    """Short note under the kicker, left-aligned, above the footage (safe band)."""
+    p = ds.anim(t, t0, 0.35)
+    if p <= 0:
+        return
+    f = ds.font('body', 500, size)
+    d0 = ImageDraw.Draw(base)
+    ds.fade_layer(base, lambda dd, off: dd.text(
+        (140 - off[0], 150 - off[1]), text, font=f,
+        fill=ds.rgba(ds.ON_DARK_2, 255)), p, box=(136, 146, 1300, 150 + size + 8))
 
 
 def _right_note(base, text, t, t0=1.1, size=32, y=500):
@@ -271,61 +287,63 @@ def _right_note(base, text, t, t0=1.1, size=32, y=500):
         yy += int(size * 1.3)
 
 
-def _draw_highlights(base, beat, box, t, dur, ctx):
-    """Highlights over real footage, tracked through the push-in transform.
+def _draw_highlights(base, beat, box, t, dur, ctx, crop):
+    """Highlights from measured DOM rects, tracked through crop + cover-fit + push.
 
-    Priority: ctx['highlights'][beat] > manifest entry 'highlights' >
-    EXACT_HIGHLIGHTS (measured) > BEATS normalised fallback.
+    Priority: ctx['highlights'][beat] > HIGHLIGHT_PLAN (target names / source boxes).
+    Boxes are clamped to the footage box so nothing draws over the backdrop.
     """
-    exact = (ctx.get('highlights') or {}).get(beat)
-    if exact is None:
-        entry = ft.load_manifest().get(beat, {})
-        exact = entry.get('highlights') if isinstance(entry, dict) else None
-    if exact is None:
-        exact = EXACT_HIGHLIGHTS.get(beat)
-    m = ft.footage_mapper(box, t, dur)
-    if exact:
-        for h in exact:
-            hx0, hy0 = m(h['box'][0], h['box'][1])
-            hx1, hy1 = m(h['box'][2], h['box'][3])
-            ft.highlight_box(base, (hx0, hy0, hx1, hy1), t, h.get('t', 0.8),
-                             color=ds.ACCENT, label=h.get('label'),
-                             exit_t=h.get('exit'),
-                             label_pos=h.get('label_pos', 'above'))
-    else:
-        for t0, norm, label in BEATS[beat][3]:
-            ft.highlight_box(base, ft.map_to_box(norm, box), t, t0,
-                             color=ds.ACCENT, label=label)
+    plan = (ctx.get('highlights') or {}).get(beat) or HIGHLIGHT_PLAN.get(beat)
+    if not plan:
+        return
+    clip = ft.resolve_clip(beat)
+    src_size = ft.clip_size(clip['path']) if clip else (1920, 1560)
+    m = ft.rect_mapper(box, t, dur, crop, src_size, push=BEAT_PUSH)
+    bx0, by0, bx1, by1 = box
+    for h in plan:
+        rect = h.get('box') or ft.target_rect(beat, h.get('target'))
+        if not rect:
+            continue
+        hx0, hy0 = m(rect[0], rect[1])
+        hx1, hy1 = m(rect[2], rect[3])
+        hx0, hx1 = max(bx0, min(hx0, bx1)), max(bx0, min(hx1, bx1))
+        hy0, hy1 = max(by0, min(hy0, by1)), max(by0, min(hy1, by1))
+        if hx1 - hx0 < 8 or hy1 - hy0 < 8:
+            continue
+        ft.highlight_box(base, (hx0, hy0, hx1, hy1), t, h.get('t', 0.8),
+                         color=ds.ACCENT, label=h.get('label'),
+                         exit_t=h.get('exit'), label_pos=h.get('label_pos', 'above'))
 
 
 def _beat_scene(base, t, seg, ctx, beat):
-    title, stamp, note, highs = BEATS[beat]
+    title, stamp, note, _highs = BEATS[beat]
     dur = seg['dur']
     ft.kicker(base, title, t, 0.1)
     window = (ctx.get('footage_window') or {}).get(beat, DEFAULT_WINDOWS.get(beat))
     img, real = ft.get_frame(beat, t, window=window, seg_dur=dur)
     _live_tag(base, real)
+    crop = ft.crop_at(beat, t, dur)
     if beat == 's8':
-        box = ft.composite_footage(base, img, (140, 170, 980, 820), t, dur)
-        ft.s8_maths(base, (1020, 170, 1780, 820), t, 0.6)
+        box = ft.composite_footage(base, img, (140, 210, 900, 720), t, dur,
+                                   crop=crop, push=BEAT_PUSH)
+        ft.s8_maths(base, (940, 210, 1780, 720), t, 0.6)
         return
-    has_right = bool(stamp or note or beat == 'run-demo')
-    box = (140, 170, 1480, 820) if has_right else (140, 170, 1780, 820)
-    box = ft.composite_footage(base, img, box, t, dur)
-    if real:  # highlights annotate real UI elements; never the placeholder label
-        _draw_highlights(base, beat, box, t, dur, ctx)
     if beat == 'run-demo':
+        box = ft.composite_footage(base, img, (140, 210, 1780, 720), t, dur,
+                                   crop=crop, push=BEAT_PUSH)
         for i, kind in enumerate(('allow', 'hold', 'block')):
-            ft.decision_stamp(base, (1640, 280 + i * 170), kind, t, 0.8 + i * 0.5,
-                              size=42, subscript=ft.STAMP_SUB[kind])
+            ft.decision_stamp(base, (1300 + i * 180, 158), kind, t, 0.8 + i * 0.5,
+                              size=30, subscript=None)
         return
+    box = ft.composite_footage(base, img, (140, 210, 1780, 720), t, dur,
+                               crop=crop, push=BEAT_PUSH)
+    if real:
+        _draw_highlights(base, beat, box, t, dur, ctx, crop)
     stamp_t0 = STAMP_T0.get(beat, 0.8)
     if stamp:
-        ft.decision_stamp(base, (1640, 380), stamp, t, stamp_t0, size=54,
-                          subscript=ft.STAMP_SUB[stamp])
+        ft.decision_stamp(base, (1620, 158), stamp, t, stamp_t0, size=46, subscript=None)
     if note:
-        _right_note(base, note, t, stamp_t0 + 0.4 if beat in STAMP_T0 else 1.2,
-                    y=520 if stamp else 380)
+        _note_line(base, note, t, stamp_t0 + 0.3 if beat in STAMP_T0 else 1.2)
 
 
 # ------------------------------------------------------------------ hook
@@ -426,17 +444,16 @@ def _hook(base, t, seg, ctx):
                       press=ds.anim(t, 4.6, 0.12) * (1 - ds.anim(t, 4.75, 0.1)),
                       alpha=p)
         return
-    # hard cut to the live log; STOPPED slams beside the footage, never over it
+    # hard cut to the live log; STOPPED slams above the footage, never over it
     ft.kicker(base, 'LIVE LOG · S7', t, 5.0)
-    img, real = ft.get_frame('hook', t - 5.0)
-    if not real:
-        img, real = ft.get_frame('s7', t - 5.0)
+    tf = t - 5.0
+    img, real = ft.get_frame('s7', tf, window=DEFAULT_WINDOWS.get('s7'), seg_dur=3.0)
     _live_tag(base, real)
-    ft.composite_footage(base, img, (140, 170, 1480, 820), t - 5.0, 3.0)
-    ft.decision_stamp(base, (1640, 360), 'stopped', t, 5.2, size=52,
-                      subscript='BLOCK')
-    ft.kinetic_line(base, (1640, 520), 'Nothing was sent.', t, 6.0, size=52,
-                    maxw=320, stagger=0.08)
+    crop = ft.crop_at('s7', tf, 3.0)
+    ft.composite_footage(base, img, (140, 210, 1780, 720), tf, 3.0, crop=crop, push=BEAT_PUSH)
+    ft.decision_stamp(base, (1620, 158), 'stopped', t, 5.2, size=46, subscript=None)
+    ft.kinetic_line(base, (960, 158), 'Nothing was sent.', t, 6.0, size=40,
+                    maxw=600, stagger=0.08)
 
 
 # ------------------------------------------------------------------ S9 forged approval
@@ -497,11 +514,12 @@ def _s9(base, t, seg, ctx):
     window = (ctx.get('footage_window') or {}).get('s9', DEFAULT_WINDOWS.get('s9'))
     img, real = ft.get_frame('s9', tf, window=window, seg_dur=df)
     _live_tag(base, real)
-    box = ft.composite_footage(base, img, (140, 170, 1480, 820), tf, df)
+    crop = ft.crop_at('s9', tf, df)
+    box = ft.composite_footage(base, img, (140, 210, 1780, 720), tf, df, crop=crop, push=BEAT_PUSH)
     if real:
-        _draw_highlights(base, 's9', box, tf, df, ctx)
-    ft.decision_stamp(base, (1640, 380), 'block', t, 4.8, size=54, subscript='BLOCK')
-    _right_note(base, 'Only the queue can approve.', t, 5.2, y=520)
+        _draw_highlights(base, 's9', box, tf, df, ctx, crop)
+    ft.decision_stamp(base, (1620, 158), 'block', t, 4.8, size=46, subscript=None)
+    _note_line(base, 'Only the queue can approve.', t, 5.2)
 
 
 # ------------------------------------------------------------------ problem
@@ -538,16 +556,16 @@ def _problem(base, t, seg, ctx):
                 (cx - sw / 2 - off[0], 580 - off[1]), sub, font=fs,
                 fill=ds.rgba(ds.ON_DARK_3, 255)), ds.anim(t, t0 + 0.3, 0.35),
                 box=(cx - 220, 570, cx + 220, 626))
-        ft.kinetic_line(base, (W / 2, 680), 'One person. No one checking.', t, 3.4,
+        ft.kinetic_line(base, (W / 2, 660), 'One person. No one checking.', t, 3.4,
                         size=44, color=ds.ON_DARK_2, weight=500)
         return
     if t < 12.0:
         ft.kicker(base, 'THE PROBLEM', t, 0.1)
-        ft.kinetic_line(base, (W / 2, 230), 'You are the only', t, 6.3, size=88)
-        ft.kinetic_line(base, (W / 2, 350), 'compliance team.', t, 6.9, size=88)
-        ft.kinetic_line(base, (W / 2, 490), 'Mei Tan · Lumen Studio', t, 7.8,
+        ft.kinetic_line(base, (W / 2, 210), 'You are the only', t, 6.3, size=88)
+        ft.kinetic_line(base, (W / 2, 320), 'compliance team.', t, 6.9, size=88)
+        ft.kinetic_line(base, (W / 2, 450), 'Mei Tan · Lumen Studio', t, 7.8,
                         size=34, color=ds.ON_DARK_2, weight=500)
-        ft.counter(base, (960, 620), 30, t, 8.5, dur=1.0, size=80,
+        ft.counter(base, (960, 560), 30, t, 8.5, dur=1.0, size=72,
                    label='actions today')
         workers = ['Marketing', 'Sales', 'Ops', 'Finance', 'Support']
         d = ImageDraw.Draw(base)
@@ -558,7 +576,7 @@ def _problem(base, t, seg, ctx):
         for i, w in enumerate(workers):
             p = ds.anim(t, 9.0 + i * 0.08, 0.3)
             if p > 0:
-                ds.chip_mono(base, (x, 760), w, alpha=p, size=24,
+                ds.chip_mono(base, (x, 650), w, alpha=p, size=24,
                              fg=ds.ON_DARK_2, bg=ds.INK, border=ds.ON_DARK_LINE)
             x += widths[i] + 24
         return
@@ -594,20 +612,21 @@ def _problem(base, t, seg, ctx):
 # ------------------------------------------------------------------ proof
 def _proof(base, t, seg, ctx):
     ft.kicker(base, 'PROOF', t, 0.1)
-    ft.kinetic_line(base, (W / 2, 180), 'Checked, not claimed.', t, 0.2, size=72)
-    n = int(ctx.get('unit_tests', 62))
-    tiles = [(400, 30, '30', 'scenario checks', '10 scenarios × 3 checks', 0.8),
-             (960, 30, '30', 'files classified', 'right privacy level', 1.6),
-             (1520, n, str(n), 'unit tests', 'npm test', 2.4)]
+    ft.kinetic_line(base, (W / 2, 160), 'Checked, not claimed.', t, 0.2, size=64)
+    n = int(ctx.get('unit_tests', 173))
+    # counters land ON their narration word: 30/30 @5.6, classifier @7.2, tests @10.0
+    tiles = [(400, 30, '30', 'scenario checks', '10 scenarios × 3 checks', 5.6),
+             (960, 30, '30', 'files classified', 'right privacy level', 7.2),
+             (1520, n, str(n), 'unit tests', 'npm test', 10.0)]
     for cx, val, denom, label, sub, t0 in tiles:
-        p = ds.anim(t, t0 - 0.3, 0.4)
+        p = ds.anim(t, t0 - 0.4, 0.4)
         if p > 0:
-            ds.paste_card(base, (cx - 250, 330, cx + 250, 700), fill=ds.ON_DARK_LINE,
+            ds.paste_card(base, (cx - 250, 280, cx + 250, 640), fill=ds.ON_DARK_LINE,
                           border=ds.BORDER_ST, radius=18, width=1, alpha=p)
-        ft.counter(base, (cx, 470), val, t, t0, dur=1.2, size=104, denom=denom,
+        ft.counter(base, (cx, 420), val, t, t0, dur=1.2, size=96, denom=denom,
                    label=label, sub=sub)
-    ft.kinetic_line(base, (W / 2, 760), 'The same checks run in the test suite.', t,
-                    4.0, size=32, color=ds.ON_DARK_2, weight=500)
+    ft.kinetic_line(base, (W / 2, 680), 'The same checks run in the test suite.', t,
+                    4.0, size=30, color=ds.ON_DARK_2, weight=500)
 
 
 # ------------------------------------------------------------------ business
@@ -616,20 +635,20 @@ def _business(base, t, seg, ctx):
     personas = [(380, 'One-person studios', 'person', 'agents email and pay'),
                 (960, 'Agencies', 'file', 'client work through agents'),
                 (1540, 'Fractional ops teams', 'mail', 'no compliance team to hire')]
-    shrink = ds.ease_standard(ds.anim(t, 6.7, 0.4))
+    shrink = ds.ease_standard(ds.anim(t, 6.3, 0.4))
     for i, (cx, name, icon, sub) in enumerate(personas):
         t0 = 0.5 + i * 0.15
         p = ds.anim(t, t0, 0.35)
         if p <= 0:
             continue
-        cy = ds.lerp(480, 310, shrink)
-        ch = ds.lerp(230, 85, shrink)
+        cy = ds.lerp(430, 300, shrink)
+        ch = ds.lerp(200, 70, shrink)
         cw = ds.lerp(250, 220, shrink)
         ds.paste_card(base, (cx - cw, cy - ch, cx + cw, cy + ch), fill=ds.ON_DARK_LINE,
                       border=ds.BORDER_ST, radius=18, width=1, alpha=p)
         d = ImageDraw.Draw(base)
         if shrink < 0.5:
-            ds.ICONS[icon](d, cx, cy - 90, 30, ds.rgba(ds.ON_DARK_2, 255), 3, p)
+            ds.ICONS[icon](d, cx, cy - 80, 30, ds.rgba(ds.ON_DARK_2, 255), 3, p)
         f_n = ds.font('heading', 600, int(ds.lerp(40, 30, shrink)))
         nw = d.textlength(name, font=f_n)
         d.text((cx - nw / 2, cy - ds.lerp(20, 16, shrink)), name, font=f_n,
@@ -640,43 +659,29 @@ def _business(base, t, seg, ctx):
                 lw = d.textlength(ln, font=f_s)
                 d.text((cx - lw / 2, cy + 50 + j * 34), ln, font=f_s,
                        fill=ds.rgba(ds.ON_DARK_3, int(255 * p)))
-    if t < 7.0:
+    if t < 6.8:
         ft.kinetic_line(base, (W / 2, 150), 'Who pays', t, 0.2, size=80)
         return
-    ft.kinetic_line(base, (W / 2, 150), 'Cheap to run. Easy to audit.', t, 7.0,
-                    size=48)
+    ft.kinetic_line(base, (W / 2, 150), 'Cheap to run. Easy to audit.', t, 6.9, size=48)
     facts = [(330, '0', 'dependencies'), (750, '1', 'Node process'),
              (1170, 'Append-only', 'audit log'), (1590, 'Plain files', 'for rules')]
     for i, (cx, big, small) in enumerate(facts):
-        t0 = 7.5 + i * 0.12
+        t0 = 7.3 + i * 0.12
         p = ds.anim(t, t0, 0.3)
         if p <= 0:
             continue
-        ds.paste_card(base, (cx - 190, 400, cx + 190, 560), fill=ds.ON_DARK_LINE,
+        ds.paste_card(base, (cx - 190, 380, cx + 190, 520), fill=ds.ON_DARK_LINE,
                       border=ds.BORDER_ST, radius=16, width=1, alpha=p)
         d = ImageDraw.Draw(base)
         f_b = ds.font('heading', 700, 44)
         bw = d.textlength(big, font=f_b)
-        d.text((cx - bw / 2, 430), big, font=f_b, fill=ds.rgba(ds.ON_DARK, int(255 * p)))
+        d.text((cx - bw / 2, 410), big, font=f_b, fill=ds.rgba(ds.ON_DARK, int(255 * p)))
         f_s = ds.font('body', 500, 28)
         sw = d.textlength(small, font=f_s)
-        d.text((cx - sw / 2, 494), small, font=f_s, fill=ds.rgba(ds.ON_DARK_2, int(255 * p)))
-    # price: clearly-marked placeholder, never an invented number
-    pp = ds.anim(t, 14.0, 0.4)
-    if pp > 0:
-        ds.paste_card(base, (610, 610, 1310, 810), fill=ds.INK,
-                      border=ds.WAIT_BORDER, radius=18, width=2, alpha=pp)
-        d = ImageDraw.Draw(base)
-        f_l = ds.font('body', 500, 28)
-        d.text((660, 636), 'Price', font=f_l, fill=ds.rgba(ds.ON_DARK_3, int(255 * pp)))
-        f_p = ds.font('mono', 600, 42)
-        d.text((660, 676), '[ to be confirmed ]', font=f_p,
-               fill=ds.rgba(ds.ON_DARK, int(255 * pp)))
-        f_s = ds.font('body', 400, 26)
-        d.text((660, 736), 'Pricing is being confirmed', font=f_s,
-               fill=ds.rgba(ds.ON_DARK_2, int(255 * pp)))
-        ds.chip_mono(base, (1040, 770), 'OWNER INPUT', alpha=pp, size=20,
-                     fg=ds.WAIT_BORDER, bg=ds.INK, border=ds.WAIT_BORDER)
+        d.text((cx - sw / 2, 474), small, font=f_s, fill=ds.rgba(ds.ON_DARK_2, int(255 * p)))
+    # end on the agent -> Chaperone gate -> world flow (NO price card)
+    ft.flow_diagram(base, (200, 550, 1720, 690), t, 8.6, 'allow',
+                    agent_label='Your agents', world_label='the world', stamp_size=26)
 
 
 # ------------------------------------------------------------------ qwenwork
@@ -724,56 +729,72 @@ def _terminal_box(clip):
     return (x0, 258, x0 + int(pw), 258 + int(ph))
 
 
-def _qwenwork(base, t, seg, ctx):
-    ft.kicker(base, 'BUILT ON QWENWORK', t, 0.1)
-    if t < 7.0:
-        ft.kinetic_line(base, (W / 2, 140), 'Built with QwenWork.', t, 0.2, size=56)
-        ft.kinetic_line(base, (W / 2, 214),
-                        'video · music · title art · integration · deploy', t, 0.8,
-                        size=26, color=ds.ON_DARK_2, weight=500)
-        clip = _qwen_file('terminal')
-        _qwen_footage(base, 'qwenwork · integration', clip,
-                      t, 7.0, _terminal_box(clip), fit='contain')
+def _scoped_chip(base, t, t0):
+    """Honesty lower-third: the hook is scoped to the two demo calls and gates
+    against a local Chaperone instance (kept above the caption pill)."""
+    p = ds.anim(t, t0, 0.35)
+    if p <= 0:
         return
-    if t < 11.0:
-        ft.kinetic_line(base, (W / 2, 160), 'Hosted on QwenWork Pages.', t, 7.2, size=52)
+    label = 'PreToolUse hook · scoped to these 2 demo calls · local Chaperone gate'
+    f = ds.font('mono', 500, 22)
+    d = ImageDraw.Draw(base)
+    tw = d.textlength(label, font=f)
+    ds.chip_mono(base, (W / 2 - tw / 2 - 17, 690), label, alpha=p, size=22,
+                 fg=ds.ON_DARK_2, bg=ds.INK, border=ds.ON_DARK_LINE)
+
+
+def _local_chip(base, x, t, t0):
+    p = ds.anim(t, t0, 0.3)
+    if p <= 0:
+        return
+    ds.chip_mono(base, (x, 176), 'Chaperone · local gate instance', alpha=p, size=20,
+                 fg=ds.ON_DARK_2, bg=ds.INK, border=ds.ON_DARK_LINE)
+
+
+def _qwenwork(base, t, seg, ctx):
+    ft.kicker(base, 'BUILT WITH QWENWORK', t, 0.1)
+    dur = seg['dur']
+    if t < 6.5:
+        ft.kinetic_line(base, (W / 2, 150), 'Built with QwenWork.', t, 0.2, size=52)
+        ft.kinetic_line(base, (W / 2, 200),
+                        'video · music · title art · integration · deploy', t, 0.8,
+                        size=24, color=ds.ON_DARK_2, weight=500)
+        _qwen_footage(base, 'qwenwork · build', _qwen_file('build'),
+                      t, 6.5, (140, 250, 1780, 720))
+        return
+    if t < 9.0:
+        ft.kinetic_line(base, (W / 2, 150), 'Hosted on QwenWork Pages.', t, 6.6, size=48)
         f = ds.font('mono', 500, 30)
         d = ImageDraw.Draw(base)
-        uw = d.textlength(LIVE_URL, font=f)
+        url = 'https://uq2xhx6u.qwenwork.page'
+        uw = d.textlength(url, font=f)
         ds.fade_layer(base, lambda dd, off: dd.text(
-            (W / 2 - uw / 2 - off[0], 235 - off[1]), LIVE_URL, font=f,
-            fill=ds.rgba(ds.HELD_BORDER, 255)), ds.anim(t, 7.6, 0.35),
-            box=(int(W / 2 - uw / 2) - 4, 225, int(W / 2 + uw / 2) + 4, 281))
-        _qwen_footage(base, 'qwenwork · hosting', _qwen_file('overview'),
-                      t - 7.0, 4.0, (140, 300, 1780, 820))
+            (W / 2 - uw / 2 - off[0], 205 - off[1]), url, font=f,
+            fill=ds.rgba(ds.HELD_BORDER, 255)), ds.anim(t, 6.9, 0.35),
+            box=(int(W / 2 - uw / 2) - 4, 195, int(W / 2 + uw / 2) + 4, 251))
+        _qwen_footage(base, 'qwenwork · hosting', _qwen_file('hosting'),
+                      t - 6.5, 2.5, (140, 270, 1780, 720))
         return
-    # live Qwen agents through the gate: real BLOCKED + HELD recordings when present
-    sales = _qwen_file('blocked', 'sales')
-    ops = _qwen_file('held', 'ops')
-    if sales and ops:
-        ft.kinetic_line(base, (W / 2, 150), 'Live agents, through the gate.', t, 11.2,
-                        size=56)
-        if t < 16.5:
-            real = _qwen_footage(base, 'qwenwork · sales agent', sales,
-                                 t - 11.0, 5.5, (140, 240, 1480, 820))
-            _live_tag(base, real)
-            ft.decision_stamp(base, (1640, 380), 'block', t, 12.0, size=54,
-                              subscript='BLOCK')
-            _right_note(base, 'Sales agent · client list email.', t, 12.4, y=520)
-        else:
-            real = _qwen_footage(base, 'qwenwork · ops agent', ops,
-                                 t - 16.5, 5.5, (140, 240, 1480, 820))
-            _live_tag(base, real)
-            ft.decision_stamp(base, (1640, 380), 'hold', t, 17.3, size=54,
-                              subscript='HOLD_FOR_APPROVAL')
-            _right_note(base, 'Ops agent · delete, held for the owner.', t, 17.7, y=520)
+    # live QwenWork agents through the gate (real hook denials, local instance)
+    ft.kinetic_line(base, (W / 2, 150), 'Live agents, through the gate.', t, 9.0, size=48)
+    _scoped_chip(base, t, 9.2)
+    if t < 12.4:
+        _qwen_footage(base, 'qwenwork · live', _qwen_file('live', 'overview'),
+                      t - 9.0, 3.4, (140, 210, 1780, 720))
+        _local_chip(base, 140, t, 9.4)
         return
-    ft.kinetic_line(base, (W / 2, 150), 'Live agents, through the gate.', t, 11.2,
-                    size=56)
-    ft.flow_diagram(base, (200, 300, 1720, 540), t, 11.6, 'block',
-                    agent_label='Sales agent', world_label='client list \u2192 stranger')
-    ft.flow_diagram(base, (200, 560, 1720, 800), t, 12.4, 'hold',
-                    agent_label='Ops agent', world_label='delete records')
+    if t < 16.8:
+        tl, dd = t - 12.4, 4.4
+        _qwen_footage(base, 'qwen · block session', _qwen_file('block', 'session'),
+                      tl, dd, (140, 210, 1780, 720))
+        ft.decision_stamp(base, (1620, 158), 'block', t, 12.7, size=40, subscript=None)
+        _note_line(base, 'read_file · out of scope · nothing read', t, 13.0, size=26)
+        return
+    tl, dd = t - 16.8, dur - 16.8
+    _qwen_footage(base, 'qwen · hold session', _qwen_file('hold', 'session'),
+                  tl, dd, (140, 210, 1780, 720))
+    ft.decision_stamp(base, (1620, 158), 'hold', t, 17.1, size=40, subscript=None)
+    _note_line(base, 'delete_file · unpaid invoice · held for Mei', t, 17.4, size=26)
 
 
 # ------------------------------------------------------------------ CTA
@@ -799,10 +820,11 @@ def _cta(base, t, seg, ctx):
     bg = _cta_bg()
     base.alpha_composite(bg)
     d = ImageDraw.Draw(base)
-    # logo + wordmark (compact top block; URLs sit fully above the caption zone)
+    dur = seg['dur']
+    # logo + wordmark
     p = ds.anim(t, 0.2, 0.4)
     if p > 0:
-        cx, cy = W / 2, 180
+        cx, cy = W / 2, 160
         s = 42
         d.rounded_rectangle([cx - s, cy - s, cx + s, cy + s], radius=14,
                             fill=ds.rgba(ds.INK, 255), outline=ds.rgba(ds.BORDER_ST, 255),
@@ -813,42 +835,56 @@ def _cta(base, t, seg, ctx):
                fill=ds.rgba(ds.ON_DARK, 255), width=5)
         d.line([cx + s * 0.5, cy + s * 0.05, cx + s * 0.5, cy + s * 0.5],
                fill=ds.rgba(ds.ON_DARK, 255), width=5)
-    ft.kinetic_line(base, (W / 2, 250), 'Chaperone', t, 0.35, size=80)
-    ft.kinetic_line(base, (W / 2, 360), 'Press Run the demo.', t, 0.7, size=32,
+    ft.kinetic_line(base, (W / 2, 230), 'Chaperone', t, 0.35, size=80)
+    ft.kinetic_line(base, (W / 2, 330), 'Built with QwenWork', t, 0.7, size=36,
                     color=ds.ON_DARK_2, weight=500)
-    # URL 1 — live app (types in, then holds clean)
+    ft.kinetic_line(base, (W / 2, 390), 'Press Run the demo.', t, 1.0, size=28,
+                    color=ds.ON_DARK_3, weight=500)
+    # URL 1 — live app (types in)
     f_k = ds.font('heading', 600, 24)
     k1 = 'LIVE APP'
     kw = ds.tracked_w(d, k1, f_k, 0.16)
     ds.fade_layer(base, lambda dd, off: ds.tracked(
-        dd, (W / 2 - kw / 2 - off[0], 430 - off[1]), k1, f_k,
-        ds.rgba(ds.ON_DARK_3, 255), 0.16), ds.anim(t, 0.9, 0.3),
-        box=(int(W / 2 - kw / 2) - 4, 420, int(W / 2 + kw / 2) + 4, 470))
-    f_u = ds.font('mono', 600, 54)
-    n1 = int(len(LIVE_URL) * ds.anim(t, 1.0, 0.6))
+        dd, (W / 2 - kw / 2 - off[0], 460 - off[1]), k1, f_k,
+        ds.rgba(ds.ON_DARK_3, 255), 0.16), ds.anim(t, 1.2, 0.3),
+        box=(int(W / 2 - kw / 2) - 4, 450, int(W / 2 + kw / 2) + 4, 500))
+    f_u = ds.font('mono', 600, 52)
+    n1 = int(len(LIVE_URL) * ds.anim(t, 1.3, 0.6))
     shown = LIVE_URL[:n1]
     uw = d.textlength(shown, font=f_u)
-    d.text((W / 2 - uw / 2, 466), shown, font=f_u, fill=ds.rgba(ds.HELD_BORDER, 255))
+    d.text((W / 2 - uw / 2, 496), shown, font=f_u, fill=ds.rgba(ds.HELD_BORDER, 255))
     # URL 2 — Hashmeta site
-    k2 = 'HASHMETA'
+    k2 = 'HASHMETA SITE'
     kw2 = ds.tracked_w(d, k2, f_k, 0.16)
     ds.fade_layer(base, lambda dd, off: ds.tracked(
-        dd, (W / 2 - kw2 / 2 - off[0], 560 - off[1]), k2, f_k,
-        ds.rgba(ds.ON_DARK_3, 255), 0.16), ds.anim(t, 1.7, 0.3),
-        box=(int(W / 2 - kw2 / 2) - 4, 550, int(W / 2 + kw2 / 2) + 4, 600))
-    f_u2 = ds.font('mono', 500, 44)
-    n2 = int(len(SITE_URL) * ds.anim(t, 1.8, 0.6))
+        dd, (W / 2 - kw2 / 2 - off[0], 570 - off[1]), k2, f_k,
+        ds.rgba(ds.ON_DARK_3, 255), 0.16), ds.anim(t, 1.9, 0.3),
+        box=(int(W / 2 - kw2 / 2) - 4, 560, int(W / 2 + kw2 / 2) + 4, 610))
+    f_u2 = ds.font('mono', 500, 40)
+    n2 = int(len(SITE_URL) * ds.anim(t, 2.0, 0.6))
     shown2 = SITE_URL[:n2]
     uw2 = d.textlength(shown2, font=f_u2)
-    d.text((W / 2 - uw2 / 2, 596), shown2, font=f_u2, fill=ds.rgba(ds.ON_DARK_2, 255))
-    # footer credit
-    f_f = ds.font('body', 400, 26)
-    foot = 'Built on AvePoint \u201cAgents Watching Agents\u201d · QwenWork × Hashmeta · Track 2'
+    d.text((W / 2 - uw2 / 2, 606), shown2, font=f_u2, fill=ds.rgba(ds.ON_DARK_2, 255))
+    # footer credit — challenge attribution, not product attribution
+    f_f = ds.font('body', 400, 24)
+    foot = 'Track 2 challenge: AvePoint \u201cAgents Watching Agents\u201d'
     fw = d.textlength(foot, font=f_f)
     ds.fade_layer(base, lambda dd, off: dd.text(
-        (W / 2 - fw / 2 - off[0], 700 - off[1]), foot, font=f_f,
-        fill=ds.rgba(ds.ON_DARK_3, 255)), ds.anim(t, 2.5, 0.4),
-        box=(int(W / 2 - fw / 2) - 4, 690, int(W / 2 + fw / 2) + 4, 740))
+        (W / 2 - fw / 2 - off[0], 670 - off[1]), foot, font=f_f,
+        fill=ds.rgba(ds.ON_DARK_3, 255)), ds.anim(t, 2.6, 0.4),
+        box=(int(W / 2 - fw / 2) - 4, 660, int(W / 2 + fw / 2) + 4, 706))
+    # slow push-in on the whole card (no frozen end), then fade to dark
+    z = 1.0 + 0.05 * ds.ease_standard(min(1.0, t / max(0.001, dur)))
+    a = 1.0 / z
+    zoomed = base.transform((W, H), Image.AFFINE,
+                            (a, 0, W / 2 - a * W / 2, 0, a, H / 2 - a * H / 2),
+                            resample=Image.BICUBIC)
+    base.paste(zoomed, (0, 0))
+    fade = ds.anim(t, dur - 1.5, 1.4)
+    if fade > 0:
+        dark = Image.new('RGB', (W, H), ds.DARK_FADE)
+        blended = Image.blend(base.convert('RGB'), dark, ds.ease_standard(fade))
+        base.paste(blended.convert('RGBA'), (0, 0))
 
 
 # ------------------------------------------------------------------ dispatch

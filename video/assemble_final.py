@@ -699,10 +699,11 @@ def preextract_footage(ren, ft):
     for b in ren.FOOTAGE_ORDER:
         ft.get_frame(b, 0.0)
     ft.get_frame('s7', 0.0)
-    qmap = [('qwenwork · integration', ren._qwen_file('terminal')),
-            ('qwenwork · hosting', ren._qwen_file('overview')),
-            ('qwenwork · sales agent', ren._qwen_file('blocked', 'sales')),
-            ('qwenwork · ops agent', ren._qwen_file('held', 'ops'))]
+    qmap = [('qwenwork · build', ren._qwen_file('build')),
+            ('qwenwork · hosting', ren._qwen_file('hosting')),
+            ('qwenwork · live', ren._qwen_file('live', 'overview')),
+            ('qwen · block session', ren._qwen_file('block', 'session')),
+            ('qwen · hold session', ren._qwen_file('hold', 'session'))]
     for key, clip in qmap:
         if clip:
             ft.get_frame(key, 0.0, directory=ft.QWEN_DIR,
@@ -760,9 +761,9 @@ def _s6_lineage(seg, tl, tg, ctx):
         if a2 >= 1:
             ds.arrow_head(d, (1276, 510), 0, ds.ON_DARK_3, 12)
     FT.decision_stamp(base, (1530, 500), 'stopped', tl, 4.2, size=54,
-                      subscript=FT.STAMP_SUB['stopped'])
-    FT.kinetic_line(base, (W / 2, 688), 'Rewriting it never makes it safe to share.',
-                    tl, 5.2, size=34, color=ds.ON_DARK_2, weight=500)
+                      subscript=None)
+    # NOTE: no on-screen "Rewriting it…" subtitle — the caption already carries
+    # that line; duplicating it under the pill was a round-2 collision.
     FT.chapter_bar(base, tg, REN.chapters(), REN.TOTAL)
     return base
 
@@ -789,6 +790,17 @@ def init_worker(cfgpath):
             print(f'  WARNING: scenes_final import failed ({e}); using placeholder cards')
 
 
+def _render_seg(seg, tl, tg, ctx):
+    if REN is not None:
+        if seg['id'] == 's6' and 's6' not in CFG.get('valid_footage', {}):
+            return _s6_lineage(seg, tl, tg, ctx).convert('RGB')
+        return REN.render_frame(seg['id'], tl, tg, ctx).convert('RGB')
+    return placeholder_frame(seg, tl, tg, ctx).convert('RGB')
+
+
+XFADE = 0.25  # seconds of crossfade at segment boundaries (no blank navy frames)
+
+
 def render_one(n):
     tg = n / FPS
     idx, tl = seg_at(tg)
@@ -799,13 +811,12 @@ def render_one(n):
         ctx['unit_tests'] = CFG['unit_tests']
     if CFG.get('footage_window'):
         ctx['footage_window'] = CFG['footage_window']
-    if REN is not None:
-        if seg['id'] == 's6' and 's6' not in CFG.get('valid_footage', {}):
-            img = _s6_lineage(seg, tl, tg, ctx)
-        else:
-            img = REN.render_frame(seg['id'], tl, tg, ctx)
-    else:
-        img = placeholder_frame(seg, tl, tg, ctx)
+    img = _render_seg(seg, tl, tg, ctx)
+    if idx > 0 and tl < XFADE:
+        prev = SEGS[idx - 1]
+        ptl = max(0.0, prev['duration'] - XFADE + tl)
+        pimg = _render_seg(prev, ptl, tg, ctx)
+        img = Image.blend(pimg, img, ds.ease_standard(tl / XFADE))
     if CAPBANK is not None:
         ov = CAPBANK.overlay(tg)
         if ov is not None:
@@ -1080,16 +1091,10 @@ def main():
                 valid_footage[stem] = e['file']
                 if e['id']:
                     valid_footage[e['id']] = e['file']
-    footage_window = {
-        's1': {'in': 9.0, 'out': 11.5},
-        's5': {'in': 3.5, 'out': 6.8},
-        's9': {'in': 8.0, 'out': 13.0},
-    }
-    if 's7' in valid_footage:
-        s7f = valid_footage['s7']
-        s7f = s7f['file'] if isinstance(s7f, dict) else s7f
-        valid_footage['s7'] = {'file': s7f, 'trim_in': 6.0}
-        print('  hook: s7.mp4 trimmed to clip 6.0 s (expanded S7 BLOCK row) for the 5-8 s real-log cut')
+    # Footage windows + content crops now live in scenes_final.DEFAULT_WINDOWS /
+    # footage.CROP_PLAN (measured from the DPR2 retakes + rects.json). Do not
+    # override them here.
+    footage_window = {}
     mg_covered = []
     if ren is not None:
         missing = [b for b in ren.FOOTAGE_ORDER if b not in valid_footage]
@@ -1164,43 +1169,59 @@ def main():
         else:
             print('  NOTE: ffmpeg has no subtitles filter and no caption PNG bank; captions not burned')
 
-    st = bitrate_of(video)
-    if st['bitrate'] and st['bitrate'] < 8_000_000:
-        print(f'  video bitrate {st["bitrate"]/1e6:.2f} Mbps < 8 Mbps; CBR re-encode at 9 Mbps')
-        hq = os.path.join(WORK, 'final_video_hq.mp4')
-        sh(['ffmpeg', '-y', '-v', 'error', '-i', video, '-c:v', 'libx264', '-preset', 'medium',
-            '-b:v', '9M', '-minrate', '9M', '-maxrate', '9M', '-bufsize', '18M',
-            '-x264-params', 'nal-hrd=cbr:force-cfr=1', '-pix_fmt', 'yuv420p',
-            '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
-            '-g', '15', '-bf', '2', '-movflags', '+faststart', '-an', hq])
-        video = hq
-
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    loud = mix.mux(video, mixwav, OUT)
+    master = os.path.join(ROOT, 'assets', 'demo-video-master.mp4')
 
-    st = bitrate_of(OUT)
+    # MASTER: the CRF18 render + -16 LUFS mix, AAC 320k (quality reference).
+    print('muxing MASTER (CRF18 video + mix)…')
+    loud = mix.mux(video, mixwav, master)
+    mst = bitrate_of(master)
+
+    # WEB COPY: <=15 MB. Two-pass ABR sized to the real duration, 1080p preserved
+    # (static UI + motion graphics compress well); audio 128k.
+    dur = mst['duration']
+    target_bytes = 14.0e6
+    audio_k = 128
+    video_k = max(300, int((target_bytes * 8 / dur - audio_k * 1000) / 1000))
+    print(f'encoding WEB copy <=15 MB (video {video_k}k + audio {audio_k}k, 2-pass)…')
+    passlog = os.path.join(WORK, 'webpass')
+    common = ['-c:v', 'libx264', '-preset', 'slow', '-b:v', f'{video_k}k',
+              '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709',
+              '-color_trc', 'bt709', '-g', '15', '-bf', '2']
+    sh(['ffmpeg', '-y', '-v', 'error', '-i', video, '-passlogfile', passlog,
+        *common, '-pass', '1', '-an', '-f', 'null', '-'])
+    sh(['ffmpeg', '-y', '-v', 'error', '-i', video, '-i', mixwav, '-passlogfile', passlog,
+        *common, '-pass', '2', '-c:a', 'aac', '-b:a', f'{audio_k}k', '-ar', '48000',
+        '-movflags', '+faststart', '-shortest', OUT])
+    wloud = mix.verify_loudness(OUT)
+    wst = bitrate_of(OUT)
+
     failures = []
-    if not (170.0 <= st['duration'] <= 178.0):
-        failures.append(f'duration {st["duration"]:.2f}s outside [170,178] — route to V3 (narration length)')
-    if st['bitrate'] and not (8_000_000 <= st['bitrate'] <= 12_500_000):
-        failures.append(f'bitrate {st["bitrate"]/1e6:.2f} Mbps outside 8–12 Mbps sanity band')
-    dec = subprocess.run(['ffmpeg', '-v', 'error', '-i', OUT, '-f', 'null', '-'], capture_output=True, text=True)
-    if dec.returncode or dec.stderr.strip():
-        failures.append(f'full decode check failed: {dec.stderr[-500:]}')
-    sheet_from_video(OUT, f'CHAPERONE FINAL · {st["duration"]:.1f}s · {loud["i"]:.1f} LUFS · TP {loud["tp"]:.1f} dBTP')
-    qd = qa_frames(OUT)
+    if not (170.0 <= mst['duration'] <= 178.0):
+        failures.append(f'duration {mst["duration"]:.2f}s outside [170,178]')
+    if wst['size'] > 15_000_000:
+        failures.append(f'web copy {wst["size"]/1e6:.2f} MB > 15 MB')
+    for path, label in ((master, 'master'), (OUT, 'web')):
+        dec = subprocess.run(['ffmpeg', '-v', 'error', '-i', path, '-f', 'null', '-'],
+                             capture_output=True, text=True)
+        if dec.returncode or dec.stderr.strip():
+            failures.append(f'{label} decode check failed: {dec.stderr[-300:]}')
+    sheet_from_video(master, f'CHAPERONE FINAL · {mst["duration"]:.1f}s · {loud["i"]:.1f} LUFS · TP {loud["tp"]:.1f} dBTP')
+    qd = qa_frames(master)
 
     print('---- ACCEPTANCE ----')
-    print(f'  output: {OUT}')
-    print(f'  duration: {st["duration"]:.3f}s | size: {st["size"]/1e6:.1f} MB | '
-          f'bitrate: {st["bitrate"]/1e6:.2f} Mbps | codec: {st["vcodec"]} {st["width"]}x{st["height"]}')
-    print(f'  loudness I: {loud["i"]:.1f} LUFS | LRA: {loud["lra"]:.1f} LU | true peak: {loud["tp"]:.2f} dBTP (gate ≤ -1.0)')
+    print(f'  master: {master}')
+    print(f'    duration {mst["duration"]:.3f}s | {mst["size"]/1e6:.1f} MB | {mst["bitrate"]/1e6:.2f} Mbps | {mst["vcodec"]} {mst["width"]}x{mst["height"]} (CRF18)')
+    print(f'    loudness I {loud["i"]:.1f} LUFS | LRA {loud["lra"]:.1f} LU | true peak {loud["tp"]:.2f} dBTP (gate <= -1.0)')
+    print(f'  web:    {OUT}')
+    print(f'    duration {wst["duration"]:.3f}s | {wst["size"]/1e6:.2f} MB (<=15) | {wst["bitrate"]/1e6:.2f} Mbps | {wst["vcodec"]} {wst["width"]}x{wst["height"]}')
+    print(f'    loudness I {wloud["i"]:.1f} LUFS | true peak {wloud["tp"]:.2f} dBTP')
+    print(f'  captions: {os.path.join(ROOT, "assets", "demo-video.srt")}')
     print(f'  contact sheet: {os.path.join(WORK, "contact_sheet.png")}')
     print(f'  contact sheet: {os.path.join(SCRATCH, "contact_sheet.png")}')
     print(f'  thumbnail: {os.path.join(ROOT, "assets", "thumbnail.png")} (1280x720)')
     print(f'  youtube kit: {os.path.join(HERE, "youtube.md")}')
     print(f'  QA frames: {qd}')
-    print(f'  decode check: {"PASS" if not any("decode" in f for f in failures) else "FAIL"}')
     if failures:
         for f in failures:
             print(f'  FAIL: {f}')
