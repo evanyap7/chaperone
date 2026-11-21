@@ -242,14 +242,15 @@ settings, listed in [`video/README.md`](video/README.md).
 
 ### HTTP API
 
-Worker channel: `POST /api/gate` needs no owner token (agents call it). Owner
-routes need the owner cookie or `Authorization: Bearer <token>`; cross-origin
+Writes to the real engine (`POST /api/gate`, `POST /api/hook`) need the owner
+cookie or `Authorization: Bearer <token>`; worker agents send the Bearer token.
+Other owner routes need the same; cross-origin
 writes are refused. Read routes serve the owner's real context or a visitor's
 demo context.
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `POST` | `/api/gate` | worker | The single channel for worker actions. Returns the decision, rules and evidence. Body capped at 64 KB (413 above). |
+| `POST` | `/api/gate` | owner (Bearer) | The single channel for worker actions. Returns the decision, rules and evidence. Body capped at 64 KB (413 above). |
 | `POST` | `/api/hook` | owner | QwenWork PreToolUse hook: `{tool_name, tool_input}` → `{decision: "allow"\|"deny", reason}`. HOLD maps to deny ("held for owner approval") and queues the item. Body capped at 64 KB (413 above). |
 | `GET` | `/api/events` | owner real / visitor demo | Server-sent events stream used by the UI. |
 | `GET` | `/api/state` | owner real / visitor demo | Log, queue, scores, briefing, lineage and `log_chain` in one snapshot. |
@@ -263,7 +264,7 @@ demo context.
 
 QwenWork is not a checkbox in this project — it built and runs it:
 
-- **The demo video** (`assets/demo-video.mp4`, 175 s): script, neural narration
+- **The demo video** (`assets/demo-video.mp4`, 174 s): script, neural narration
   (local Kokoro), word-level captions (faster-whisper alignment), motion
   graphics, real Playwright footage of the running app, and final assembly —
   all produced by QwenWork agents working in parallel.
@@ -297,7 +298,7 @@ and the demo sandbox. It has six tabs:
 
 ## Videos
 
-- **`assets/demo-video.mp4`** — the 175-second product demo: a hook built on the
+- **`assets/demo-video.mp4`** — the 174-second product demo: a hook built on the
   real S7 injection attack, kinetic type, **real Playwright footage of the
   running app** (not redraws), animated proof counters (classifier 30/30,
   scenarios 30/30, unit tests), the business case, live QwenWork agents being

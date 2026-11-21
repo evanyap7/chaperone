@@ -22,9 +22,12 @@
   // ------------------------------------------------------------------ constants
   const TABS = ['today', 'log', 'queue', 'facts', 'lineage', 'score'];
   const AGENTS = ['Marketing', 'Sales', 'Ops', 'Finance', 'Support'];
+  // One status vocabulary app-wide (D4): ALLOW=Done, HOLD=Waiting, BLOCK=Stopped.
+  // The engine's internal names stay ALLOW/HOLD_FOR_APPROVAL/BLOCK; the owner
+  // only ever sees Done / Waiting / Stopped, on every tab and filter.
   const DEC = {
     ALLOW: { cls: 'done', label: 'Done', icon: 'i-done', filter: 'Done' },
-    HOLD_FOR_APPROVAL: { cls: 'waiting', label: 'Held', icon: 'i-wait', filter: 'Held' },
+    HOLD_FOR_APPROVAL: { cls: 'waiting', label: 'Waiting', icon: 'i-wait', filter: 'Waiting' },
     BLOCK: { cls: 'blocked', label: 'Stopped', icon: 'i-stop', filter: 'Stopped' },
   };
   const LEVELS = {
@@ -54,6 +57,12 @@
     open: new Set(),    // ids of open <details>
     videoOk: false,
     tab: 'today',
+    history: [],        // archived run summaries, newest first (U3)
+    decidedHistory: [], // decided items from earlier runs (U3)
+    viewRun: null,      // null = latest/live run; else an archived run_id being browsed
+    runCache: new Map(),// run_id -> fetched archive {log, queue, log_chain, ...}
+    loadError: false,   // true when the server could not be reached (F5)
+    loaded: false,      // true once the first state snapshot has rendered
   };
   // Owner viewing the sandbox asks for it explicitly; visitors are forced to
   // demo by the server regardless of what they send.
@@ -139,6 +148,14 @@
     const rid = latestRunId();
     return S.log.filter((e) => !e.scenario || e.run_id === rid);
   }
+  // The log tab can browse the live run or any archived run (U3). These return
+  // the entries / chain for whichever run is currently selected.
+  function viewedArchive() { return S.viewRun ? S.runCache.get(S.viewRun) || null : null; }
+  function viewLog() {
+    const a = viewedArchive();
+    return a ? a.log.filter(isActionEntry) : S.log;
+  }
+  function viewChain() { const a = viewedArchive(); return a ? a.log_chain : S.logChain; }
 
   function dedupeEvidence(list) {
     const seen = new Set();
@@ -203,7 +220,7 @@
       if (total) {
         const bits = [];
         if (c.BLOCK) bits.push(`${c.BLOCK} stopped`);
-        if (c.HOLD_FOR_APPROVAL) bits.push(`${c.HOLD_FOR_APPROVAL} held`);
+        if (c.HOLD_FOR_APPROVAL) bits.push(`${c.HOLD_FOR_APPROVAL} waiting`);
         if (c.ALLOW) bits.push(`${c.ALLOW} done`);
         parts.push(`${plural(total, 'new action')}: ${bits.join(', ')}.`);
       }
@@ -337,12 +354,13 @@
 
   // ------------------------------------------------------------------ log tab
   function renderFilters() {
-    const c = counts();
-    const decs = [['all', 'Everything', null, c.total], ['BLOCK', 'Stopped', 'i-stop', c.BLOCK], ['HOLD_FOR_APPROVAL', 'Held', 'i-wait', c.HOLD_FOR_APPROVAL], ['ALLOW', 'Done', 'i-done', c.ALLOW]];
+    const log = viewLog();
+    const c = counts(log);
+    const decs = [['all', 'Everything', null, c.total], ['BLOCK', 'Stopped', 'i-stop', c.BLOCK], ['HOLD_FOR_APPROVAL', 'Waiting', 'i-wait', c.HOLD_FOR_APPROVAL], ['ALLOW', 'Done', 'i-done', c.ALLOW]];
     const df = $('#decFilter');
     df.innerHTML = decs.map(([k, l, ic, n]) => `<button type="button" data-dec="${k}" aria-pressed="${S.filters.dec === k}">${ic ? icon(ic) : ''}${esc(l)} <span class="u-mono">${n}</span></button>`).join('');
     const per = {};
-    for (const e of S.log) per[e.agent] = (per[e.agent] || 0) + 1;
+    for (const e of log) per[e.agent] = (per[e.agent] || 0) + 1;
     const af = $('#agentFilter');
     af.innerHTML = [['all', 'All agents', c.total]].concat(AGENTS.map((a) => [a, a, per[a] || 0])).map(([k, l, n]) => `<button type="button" data-agent="${esc(k)}" aria-pressed="${S.filters.agent === k}">${esc(l)} <span class="u-mono">${n}</span></button>`).join('');
   }
@@ -354,55 +372,109 @@
       r.hidden = !ok;
       if (ok) shown++;
     }
-    const c = counts();
+    const archive = viewedArchive();
+    const c = counts(viewLog());
     const empty = c.total === 0;
-    $('#logEmpty').classList.toggle('hidden', !empty);
+    $('#logEmpty').classList.toggle('hidden', !empty || !!archive);
     $('#logNone').classList.toggle('hidden', empty || shown > 0);
     list.classList.toggle('hidden', empty || shown === 0);
     $('#filters').classList.toggle('hidden', empty);
     const sum = $('#logSummary');
-    if (empty) { sum.textContent = ''; sum.classList.add('hidden'); return; }
-    sum.classList.remove('hidden');
-    const filtered = S.filters.dec !== 'all' || S.filters.agent !== 'all';
-    let tail = '';
-    if (c.HOLD_FOR_APPROVAL) {
-      // Log-side held actions map to queue decisions (two halves of a split
-      // payment are one decision). The queue is the single source of "waiting".
-      tail = c.pending
-        ? ` ${c.HOLD_FOR_APPROVAL} held actions → ${plural(c.pending, 'decision')} for you${c.decided ? `, ${c.decided} already decided` : ''}.`
-        : ` All ${plural(c.decided, 'decision')} decided.`;
+    if (empty) { sum.textContent = ''; sum.classList.add('hidden'); }
+    else {
+      sum.classList.remove('hidden');
+      const filtered = S.filters.dec !== 'all' || S.filters.agent !== 'all';
+      if (archive) {
+        sum.textContent = filtered
+          ? `Showing ${shown} of ${plural(c.total, 'action')} in this archived run.`
+          : `Archived run · ${plural(c.total, 'action')}: ${c.BLOCK} stopped, ${c.HOLD_FOR_APPROVAL} waiting, ${c.ALLOW} done. Read-only.`;
+      } else {
+        let tail = '';
+        if (c.HOLD_FOR_APPROVAL) {
+          // Waiting actions map to queue decisions (two halves of a split
+          // payment are one decision). The queue is the single source of truth.
+          tail = c.pending
+            ? ` ${c.HOLD_FOR_APPROVAL} waiting actions → ${plural(c.pending, 'decision')} for you${c.decided ? `, ${c.decided} already decided` : ''}.`
+            : ` All ${plural(c.decided, 'decision')} decided.`;
+        }
+        sum.textContent = filtered
+          ? `Showing ${shown} of ${plural(c.total, 'action')}.`
+          : `${plural(c.total, 'action')} so far: ${c.BLOCK} stopped (${c.stopped} actions, ${c.reads} file reads), ${c.HOLD_FOR_APPROVAL} waiting, ${c.ALLOW} done.${tail}`;
+      }
     }
-    sum.textContent = filtered
-      ? `Showing ${shown} of ${plural(c.total, 'action')}.`
-      : `${plural(c.total, 'action')} so far: ${c.BLOCK} stopped (${c.stopped} actions, ${c.reads} file reads), ${c.HOLD_FOR_APPROVAL} held, ${c.ALLOW} done.${tail}`;
+    // The tab badge always reflects the live run's action count.
     const lc = $('#logCount');
-    lc.textContent = String(c.total);
-    lc.classList.toggle('hidden', !c.total);
-    // Append-only hash chain, verified server-side at the last state sync.
+    const liveTotal = counts().total;
+    lc.textContent = String(liveTotal);
+    lc.classList.toggle('hidden', !liveTotal);
+    // Append-only hash chain. The count covers every entry (actions + your
+    // decisions); the rows above show actions only. Both numbers are labelled.
     const chainEl = $('#logChain');
-    const ch = S.logChain;
+    const ch = viewChain();
     if (ch && !S.demoRunning && c.total) {
       chainEl.classList.remove('hidden');
       chainEl.classList.toggle('bad', !ch.ok);
       chainEl.innerHTML = ch.ok
-        ? `${icon('i-done')}Append-only log · ${plural(ch.length, 'entry', 'entries')} · hash chain verified`
+        ? `${icon('i-done')}Append-only log · ${plural(ch.length, 'entry', 'entries')} (actions + decisions) · hash chain verified`
         : `${icon('i-stop')}Log chain broken at entry ${esc(ch.broken_at)}. Treat this log as untrusted.`;
     } else chainEl.classList.add('hidden');
+    renderRunPicker();
   }
   function rebuildLog() {
     const list = $('#logList');
     list.textContent = '';
+    const log = viewLog();
     const frag = document.createDocumentFragment();
-    for (let i = S.log.length - 1; i >= 0; i--) frag.appendChild(buildRow(S.log[i]));
+    for (let i = log.length - 1; i >= 0; i--) frag.appendChild(buildRow(log[i]));
     list.appendChild(frag);
     renderFilters();
     applyFilters();
   }
   function prependRow(e) {
+    if (S.viewRun) return; // browsing an archive: live rows don't interrupt it
     const r = buildRow(e);
     r.classList.add('fresh');
     r.addEventListener('animationend', () => r.classList.remove('fresh'), { once: true });
     $('#logList').prepend(r);
+  }
+
+  // ---- run picker (U3: every demo run is kept and browsable) ---------------
+  function runLabel(h) {
+    const d = new Date(h.ended_at);
+    const when = isNaN(d) ? '' : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `${when} · ${plural(h.actions, 'action')}${h.decided ? ` · ${h.decided} decided` : ''}`;
+  }
+  function renderRunPicker() {
+    const wrap = $('#runPickerWrap');
+    const sel = $('#runPicker');
+    const note = $('#runPickerNote');
+    const has = S.log.length > 0 || S.history.length > 0;
+    wrap.classList.toggle('hidden', !has);
+    if (!has) return;
+    const opts = [`<option value="">Latest run${S.demoRunning ? ' (running…)' : ' (live)'}</option>`]
+      .concat(S.history.map((h) => `<option value="${esc(h.run_id)}"${S.viewRun === h.run_id ? ' selected' : ''}>${esc(runLabel(h))}</option>`));
+    const sig = opts.join('');
+    if (sel.dataset.sig !== sig) { sel.innerHTML = sig; sel.dataset.sig = sig; }
+    sel.value = S.viewRun || '';
+    note.textContent = S.viewRun
+      ? 'Browsing an earlier run. Switch back to “Latest run” to see live activity.'
+      : (S.history.length ? `${plural(S.history.length, 'earlier run')} kept.` : '');
+  }
+  async function setViewRun(runId) {
+    S.viewRun = runId || null;
+    S.filters = { dec: 'all', agent: 'all' };
+    if (S.viewRun && !S.runCache.has(S.viewRun)) {
+      $('#logList').innerHTML = '<div class="skel skel-card" aria-hidden="true"></div>';
+      try {
+        const r = await fetch('/api/run?run_id=' + encodeURIComponent(S.viewRun), { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        S.runCache.set(S.viewRun, await r.json());
+      } catch (_) {
+        S.viewRun = null;
+        toast('Could not load that run.', 'info', 'Showing the latest run instead.');
+      }
+    }
+    rebuildLog();
   }
 
   // ----------------------------------------------------------- approval cards
@@ -439,14 +511,17 @@
       const verb = pend.decision === 'approve' ? 'You approved this.' : 'You said no.';
       actions = `<div class="undo u-${pend.decision}${pend.paused ? ' is-paused' : ''}" data-undo="${q.queue_id}"><p class="undo-text"><strong>${verb}</strong> Recording it in <span class="n" data-count="${q.queue_id}">${left}</span>s.</p><button type="button" class="btn btn-secondary btn-undo" data-act="undo" data-q="${q.queue_id}" data-key="undo-${k}">${icon('i-undo')}Undo</button><p class="undo-paused"${pend.paused ? '' : ' hidden'}>${icon('i-wait')}Paused — press Undo to change your mind, or move focus away to resume.</p><span class="undo-bar" aria-hidden="true"><i style="animation-duration:${Math.max(0, ms)}ms${pend.paused ? ';animation-play-state:paused' : ''}"></i></span></div>`;
     } else {
-      // The recommended choice is the primary button. Destructive fill is used
-      // for "Say no" only when saying no is the recommendation.
+      // U1: FIXED button positions on every card — "Say no" always left,
+      // "Approve" always right. The recommendation is carried by the badge
+      // above, never by swapping order or promoting Approve on a caution card.
+      // A "no" recommendation fills Say no; a "look closely" recommendation
+      // promotes neither action (both secondary weight).
       const denyPrimary = q.recommendation === 'deny';
       const approve = q.never
         ? `<button type="button" class="btn btn-secondary" disabled>Approve</button>`
-        : `<button type="button" class="btn ${denyPrimary ? 'btn-secondary' : 'btn-approve'}" data-act="approve" data-q="${q.queue_id}" data-key="approve-${k}" aria-describedby="qt-${k}">${icon('i-done')}Approve</button>`;
+        : `<button type="button" class="btn btn-secondary" data-act="approve" data-q="${q.queue_id}" data-key="approve-${k}" aria-describedby="qt-${k}">${icon('i-done')}Approve</button>`;
       const deny = `<button type="button" class="btn ${denyPrimary ? 'btn-danger-solid' : 'btn-danger'}" data-act="deny" data-q="${q.queue_id}" data-key="deny-${k}" aria-describedby="qt-${k}">${icon('i-cross')}Say no</button>`;
-      actions = `<div class="card-actions">${denyPrimary ? deny + approve : approve + deny}</div>`;
+      actions = `<div class="card-actions">${deny}${approve}</div>`;
     }
     const extra = !maths && related.length > 1 ? `<p class="card-note">${esc(plural(related.length, 'payment'))} were attempted against this one invoice. Approving releases the whole amount.</p>` : '';
     const whyBody = ev.length || e
@@ -455,10 +530,10 @@
     return `<article class="card card-pending${compact ? ' compact' : ''}${q.never ? ' card-never' : ''}${pend ? ' is-pending' : ''}" id="card-${k}" data-qid="${q.queue_id}" aria-labelledby="qt-${k}">
       <div class="card-top"><div class="card-who">${agentPill(q.agent)}<span class="card-when"><time datetime="${esc(q.created_at)}">${esc(timeOf(q.created_at))}</time></span></div>${stake}</div>
       <h3 class="card-title" id="qt-${k}">${esc(plainFiles(q.summary))}</h3>
-      <p class="rec ${rec.cls}">${icon(rec.ic)}<span><strong>${rec.head}</strong>${rec.why && !compact && !maths ? ' ' + esc(rec.why) : ''}</span></p>
+      <p class="rec ${rec.cls}">${icon(rec.ic)}<span><strong>${rec.head}</strong>${rec.why && !maths ? ' ' + esc(rec.why) : ''}</span></p>
       ${maths}
-      ${compact ? '' : extra}
-      ${compact ? '' : whyBody}
+      ${extra}
+      ${whyBody}
       ${actions}
       <p class="card-err" role="alert"${err ? '' : ' hidden'}>${esc(err || '')}</p>
     </article>`;
@@ -480,7 +555,10 @@
   }
   function renderQueue() {
     const pend = pendingQueue();
-    const dec = decidedQueue();
+    // U3: "Already decided" keeps every decision across every demo run. Current
+    // run decisions plus the archived ones, newest first, each labelled by run.
+    const dec = decidedQueue().concat(S.decidedHistory || [])
+      .sort((a, b) => (a.decided_at || '') < (b.decided_at || '') ? 1 : -1);
     const hasLog = S.log.length > 0;
     const ql = $('#queueList');
     withFocus(ql, () => { ql.innerHTML = pend.map((q) => cardHtml(q, 'queue')).join(''); });
@@ -490,7 +568,8 @@
     $('#decidedWrap').classList.toggle('hidden', dec.length === 0);
     $('#decidedList').innerHTML = dec.map((q) => {
       const ok = q.status === 'approved';
-      return `<li class="dec-${esc(q.status)}">${icon(ok ? 'i-done' : 'i-cross-circle')}<span class="what">${esc(plainFiles(q.summary))}</span><span class="pill ${ok ? 'pill-status-done' : 'pill-status-blocked'}">${ok ? 'You approved this' : 'You said no'}</span>${q.decided_at ? `<time datetime="${esc(q.decided_at)}">${esc(timeOf(q.decided_at))}</time>` : ''}</li>`;
+      const tag = q.run_id ? `<span class="run-tag">earlier run</span>` : '';
+      return `<li class="dec-${esc(q.status)}">${icon(ok ? 'i-done' : 'i-cross-circle')}<span class="what">${esc(plainFiles(q.summary))}</span><span class="pill ${ok ? 'pill-status-done' : 'pill-status-blocked'}">${ok ? 'You approved this' : 'You said no'}</span>${tag}${q.decided_at ? `<time datetime="${esc(q.decided_at)}">${esc(timeOf(q.decided_at))}</time>` : ''}</li>`;
     }).join('');
     const c = counts();
     const b = $('#queueBadge');
@@ -619,6 +698,8 @@
 
   // ---------------------------------------------------------------- Today tab
   function renderToday() {
+    // Preserve the server-rendered first paint until the first snapshot loads.
+    if (!S.loaded) return;
     const tl = todayLog();
     const c = counts(tl);
     const has = tl.length > 0;
@@ -629,17 +710,20 @@
     $('#greeting').textContent = 'Lumen Studio' + (dateStr ? ' · ' + dateStr : '');
     const lead = $('#todayLead');
     const sub = $('#todaySub');
-    if (!has) {
-      lead.textContent = S.demoRunning ? 'Your agents are starting work…' : 'Your five AI agents ask Chaperone before they act.';
-      sub.textContent = S.demoRunning
-        ? 'The demo is replaying ten real situations from the studio’s own files. Decisions appear here the moment they are made.'
-        : 'Nothing has happened yet today. Run the demo to replay ten real situations from the studio’s own files. Every decision quotes the line in your file that decided it.';
+    // U5: while the demo runs, the headline always reflects the active state —
+    // never "Nothing needs you right now" alongside "Replaying situation 2 of 10".
+    if (S.demoRunning) {
+      lead.textContent = has ? 'Your agents are at work…' : 'Your agents are starting work…';
+      sub.textContent = 'The demo is replaying ten real situations from the studio’s own files. Decisions appear here the moment they are made.';
+    } else if (!has) {
+      lead.textContent = 'Your five AI agents ask Chaperone before they act.';
+      sub.textContent = 'Nothing has happened yet today. Run the demo to replay ten real situations from the studio’s own files. Every decision quotes the line in your file that decided it.';
     } else if (c.pending > 0) {
       lead.innerHTML = `${esc(plural(c.pending, 'thing needs', 'things need'))} your yes${c.pendingMoney ? `: <span class="money">${esc(money(c.pendingMoney))}</span> in total` : ''}.`;
       sub.textContent = `Chaperone also stopped ${plural(c.stopped, 'risky action')} and ${plural(c.reads, 'file read')} before anything left the studio. ${plural(c.ALLOW, 'routine action')} went ahead without bothering you.`;
     } else {
       lead.textContent = 'Nothing needs you right now.';
-      sub.textContent = `Chaperone stopped ${plural(c.stopped, 'risky action')} and ${plural(c.reads, 'file read')}, and let ${plural(c.ALLOW, 'routine action')} through.${S.demoRunning ? ' Your agents are still working.' : ''}`;
+      sub.textContent = `Chaperone stopped ${plural(c.stopped, 'risky action')} and ${plural(c.reads, 'file read')}, and let ${plural(c.ALLOW, 'routine action')} through.`;
     }
     if (!has) return;
 
@@ -654,11 +738,19 @@
     ];
     $('#statrow').innerHTML = stats.map(([k, ic, n, l]) => `<div class="stat stat-${k}"><span class="stat-ic" aria-hidden="true">${icon(ic)}</span><span class="stat-n">${n}</span><span class="stat-l">${l}</span></div>`).join('');
 
-    // pending cards (compact)
+    // pending cards (compact, but with the full reason + "Why it was held" — U2)
     const pend = pendingQueue();
     const tq = $('#todayQueue');
-    withFocus(tq, () => { tq.innerHTML = pend.map((q) => cardHtml(q, 'today')).join(''); });
-    $('#todayQueueEmpty').classList.toggle('hidden', pend.length > 0);
+    withFocus(tq, () => {
+      if (!S.loaded && pend.length === 0) {
+        // Reserve space with a skeleton so the first cards don't shift the page.
+        tq.innerHTML = '<div class="skel skel-card" aria-hidden="true"></div>';
+      } else {
+        tq.innerHTML = pend.map((q) => cardHtml(q, 'today')).join('');
+      }
+    });
+    $('#todayQueueEmpty').classList.toggle('hidden', pend.length > 0 || !S.loaded);
+    $('#todayQueueCta').classList.toggle('hidden', pend.length > 0 || !S.loaded);
 
     // stopped rows (scope reads go under "You should know")
     const stopped = tl.filter((e) => e.decision === 'BLOCK' && e.action !== 'read_file').reverse();
@@ -710,7 +802,7 @@
       const es = log.filter((e) => e.agent === a);
       const n = { ALLOW: 0, HOLD_FOR_APPROVAL: 0, BLOCK: 0 };
       for (const e of es) n[e.decision]++;
-      const sr = es.length ? `${plural(es.length, 'action')}: ${n.ALLOW} done, ${n.HOLD_FOR_APPROVAL} held, ${n.BLOCK} stopped` : 'no actions yet';
+      const sr = es.length ? `${plural(es.length, 'action')}: ${n.ALLOW} done, ${n.HOLD_FOR_APPROVAL} waiting, ${n.BLOCK} stopped` : 'no actions yet';
       return `<li class="lane" data-agent="${esc(a)}"><div class="lane-head"><span class="lane-name">${esc(a)}</span><span class="lane-n" aria-hidden="true">${es.length}</span></div><span class="sr-only">${esc(sr)}</span><span class="lane-pips" aria-hidden="true">${es.length ? es.map((e) => `<svg class="ic d-${e.decision}" data-lid="${e.id}" focusable="false"><title>${esc(DEC[e.decision].label)}</title><use href="#${DEC[e.decision].icon}"/></svg>`).join('') : '<span class="lane-none">Nothing yet</span>'}</span></li>`;
     }).join('');
     if (lanes.dataset.sig === html) return;
@@ -825,13 +917,20 @@
     const stats = [`<div class="stat stat-done"><span class="stat-ic" aria-hidden="true">${icon('i-done')}</span><span class="stat-n">${pts}<span class="of"> / ${max}</span></span><span class="stat-l">checks passed across ${plural(rs.length, 'scenario')}${S.demoRunning ? ' so far' : ''}</span></div>`];
     if (cl && cl.total) stats.push(`<div class="stat stat-held"><span class="stat-ic" aria-hidden="true">${icon('i-file')}</span><span class="stat-n">${cl.correct}<span class="of"> / ${cl.total}</span></span><span class="stat-l">studio files given the right privacy level by the classifier</span></div>`);
     $('#scoreStats').innerHTML = stats.join('');
-    const chk = (ok, lbl, miss) => `<td class="chk ${ok ? 'pass' : 'fail'}" data-lbl="${lbl}"><span class="chk-v">${icon(ok ? 'i-done' : 'i-cross-circle')}${ok ? 'Yes' : 'No'}${!ok && miss ? `<span class="miss">${esc(miss)}</span>` : ''}</span></td>`;
+    const chk = (ok, lbl, miss) => `<td class="chk ${ok ? 'pass' : 'fail'}" data-lbl="${esc(lbl)}"><span class="chk-v">${icon(ok ? 'i-done' : 'i-cross-circle')}${ok ? 'Yes' : 'No'}${!ok && miss ? `<span class="miss">${esc(miss)}</span>` : ''}</span></td>`;
     const rows = rs.map((r) => {
       const c = r.checks || {};
+      const allPass = !!(c.decision && c.rules && c.evidence);
       const decMiss = `Expected ${r.expected_decision}, got ${r.got_decision}`;
       const ruleMiss = `Expected ${(r.expected_rules || []).join(', ')}`;
       const evMiss = (r.failed_evidence || []).length ? `Missing: ${(r.failed_evidence || []).map((x) => x.file || x).join(', ')}` : '';
-      return `<tr${freshIds && freshIds.has(r.id) ? ' class="fresh"' : ''}><th class="sit" scope="row"><strong>${esc(r.name)}</strong><span class="sid">${esc(r.id)}</span></th>${chk(c.decision, 'Right decision', decMiss)}${chk(c.rules, 'Right rule', ruleMiss)}${chk(c.evidence, 'Evidence cited', evMiss)}<td class="num" data-lbl="Score">${r.points}/${r.max}</td></tr>`;
+      // D5: on mobile an all-pass scenario collapses to one compact line; a
+      // failure always shows its labelled detail. The button toggles the row.
+      const mini = allPass
+        ? `<span class="score-mini">${icon('i-done')}${r.points}/${r.max} · all checks passed</span>`
+        : `<span class="score-mini">${icon('i-cross-circle')}${r.points}/${r.max} · needs a look</span>`;
+      const cls = `${freshIds && freshIds.has(r.id) ? 'fresh' : ''}`.trim();
+      return `<tr data-pass="${allPass ? 'all' : 'some'}" data-fail="${allPass ? '0' : '1'}"${cls ? ` class="${cls}"` : ''}><th class="sit" scope="row"><button type="button" class="score-sit-btn" aria-expanded="false"><strong>${esc(r.name)}</strong><span class="sid">${esc(r.id)}</span>${mini}</button></th>${chk(c.decision, 'Right decision', decMiss)}${chk(c.rules, 'Right rule', ruleMiss)}${chk(c.evidence, 'Evidence cited', evMiss)}<td class="num" data-lbl="Score">${r.points}/${r.max}</td></tr>`;
     }).join('');
     $('#scoreGrid').innerHTML = `<table class="score"><caption>Each scenario replays one real kind of mistake. A check passes only if Chaperone's live answer matches the expected one.</caption><thead><tr><th scope="col">Situation</th><th scope="col">Right decision</th><th scope="col">Right rule</th><th scope="col">Evidence cited</th><th scope="col" class="num">Score</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
@@ -929,7 +1028,7 @@
     for (const b of $$('button[data-view]', tg)) b.setAttribute('aria-pressed', String(b.dataset.view === S.view));
   }
   function renderAll() {
-    rebuildLog(); renderQueue(); renderToday(); renderFacts(); renderLineage(); renderScore(); renderProgress(); renderRunButton(); renderMode();
+    rebuildLog(); renderQueue(); renderToday(); renderFacts(); renderLineage(); renderScore(); renderProgress(); renderRunButton(); renderMode(); renderConnError();
   }
 
   // --------------------------------------------------------------- data in
@@ -952,6 +1051,12 @@
     S.lineage = st.lineage || [];
     S.demoRunning = !!st.demoRunning;
     S.logChain = st.log_chain || null;
+    S.history = Array.isArray(st.history) ? st.history : [];
+    S.decidedHistory = Array.isArray(st.decided_history) ? st.decided_history : [];
+    // A run that was being browsed may have been archived away; fall back to live.
+    if (S.viewRun && !S.history.some((h) => h.run_id === S.viewRun)) S.viewRun = null;
+    S.loadError = false;
+    S.loaded = true;
     if (!S.demoRunning && !S.scenarioIds.length) S.scen.clear();
     renderAll();
   }
@@ -961,8 +1066,19 @@
       if (!r.ok) throw new Error('HTTP ' + r.status);
       loadState(await r.json());
     } catch (_) {
+      // F5: a distinct error state, not a misleading "nothing happened yet".
+      S.loadError = true;
+      renderConnError();
+      if (!S.loaded) renderAll();
       toast('Could not load the latest state.', 'info', 'Chaperone will try again when the connection comes back.');
     }
+  }
+  function renderConnError() {
+    const el = $('#connError');
+    if (!el) return;
+    el.classList.toggle('hidden', !S.loadError);
+    const sub = $('#connErrorSub');
+    if (sub) sub.textContent = S.loaded ? 'Showing the last loaded state. Trying again automatically…' : 'Nothing has loaded yet. Check the server, then retry.';
   }
   function addEntry(e) {
     if (!isActionEntry(e) || e.id == null || S.byId.has(e.id)) return;
@@ -976,6 +1092,8 @@
     for (const qid of [...S.pending.keys()]) clearPending(qid);
     S.log = []; S.byId = new Map(); S.queue = new Map(); S.results = []; S.briefing = null; S.lineage = [];
     S.errors.clear(); S.open.clear();
+    // U3: history survives a reset — earlier runs and their decisions are kept.
+    S.viewRun = null;
     for (const sel of ['#briefSections', '#factList', '#lineageList', '#filesByLevel', '#lanes']) { const el = $(sel); if (el) delete el.dataset.sig; }
     renderAll();
   }
@@ -1141,12 +1259,21 @@
         else startDecision(qid, act.dataset.act);
         return;
       }
+      const sit = ev.target.closest('.score-sit-btn');
+      if (sit) {
+        const tr = sit.closest('tr');
+        const open = tr.classList.toggle('open');
+        sit.setAttribute('aria-expanded', String(open));
+        return;
+      }
       const dec = ev.target.closest('#decFilter button[data-dec]');
       if (dec) { S.filters.dec = dec.dataset.dec; renderFilters(); applyFilters(); $(`#decFilter [data-dec="${CSS.escape(S.filters.dec)}"]`).focus(); return; }
       const ag = ev.target.closest('#agentFilter button[data-agent]');
       if (ag) { S.filters.agent = ag.dataset.agent; renderFilters(); applyFilters(); $(`#agentFilter [data-agent="${CSS.escape(S.filters.agent)}"]`).focus(); return; }
     });
     $('#clearFilters').addEventListener('click', () => { S.filters = { dec: 'all', agent: 'all' }; renderFilters(); applyFilters(); $('#decFilter button').focus(); });
+    $('#runPicker').addEventListener('change', (ev) => setViewRun(ev.target.value));
+    $('#retryBtn').addEventListener('click', () => { fetchState(); connect(); });
     // Pause the undo countdown only for keyboard focus on the Undo button.
     // A resting mouse must never freeze a decision; keyboard users get a
     // visible "Paused" hint on the card while they read.
@@ -1177,6 +1304,10 @@
   }
 
   // -------------------------------------------------------------------- boot
+  // Activate the full stylesheet (preloaded in <head>; critical CSS painted the
+  // shell already). Keeping it out of the render-blocking path is the F1 win.
+  const fullCss = $('#fullCssLink');
+  if (fullCss) fullCss.rel = 'stylesheet';
   wire();
   selectTab((location.hash || '#today').slice(1));
   renderAll();

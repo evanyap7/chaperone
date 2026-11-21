@@ -25,9 +25,15 @@ process.on('unhandledRejection', (e) => console.error('unhandled rejection:', e)
 
 server.listen(PORT, HOST, () => {
   console.log(`Chaperone live on http://localhost:${PORT}`);
-  console.log(`Owner sign-in: http://localhost:${PORT}/?owner=${app.ownerToken}`);
+  // The owner token is never printed or embedded in the page. Sign in with the
+  // token you configured: visit /?owner=<your OWNER_TOKEN> (sets an httpOnly
+  // cookie). If OWNER_TOKEN is unset, a random token is generated for this boot
+  // and is deliberately not shown — set OWNER_TOKEN to sign in.
+  console.log(process.env.OWNER_TOKEN
+    ? 'Owner sign-in: visit /?owner=<your OWNER_TOKEN>. The token is never printed.'
+    : 'Owner sign-in: set OWNER_TOKEN and restart, then visit /?owner=<token>. A random boot token is never printed.');
   console.log('Visitors get a read-only demo sandbox; real files, payments and approvals are never touched.');
-  console.log('The owner token is never embedded in the page. Owner API calls: Authorization: Bearer <token>.');
+  console.log('Worker agents authenticate to /api/gate with Authorization: Bearer <token>.');
 });
 
 function shutdown(signal) {

@@ -5,11 +5,13 @@
    formula and are stated in MASTER.md §3. Light theme only (color-scheme: light).
    ========================================================================== */
 
-/* Typefaces are self-hosted (web/fonts, SIL OFL 1.1, variable WOFF). No CDN:
-   the app must run fully offline. System stacks in --font-* cover any miss. */
-@font-face { font-family: "Lexend"; src: url("/fonts/Lexend.woff") format("woff"); font-weight: 100 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "Source Sans 3"; src: url("/fonts/SourceSans3.woff") format("woff"); font-weight: 200 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "JetBrains Mono"; src: url("/fonts/JetBrainsMono.woff") format("woff"); font-weight: 100 800; font-style: normal; font-display: swap; }
+/* Typefaces are self-hosted (web/fonts, SIL OFL 1.1, variable WOFF2 subsets).
+   No CDN: the app must run fully offline. font-display: optional avoids the
+   swap reflow (CLS); the subsets are preloaded so they usually win the race.
+   System stacks in --font-* cover any miss. ?v= cache-busts the immutable URL. */
+@font-face { font-family: "Lexend"; src: url("/fonts/Lexend.woff2?v=2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: optional; }
+@font-face { font-family: "Source Sans 3"; src: url("/fonts/SourceSans3.woff2?v=2") format("woff2"); font-weight: 200 900; font-style: normal; font-display: optional; }
+@font-face { font-family: "JetBrains Mono"; src: url("/fonts/JetBrainsMono.woff2?v=2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: optional; }
 
 :root {
   color-scheme: light;
@@ -391,8 +393,9 @@ samp {
   max-width: var(--measure); margin-top: var(--space-sm);
 }
 #todayLead { max-width: 46ch; }
-/* One typeface in the headline: the amount is bold and amber, never mono. */
-#todayLead .money { font-family: inherit; color: var(--color-status-waiting-fg); font-weight: var(--font-bold); font-variant-numeric: tabular-nums; }
+/* One typeface in the headline: the amount is bold and amber, never mono, and
+   never splits across lines — it is the single most important token on screen. */
+#todayLead .money { font-family: inherit; color: var(--color-status-waiting-fg); font-weight: var(--font-bold); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .quiet { color: var(--color-ink-muted); }
 .small { font-size: var(--text-sm); }
 .fine { font-size: 0.8125rem; color: var(--color-ink-muted); max-width: var(--measure); }
@@ -501,7 +504,7 @@ samp {
 .stat-n .of { white-space: nowrap; }
 table.score .chk-v { display: inline-flex; align-items: center; flex-wrap: wrap; }
 .stat-l { font-size: var(--text-sm); color: var(--color-ink-secondary); line-height: var(--leading-snug); }
-.stat-l .money { font-family: var(--font-mono); font-weight: var(--font-semibold); }
+.stat-l .money { font-family: var(--font-mono); font-weight: var(--font-semibold); white-space: nowrap; }
 .stat-blocked .stat-ic { background: var(--color-status-blocked-bg); color: var(--color-status-blocked-fg); }
 .stat-waiting .stat-ic { background: var(--color-status-waiting-bg); color: var(--color-status-waiting-fg); }
 .stat-done    .stat-ic { background: var(--color-status-done-bg);    color: var(--color-status-done-fg); }
@@ -555,7 +558,11 @@ table.score .chk-v { display: inline-flex; align-items: center; flex-wrap: wrap;
 .briefitem details summary::-webkit-details-marker { display: none; }
 
 /* ---------- video panel ---------- */
-.video video { width: 100%; border-radius: var(--radius-md); background: var(--color-primary); display: block; margin-bottom: var(--space-sm); }
+/* Explicit 16:9 box reserves space before the poster/metadata loads, so the
+   hidden→shown transition never shifts the page (CLS). Light letterbox.
+   object-fit:contain guarantees the poster/first frame is never cropped by
+   the player box (the asset's own opening pan is a video-content matter). */
+.video video { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; border-radius: var(--radius-md); background: var(--color-surface-sunken); display: block; margin-bottom: var(--space-sm); }
 
 /* ---------- lanes + keyline (§7) ---------- */
 .lanes { list-style: none; margin: 0 0 var(--space-base); padding: 0; display: flex; flex-direction: column; gap: var(--space-md); }
@@ -962,10 +969,11 @@ table.score th.sit { text-align: left; font-weight: var(--font-regular); }
   .link-step .ic.v { display: none; }
 }
 
-/* 768–1023: side column becomes 2-up; lineage stacks */
+/* 768–1023: side column becomes 2-up; stats 2×2; lineage stacks */
 @media (min-width: 768px) and (max-width: 1023px) {
   .col-side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* <900: header un-sticks */
@@ -983,9 +991,9 @@ table.score th.sit { text-align: left; font-weight: var(--font-regular); }
   footer p { padding: var(--space-lg) var(--gutter-sm); }
   .block, .card, .fact, .chain, .intro { padding: var(--space-base); }
 
-  /* tabs → 3×2 grid of short labels */
-  .tabs-inner { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-xs); padding: var(--space-sm) var(--gutter-sm); overflow: visible; }
-  .tabs button { justify-content: center; padding: var(--space-sm); border-radius: var(--radius-md); }
+  /* tabs → one horizontally scrollable row of short labels (slim chrome) */
+  .tabs-inner { display: flex; gap: var(--space-xs); padding: 0 var(--gutter-sm); overflow-x: auto; }
+  .tabs button { justify-content: center; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); min-height: 44px; }
   .tabs button .long { display: none; }
   .tabs button .short { display: inline; }
   .tabs button::after { display: none; }
@@ -1037,9 +1045,40 @@ table.score th.sit { text-align: left; font-weight: var(--font-regular); }
   .toasts { left: var(--space-base); right: var(--space-base); bottom: var(--space-base); max-width: none; }
 
   .conn { padding: var(--space-2xs) var(--space-sm); }
-  .brand .who { display: none; }
-  .brand .tagline { font-size: var(--text-xs); line-height: 1.35; }
-  .top-inner { padding: var(--space-sm) var(--gutter-sm); }
+  /* D1/D2: slim mobile header. The tagline is marketing copy, not wayfinding —
+     hide it. The "Demo mode" pill is redundant with the demo disclosure, and a
+     live connection needs no chrome on a phone (the error banner covers trouble).
+     The brand name takes its natural width and never collapses. */
+  #modePill { display: none; }
+  .conn[data-state="live"] { display: none; }
+  .brand { flex: 1 0 auto; min-width: max-content; }
+  .brand .who, .brand .tagline { display: none; }
+  .brand .name { font-size: var(--text-base); white-space: nowrap; overflow: visible; text-overflow: clip; }
+  .mark { width: 32px; height: 32px; }
+  .top-inner { padding: var(--space-sm) var(--gutter-sm); gap: var(--space-sm); }
+  .top-actions { gap: var(--space-sm); flex: 0 1 auto; min-width: 0; }
+  .run { padding: var(--space-sm) var(--space-md); white-space: nowrap; }
+  .demo-note > summary { padding: var(--space-2xs) var(--gutter-sm); min-height: 28px; }
+  .demo-note .demo-note-txt { display: none; }
+  .demo-note p { padding: 0 var(--gutter-sm) var(--space-xs); }
+  /* D2/U4: decisions first. The waiting cards move above the stat strip so the
+     first Approve/Say no is above the fold on a phone. */
+  .today-head { min-height: 0; margin-bottom: var(--space-base); }
+  h1 { font-size: clamp(1.625rem, 7vw, 2rem); }
+  #todayBody { display: flex; flex-direction: column; gap: var(--space-base); }
+  .today-grid, .col-main { display: contents; }
+  .waiting-block { order: 1; }
+  #statrow { order: 2; margin-bottom: 0; }
+  #stoppedBlock { order: 3; }
+  #briefSections { order: 4; }
+  #doneMore { order: 5; }
+  #rawBrief { order: 6; }
+  .col-side { order: 7; }
+  .figures { gap: var(--space-sm); margin-bottom: 0; }
+  .stat { padding: var(--space-md); min-height: 0; }
+  .stat-n { font-size: var(--text-lg); }
+  .stat-ic { width: 32px; height: 32px; }
+  .stat-ic .ic { width: 16px; height: 16px; }
   .card.compact { padding: var(--space-base); }
   .undo { grid-template-columns: minmax(0, 1fr); }
   .undo .btn { width: 100%; }
@@ -1057,13 +1096,31 @@ table.score th.sit { text-align: left; font-weight: var(--font-regular); }
   /* Narrow phones: the live chip only appears when something is wrong
      (connecting / reconnecting); the normal "Live" state needs no space. */
   .conn[data-state="live"] { display: none; }
-  .brand .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brand .name { overflow: visible; text-overflow: clip; white-space: nowrap; }
   /* stat cards: icon beside the number, label full width underneath */
   .stat { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; padding: var(--space-md); gap: var(--space-xs) var(--space-sm); }
   .stat-ic { grid-row: 1; width: 32px; height: 32px; }
   .stat-ic .ic { width: 16px; height: 16px; }
   .stat-l { grid-column: 1 / -1; }
   .figures-2 { grid-template-columns: minmax(0, 1fr); }
+
+  /* D2/U4 (P1): at 360×740 BOTH decision buttons ("Say no" + "Approve") must
+     sit fully above the fold with no scrolling. Tighten the vertical rhythm
+     of the head, the block head and the first card — never the tap targets
+     (buttons and summaries stay ≥44px). The sub-line clamps to two lines;
+     the stat strip below carries the same counts in full. */
+  #main { padding-top: var(--space-base); }
+  .today-head { margin-bottom: var(--space-sm); }
+  .overline { margin-bottom: var(--space-xs); }
+  #todaySub { font-size: var(--text-sm); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .block-head { gap: var(--space-sm); margin-bottom: var(--space-md); }
+  .block-head h2 { font-size: var(--text-md); }
+  .block-head .link { font-size: var(--text-sm); }
+  .card { padding: var(--space-md); }
+  .card-title { margin-top: var(--space-xs); }
+  .rec { margin-top: var(--space-sm); padding: var(--space-sm) var(--space-md); }
+  .why-held { margin-top: var(--space-sm); }
+  .card-actions { margin-top: var(--space-md); gap: var(--space-sm); }
 }
 
 table.score thead th.num { font-size: 0.8125rem; font-weight: var(--font-semibold); }
@@ -1080,13 +1137,82 @@ table.score thead th.num { font-size: 0.8125rem; font-weight: var(--font-semibol
 }
 .view-toggle button:hover { background: var(--color-surface-sunken); }
 .view-toggle button[aria-pressed="true"] { background: var(--color-primary); color: var(--color-inverse); border-color: var(--color-primary); }
+/* Demo banner: a slim disclosure. Desktop shows the full sentence inline;
+   mobile collapses to a "Demo mode" pill that taps open for the detail. */
 .demo-note {
-  margin: 0; padding: var(--space-xs) var(--gutter);
-  font-size: var(--text-sm); line-height: var(--leading-snug);
+  margin: 0; font-size: var(--text-sm); line-height: var(--leading-snug);
   color: var(--color-status-held-fg); background: var(--color-status-held-bg);
   border-top: 1px solid var(--color-status-held-border);
 }
+.demo-note > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--gutter); min-height: 32px; }
+.demo-note > summary::-webkit-details-marker { display: none; }
+.demo-note > summary .chev { width: 16px; height: 16px; flex: none; transition: transform var(--duration-base) var(--ease-out); }
+.demo-note[open] > summary .chev { transform: rotate(90deg); }
+.demo-note .demo-note-lbl { font-weight: var(--font-semibold); }
+.demo-note p { padding: 0 var(--gutter) var(--space-sm); max-width: var(--measure); }
 @media (max-width: 767.98px) {
-  .demo-note { padding: var(--space-xs) var(--gutter-sm); }
   .view-toggle button { padding: var(--space-2xs) var(--space-xs); }
+}
+
+/* ============================================================================
+   REBUILD ADDITIONS — offline error, run picker, empty CTA, skeleton,
+   scannable scorecard, thicker undo clock, tidy lineage paths.
+   ========================================================================== */
+
+/* ---------- offline / error banner (F5) ---------- */
+.conn-error {
+  display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap;
+  max-width: var(--container-max); margin: var(--space-base) auto 0; width: calc(100% - 2 * var(--gutter));
+  padding: var(--space-md) var(--space-base); border-radius: var(--radius-md);
+  background: var(--color-status-blocked-bg); border: 1px solid var(--color-status-blocked-border);
+  color: var(--color-status-blocked-fg);
+}
+.conn-error .ic { width: 20px; height: 20px; flex: none; }
+.conn-error-txt { flex: 1 1 auto; min-width: 0; font-size: var(--text-sm); font-weight: var(--font-semibold); }
+.conn-error .btn { min-height: 36px; padding: var(--space-sm) var(--space-base); }
+@media (max-width: 767px) { .conn-error { width: calc(100% - 2 * var(--gutter-sm)); } }
+
+/* ---------- run picker (U3: every run is kept, browsable) ---------- */
+.run-picker { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-base); }
+.run-picker-lbl { font-size: var(--text-xs); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--color-ink-muted); }
+.run-picker-select {
+  font-family: var(--font-body); font-size: var(--text-sm); font-weight: var(--font-medium);
+  color: var(--color-ink); background: var(--color-surface); border: var(--border-w-strong) solid var(--color-border-strong);
+  border-radius: var(--radius-md); padding: var(--space-sm) var(--space-base); min-height: 40px; cursor: pointer; max-width: 100%;
+}
+.run-picker-note { color: var(--color-ink-muted); }
+.decided .run-tag { font-size: var(--text-xs); color: var(--color-ink-muted); font-family: var(--font-mono); }
+
+/* ---------- empty-state CTA row (Today) ---------- */
+.empty-cta { display: flex; gap: var(--space-md); flex-wrap: wrap; margin-top: var(--space-base); }
+
+/* ---------- skeleton (F1: reserve space while cards load) ---------- */
+.skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--color-surface-sunken) 25%, var(--color-border) 37%, var(--color-surface-sunken) 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; }
+.skel-card { height: 252px; }
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+/* ---------- undo clock: a visible 6px drain in the status hue (P2-8) ---------- */
+.undo-bar { height: 6px; }
+.undo.u-approve .undo-bar i { background: var(--color-status-done-fg); }
+.undo.u-deny .undo-bar i { background: var(--color-status-blocked-fg); }
+
+/* ---------- lineage file lists: single-line ellipsis, full path on title (P2-9) ---------- */
+.levels .level li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
+
+/* ---------- scorecard: scannable on mobile (D5) ---------- */
+.score-sit-btn { display: block; width: 100%; text-align: left; background: none; border: 0; cursor: pointer; font: inherit; color: inherit; padding: 0; }
+.score-mini { display: none; }
+@media (max-width: 767px) {
+  .score-mini { display: inline-flex; align-items: center; gap: var(--space-xs); margin-top: var(--space-xs); font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--color-status-done-fg); }
+  .score-mini .ic { width: 16px; height: 16px; }
+  tr[data-fail="1"] .score-mini { color: var(--color-status-blocked-fg); }
+  /* All-pass rows collapse to one compact line; tap to expand the labelled rows.
+     A failure always shows its full detail — failure is the only state that
+     deserves the density. */
+  table.score tr[data-pass="all"]:not(.open) td.chk,
+  table.score tr[data-pass="all"]:not(.open) td.num { display: none; }
+  table.score tr[data-pass="all"] .score-sit-btn::after { content: "Tap for detail"; display: block; font-size: var(--text-xs); font-weight: var(--font-medium); color: var(--color-ink-muted); margin-top: var(--space-2xs); }
+  table.score tr[data-pass="all"].open .score-sit-btn::after { content: "Tap to collapse"; }
+  table.score tr[data-fail="1"] td.chk { display: flex; }
 }

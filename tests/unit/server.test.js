@@ -74,6 +74,8 @@ function raw(method, p, { body, headers = {} } = {}) {
 }
 const post = (p, body, headers = {}) => raw('POST', p, { body, headers: { 'Content-Type': 'application/json', ...headers } });
 const auth = () => ({ Authorization: `Bearer ${app.ownerToken}` });
+// The gate writes to the REAL engine and now requires owner auth (S1).
+const gate = (body, headers = {}) => post('/api/gate', body, { ...auth(), ...headers });
 const ownerJar = async () => {
   const r = await raw('GET', `/?owner=${app.ownerToken}`);
   assert.equal(r.status, 302);
@@ -153,23 +155,23 @@ test('API: unknown endpoint 404, wrong method 405 with Allow', async () => {
 });
 
 test('POST bodies: invalid JSON 400, non-object 400, missing fields 400, oversized 413', async () => {
-  assert.equal((await post('/api/gate', '{bad')).status, 400);
-  assert.equal((await post('/api/gate', '[1,2]')).status, 400);
-  assert.equal((await post('/api/gate', 'null')).status, 400);
-  const missing = await post('/api/gate', { agent: 'A' });
+  assert.equal((await gate('{bad')).status, 400);
+  assert.equal((await gate('[1,2]')).status, 400);
+  assert.equal((await gate('null')).status, 400);
+  const missing = await gate({ agent: 'A' });
   assert.equal(missing.status, 400);
   assert.match(missing.json.error, /action/);
-  const big = await post('/api/gate', JSON.stringify({ agent: 'A', action: 'list_dir', params: { pad: 'x'.repeat(1_100_000) } }));
+  const big = await gate(JSON.stringify({ agent: 'A', action: 'list_dir', params: { pad: 'x'.repeat(1_100_000) } }));
   assert.equal(big.status, 413);
   assert.equal(store.log.length, 0); // none of these reached the log
 });
 
 test('POST /api/gate returns the logged entry; traversal in params is a logged BLOCK', async () => {
-  const ok = await post('/api/gate', { agent: 'Ops', action: 'list_dir', params: { dir: 'finance/' } });
+  const ok = await gate({ agent: 'Ops', action: 'list_dir', params: { dir: 'finance/' } });
   assert.equal(ok.status, 200);
   assert.equal(ok.json.decision, 'ALLOW');
   assert.equal(typeof ok.json.id, 'number');
-  const trav = await post('/api/gate', { agent: 'Ops', action: 'read_file', params: { file: '../../etc/passwd' } });
+  const trav = await gate({ agent: 'Ops', action: 'read_file', params: { file: '../../etc/passwd' } });
   assert.equal(trav.status, 200);
   assert.equal(trav.json.decision, 'BLOCK');
 });
@@ -177,11 +179,11 @@ test('POST /api/gate returns the logged entry; traversal in params is a logged B
 test('fix7: gate and hook bodies are capped at 64KB (declared and streamed); just under passes', async () => {
   const beforeLen = store.log.length;
   const big = JSON.stringify({ agent: 'A', action: 'list_dir', params: { dir: 'finance/', pad: 'x'.repeat(66_000) } });
-  assert.equal((await post('/api/gate', big)).status, 413);
+  assert.equal((await gate(big)).status, 413);
   assert.equal((await post('/api/hook', big, auth())).status, 413);
   assert.equal(store.log.length, beforeLen, 'nothing oversized reached the log');
   // Streamed with no Content-Length: the running total is capped too.
-  const chunked = await raw('POST', '/api/gate', { body: big, headers: { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' } });
+  const chunked = await raw('POST', '/api/gate', { body: big, headers: { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked', ...auth() } });
   assert.equal(chunked.status, 413);
   assert.equal(store.log.length, beforeLen);
   // A valid body just under 64KB goes through (a long email body to the owner).
@@ -189,22 +191,22 @@ test('fix7: gate and hook bodies are capped at 64KB (declared and streamed); jus
   obj.params.body = 'x'.repeat(65_536 - Buffer.byteLength(JSON.stringify(obj)) - 1);
   const justUnder = JSON.stringify(obj);
   assert.ok(Buffer.byteLength(justUnder) < 65_536);
-  const ok = await post('/api/gate', justUnder);
+  const ok = await gate(justUnder);
   assert.equal(ok.status, 200);
   assert.equal(ok.json.decision, 'ALLOW');
 });
 
 test('gate rejects prototype-polluting and non-string task ids with 400, not 500', async () => {
   for (const task of ['__proto__', 'constructor', 'prototype']) {
-    const r = await post('/api/gate', { agent: 'X', task, action: 'read_file', params: { file: 'admin/supplier_list.md' } });
+    const r = await gate({ agent: 'X', task, action: 'read_file', params: { file: 'admin/supplier_list.md' } });
     assert.equal(r.status, 400, `task ${task} -> ${r.status}`);
   }
-  const nonString = await post('/api/gate', { agent: 'X', task: 42, action: 'read_file', params: { file: 'admin/supplier_list.md' } });
+  const nonString = await gate({ agent: 'X', task: 42, action: 'read_file', params: { file: 'admin/supplier_list.md' } });
   assert.equal(nonString.status, 400);
 });
 
 test('queue decide: 400 invalid, 404 unknown, 200 once, 409 repeat', async () => {
-  const held = await post('/api/gate', { agent: 'Ops', action: 'delete_file', params: { file: 'finance/invoice_2026-031_harbourbean.md' } });
+  const held = await gate({ agent: 'Ops', action: 'delete_file', params: { file: 'finance/invoice_2026-031_harbourbean.md' } });
   const id = held.json.queue_id;
   assert.ok(id);
   assert.equal((await post('/api/queue/decide', { queue_id: id, decision: 'maybe' }, auth())).status, 400);
@@ -229,9 +231,9 @@ test('NEVER queue items are refused with 403', async () => {
 // Runs before any demo: the sandbox is empty, so a real queue id can never
 // collide with a sandbox queue id here.
 test('visitor isolation: real actions never appear in the visitor context; visitor decide on a real item is 404', async () => {
-  const held = await post('/api/gate', { agent: 'IsoProbe', action: 'delete_file', params: { file: 'finance/invoice_2026-036_ferro_logistics.md' } });
+  const held = await gate({ agent: 'IsoProbe', action: 'delete_file', params: { file: 'finance/invoice_2026-036_ferro_logistics.md' } });
   assert.equal(held.json.decision, 'HOLD_FOR_APPROVAL');
-  const paid = await post('/api/gate', { agent: 'IsoProbe', action: 'pay_supplier', params: { amount: 720, supplier: 'Phantom Vendor' } });
+  const paid = await gate({ agent: 'IsoProbe', action: 'pay_supplier', params: { amount: 720, supplier: 'Phantom Vendor' } });
   assert.equal(paid.status, 200); // no invoice on file: held, but a REAL logged action
   const realQueueId = held.json.queue_id;
   const state = await raw('GET', '/api/state');
@@ -254,7 +256,7 @@ test('SSE: hello, retry, heartbeat, live events; disconnect is cleaned up', asyn
       res.on('data', (c) => {
         buf += c;
         if (buf.includes('event: hello') && buf.includes(': ping') && !buf.includes('event: action')) {
-          post('/api/gate', { agent: 'Ops', action: 'list_dir', params: { dir: 'x/' } });
+          gate({ agent: 'Ops', action: 'list_dir', params: { dir: 'x/' } });
         }
         if (buf.includes('event: action')) { req.destroy(); resolve(buf); }
       });
@@ -279,7 +281,7 @@ test('SSE visitor: receives sandbox action/scenario events, never real gate even
         if (!started && buf.includes('event: hello')) {
           started = true;
           post('/api/demo/run', {});
-          post('/api/gate', { agent: 'RealOnlyProbe', action: 'list_dir', params: { dir: 'finance/' } });
+          gate({ agent: 'RealOnlyProbe', action: 'list_dir', params: { dir: 'finance/' } });
         }
         if (buf.includes('event: demo') && buf.includes('"running":false')) { req.destroy(); resolve(buf); }
       });
@@ -396,12 +398,12 @@ test('writes: cross-origin POST is 403, non-JSON body is 415', async () => {
   const plain = await raw('POST', '/api/queue/decide', { body, headers: { 'Content-Type': 'text/plain' } });
   assert.equal(plain.status, 415);
   const host = new URL(base).host;
-  const same = await raw('POST', '/api/gate', { body: JSON.stringify({ agent: 'Ops', action: 'list_dir', params: { dir: 'finance/' } }), headers: { 'Content-Type': 'application/json', Origin: `http://${host}` } });
+  const same = await raw('POST', '/api/gate', { body: JSON.stringify({ agent: 'Ops', action: 'list_dir', params: { dir: 'finance/' } }), headers: { 'Content-Type': 'application/json', Origin: `http://${host}`, ...auth() } });
   assert.equal(same.status, 200);
 });
 
 test('list_dir outside data/ is blocked', async () => {
-  const r = await post('/api/gate', { agent: 'Ops', action: 'list_dir', params: { dir: '../../etc' } });
+  const r = await gate({ agent: 'Ops', action: 'list_dir', params: { dir: '../../etc' } });
   assert.equal(r.status, 200);
   assert.equal(r.json.decision, 'BLOCK');
 });
@@ -435,7 +437,7 @@ test('/api/hook: owner-only; PreToolUse payloads map to gate decisions (allow / 
 
 test('fix1: the sign-in cookie authorizes decide and demo; decided_by is the authenticated owner', async () => {
   const jar = await ownerJar();
-  const held = await post('/api/gate', { agent: 'Ops', action: 'delete_file', params: { file: 'finance/invoice_2026-034_nimbus_health.md' } });
+  const held = await gate({ agent: 'Ops', action: 'delete_file', params: { file: 'finance/invoice_2026-034_nimbus_health.md' } });
   assert.equal(held.json.decision, 'HOLD_FOR_APPROVAL');
   const beforeLen = store.log.length;
   const decided = await post('/api/queue/decide', { queue_id: held.json.queue_id, decision: 'approve' }, { Cookie: jar });
@@ -480,7 +482,7 @@ test('fix9: visitor decisions land in the sandbox chain only; owner mode:demo de
   assert.equal(app.demoStore.log.length, demoLen + 2);
   assert.equal(store.log.length, realLen);
   // Without mode, the owner decides REAL items (Bearer API behaviour).
-  const held = await post('/api/gate', { agent: 'Ops', action: 'delete_file', params: { file: 'finance/invoice_2026-036_ferro_logistics.md' } });
+  const held = await gate({ agent: 'Ops', action: 'delete_file', params: { file: 'finance/invoice_2026-036_ferro_logistics.md' } });
   assert.ok(held.json.queue_id);
   const afterGate = store.log.length;
   const real = await post('/api/queue/decide', { queue_id: held.json.queue_id, decision: 'deny' }, auth());
@@ -489,20 +491,25 @@ test('fix9: visitor decisions land in the sandbox chain only; owner mode:demo de
   assert.equal(store.log[store.log.length - 1].kind, 'owner_decision');
 });
 
-test('fix1 Q7: briefing and lineage serve the resolved context; the gate stays the open worker channel', async () => {
+test('fix1 Q7: briefing and lineage serve the resolved context; the gate requires owner auth (S1)', async () => {
   assert.equal((await raw('GET', '/api/briefing')).status, 200);
   assert.equal((await raw('GET', '/api/lineage')).status, 200);
   assert.equal((await raw('GET', '/api/briefing', { headers: auth() })).status, 200);
   assert.equal((await raw('GET', '/api/lineage', { headers: auth() })).status, 200);
-  const worker = await post('/api/gate', { agent: 'Worker', action: 'list_dir', params: { dir: 'finance/' } });
-  assert.equal(worker.status, 200, 'workers never need the owner token');
+  // An anonymous visitor can no longer write to the real engine.
+  const anon = await post('/api/gate', { agent: 'Worker', action: 'list_dir', params: { dir: 'finance/' } });
+  assert.equal(anon.status, 401, 'unauthenticated gate writes are refused');
+  assert.equal(anon.json.error, 'owner authentication required');
+  // An authenticated worker agent still goes through.
+  const worker = await gate({ agent: 'Worker', action: 'list_dir', params: { dir: 'finance/' } });
+  assert.equal(worker.status, 200, 'authenticated workers reach the real engine');
 });
 
 test('fix10 Q6/P9: a demo run leaves the real log, queue and ledger exactly unchanged; duplicate pay is BLOCK', async () => {
-  const paid = await post('/api/gate', { agent: 'Ops', action: 'pay_supplier', params: { amount: 720, invoice: 'finance/invoice_2026-037_quickprint.md', supplier: 'QuickPrint SG' } });
+  const paid = await gate({ agent: 'Ops', action: 'pay_supplier', params: { amount: 720, invoice: 'finance/invoice_2026-037_quickprint.md', supplier: 'QuickPrint SG' } });
   assert.equal(paid.json.decision, 'ALLOW');
   assert.equal(paid.json.run_id, null);
-  const held = await post('/api/gate', { agent: 'LedgerProbe', action: 'delete_file', params: { file: 'finance/invoice_2026-038_quickprint.md' } });
+  const held = await gate({ agent: 'LedgerProbe', action: 'delete_file', params: { file: 'finance/invoice_2026-038_quickprint.md' } });
   assert.equal(held.json.decision, 'HOLD_FOR_APPROVAL');
   const beforeLog = store.log.length;
   const beforeQueue = store.queue.length;
@@ -520,7 +527,7 @@ test('fix10 Q6/P9: a demo run leaves the real log, queue and ledger exactly unch
   assert.equal(q.status, 'pending', 'the real queue item survived the demo');
   // Engine fix 2: an already-paid invoice is BLOCK on every later attempt,
   // keyed on invoice+payee, in every run.
-  const again = await post('/api/gate', { agent: 'Ops', action: 'pay_supplier', params: { amount: 720, invoice: 'finance/invoice_2026-037_quickprint.md', supplier: 'QuickPrint SG' } });
+  const again = await gate({ agent: 'Ops', action: 'pay_supplier', params: { amount: 720, invoice: 'finance/invoice_2026-037_quickprint.md', supplier: 'QuickPrint SG' } });
   assert.equal(again.json.decision, 'BLOCK', 'a duplicate payment of a paid invoice is blocked');
   const state = await raw('GET', '/api/state', { headers: auth() });
   assert.equal(state.json.log_chain.ok, true);

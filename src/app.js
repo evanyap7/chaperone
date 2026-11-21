@@ -1,6 +1,7 @@
 // Chaperone HTTP app. One engine, one channel: every worker action is a
-// POST /api/gate. The UI watches via SSE. "Run demo" replays the exact scripted
-// action streams of the worker agents through a separate sandbox engine.
+// POST /api/gate (owner-authenticated). The UI watches via SSE. "Run demo"
+// replays the exact scripted action streams of the worker agents through a
+// separate sandbox engine.
 //
 // Two contexts: REAL (the injected store + chaperone) and DEMO (an in-memory
 // sandbox). Only the owner — signed in via /?owner=<token> or a Bearer token —
@@ -13,6 +14,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import zlib from 'node:zlib';
 import { Chaperone, GateInputError } from './chaperone.js';
 import { Store } from './store.js';
 import { createHookHandler } from '../integrations/qwenwork/hook-handler.js';
@@ -29,8 +31,24 @@ const MIME = {
   '.webp': 'image/webp', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.webm': 'video/webm', '.vtt': 'text/vtt; charset=utf-8',
   '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.woff': 'font/woff', '.woff2': 'font/woff2', '.pdf': 'application/pdf',
 };
-// Pages and code revalidate every load (cheap with ETag); media may be cached briefly.
-const REVALIDATE = new Set(['.html', '.js', '.mjs', '.css', '.json']);
+// Pages and code revalidate every load (cheap with ETag). Fonts are immutable
+// and versioned (?v=ASSET_V in the CSS/HTML); other media may be cached a day.
+const REVALIDATE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.vtt']);
+const IMMUTABLE = new Set(['.woff2', '.woff']);
+const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.vtt']);
+const ASSET_V = '2'; // bump when a self-hosted font/asset changes (cache-busts immutable URLs)
+const BROTLI_OPTS = { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } };
+
+// Negotiate the best text encoding the client accepts. Identity for media/ranges.
+function negotiateEncoding(req) {
+  const ae = String(req.headers['accept-encoding'] || '');
+  if (/(^|[\s,])br([\s,;]|$)/.test(ae)) return 'br';
+  if (/(^|[\s,])gzip([\s,;]|$)/.test(ae)) return 'gzip';
+  return null;
+}
+function compressBuffer(buf, enc) {
+  return enc === 'br' ? zlib.brotliCompressSync(buf, BROTLI_OPTS) : zlib.gzipSync(buf, { level: 6 });
+}
 
 class HttpError extends Error {
   constructor(status, message, headers = {}) { super(message); this.status = status; this.headers = headers; }
@@ -59,12 +77,42 @@ export function createApp({
   const demoStore = new Store(null);
   const demoChaperone = new Chaperone(demoStore);
 
+  // Append-only demo history: every finished run is archived here (newest first)
+  // before the sandbox resets for the next one, so "every run is kept" is true.
+  // Visitors can browse any earlier run read-only; decisions are never erased.
+  const demoHistory = [];
+  const HISTORY_CAP = 12;
+  const isActionEntry = (e) => e && e.kind !== 'owner_decision';
+  function archiveDemoRun() {
+    if (!demoStore.log.length) return;
+    const results = demoStore.scenarioResults || [];
+    demoHistory.unshift({
+      run_id: demoStore.lastRunId,
+      ended_at: new Date().toISOString(),
+      log: demoStore.log,
+      queue: demoStore.queue,
+      scenarioResults: results,
+      log_chain: demoStore.verifyChain(),
+      points: results.reduce((a, r) => a + (r.points || 0), 0),
+      max: results.reduce((a, r) => a + (r.max || 0), 0),
+    });
+    if (demoHistory.length > HISTORY_CAP) demoHistory.length = HISTORY_CAP;
+  }
+  const historySummaries = () => demoHistory.map((h) => ({
+    run_id: h.run_id, ended_at: h.ended_at,
+    actions: h.log.filter(isActionEntry).length,
+    decided: h.queue.filter((q) => q.status !== 'pending').length,
+    points: h.points, max: h.max,
+  }));
+  const decidedHistory = () => demoHistory.flatMap((h) =>
+    h.queue.filter((q) => q.status !== 'pending').map((q) => ({ ...q, run_id: h.run_id })));
+
   // ---- owner authentication -------------------------------------------------
   // The owner signs in by visiting /?owner=<token> (printed at startup or set
   // via OWNER_TOKEN); a valid token is handed to the browser as an httpOnly
   // SameSite=Strict cookie and the URL is redirected clean. Plain GET / never
   // sets a cookie: visitors get the demo sandbox, not owner powers. Worker
-  // agents call /api/gate without any token.
+  // agents authenticate to /api/gate with a Bearer token (the owner token).
   const tokenBuf = Buffer.from(ownerToken);
   function tokenFrom(req) {
     const auth = String(req.headers.authorization || '');
@@ -136,6 +184,7 @@ export function createApp({
   // through the demo gate. Real state is never read or written here.
   async function runDemo() {
     const runId = `run-${++demoSeq}-${Date.now()}`;
+    archiveDemoRun(); // keep the previous run (and its decisions) before resetting
     demoStore.reset();
     demoChaperone.reset();
     demoStore.lastRunId = runId;
@@ -170,13 +219,19 @@ export function createApp({
   }
 
   // ---- helpers ------------------------------------------------------------
-  function json(res, code, obj, headers = {}) {
+  function json(res, code, obj, headers = {}, req = null) {
     const body = JSON.stringify(obj);
+    const raw = Buffer.from(body);
+    const enc = req && raw.length > 1024 ? negotiateEncoding(req) : null;
+    const out = enc ? compressBuffer(raw, enc) : raw;
     res.writeHead(code, {
-      'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body),
-      'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers,
+      'Content-Type': 'application/json; charset=utf-8', 'Content-Length': out.length,
+      'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+      Vary: 'Accept-Encoding',
+      ...(enc ? { 'Content-Encoding': enc } : {}),
+      ...headers,
     });
-    res.end(body);
+    res.end(req && req.method === 'HEAD' ? undefined : out);
   }
 
   // Writes from another site are refused. A browser always sends Origin on a
@@ -247,6 +302,19 @@ export function createApp({
     return { start, end };
   }
 
+  // Cached raw + pre-compressed bytes for small text assets (keyed by path,
+  // invalidated on mtime/size change). Media is streamed, never buffered here.
+  const staticCache = new Map();
+  function textBytes(file, st) {
+    let c = staticCache.get(file);
+    if (!c || c.mtimeMs !== st.mtimeMs || c.size !== st.size) {
+      const raw = fs.readFileSync(file);
+      c = { mtimeMs: st.mtimeMs, size: st.size, raw, br: compressBuffer(raw, 'br'), gz: compressBuffer(raw, 'gzip') };
+      staticCache.set(file, c);
+    }
+    return c;
+  }
+
   function serveStatic(req, res, base, urlPath, extraHeaders = {}) {
     let rel;
     try { rel = decodeURIComponent(urlPath); } catch { throw new HttpError(400, 'malformed URL'); }
@@ -260,14 +328,34 @@ export function createApp({
       if (err || !st.isFile()) return json(res, 404, { error: 'not found' });
       const ext = path.extname(file).toLowerCase();
       const etag = `W/"${st.size.toString(16)}-${Math.floor(st.mtimeMs).toString(16)}"`;
+      const cacheControl = REVALIDATE.has(ext) ? 'no-cache'
+        : IMMUTABLE.has(ext) ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=86400';
       const headers = {
         'Content-Type': MIME[ext] || 'application/octet-stream',
-        'Cache-Control': REVALIDATE.has(ext) ? 'no-cache' : 'public, max-age=300',
+        'Cache-Control': cacheControl,
         ETag: etag, 'Last-Modified': st.mtime.toUTCString(),
         'Accept-Ranges': 'bytes', 'X-Content-Type-Options': 'nosniff',
+        Vary: 'Accept-Encoding',
         ...(ext === '.html' ? { 'Referrer-Policy': 'no-referrer' } : {}),
         ...extraHeaders,
       };
+      const wantsRange = !!req.headers.range;
+      const enc = COMPRESSIBLE.has(ext) && !wantsRange && st.size > 256 ? negotiateEncoding(req) : null;
+      // Compressed text: serve from cache with an encoding-specific ETag.
+      if (enc) {
+        const c = textBytes(file, st);
+        const body = enc === 'br' ? c.br : c.gz;
+        const cEtag = etag.slice(0, -1) + `-${enc}"`;
+        headers.ETag = cEtag;
+        headers['Content-Encoding'] = enc;
+        headers['Content-Length'] = body.length;
+        delete headers['Accept-Ranges'];
+        const inm = req.headers['if-none-match'];
+        if (inm && inm.split(',').map((s) => s.trim()).includes(cEtag)) { res.writeHead(304, headers); return res.end(); }
+        res.writeHead(200, headers);
+        return res.end(req.method === 'HEAD' ? undefined : body);
+      }
       const inm = req.headers['if-none-match'];
       const ims = req.headers['if-modified-since'];
       if ((inm && inm.split(',').map((s) => s.trim()).includes(etag))
@@ -279,7 +367,7 @@ export function createApp({
       let start = 0;
       let end = st.size - 1;
       const ifRange = req.headers['if-range'];
-      if (req.headers.range && (!ifRange || ifRange === etag)) {
+      if (wantsRange && (!ifRange || ifRange === etag)) {
         const r = parseRange(req.headers.range, st.size);
         if (r === 'unsatisfiable') {
           res.writeHead(416, { ...headers, 'Content-Range': `bytes */${st.size}`, 'Content-Length': 0 });
@@ -312,29 +400,124 @@ export function createApp({
     res.on('error', drop);
   }
 
+  // ---- server-rendered first paint ----------------------------------------
+  // The Today headline, sub-line and stat cards are rendered into the initial
+  // HTML from the resolved context, so the LCP text is not gated on the client
+  // fetching /api/state. The client re-renders the same markup on load and on
+  // every live event; this only removes the empty first paint. Every number is
+  // computed from server data — nothing is invented.
+  const ssrEsc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ssrMoney = (n) => 'SGD ' + Number(n).toLocaleString('en-SG');
+  const ssrPlural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
+  function todaySnapshot(c, running) {
+    const log = c.store.log.filter(isActionEntry);
+    let rid = null;
+    for (let i = log.length - 1; i >= 0; i--) if (log[i].run_id) { rid = log[i].run_id; break; }
+    const tl = log.filter((e) => !e.scenario || e.run_id === rid);
+    const pend = c.store.queue.filter((q) => q.status === 'pending');
+    const pendingMoney = pend.reduce((a, q) => a + (Number(q.money_at_stake) || 0), 0);
+    let stopped = 0; let reads = 0; let allow = 0;
+    for (const e of tl) {
+      if (e.decision === 'BLOCK') { if (e.action === 'read_file') reads++; else stopped++; }
+      else if (e.decision === 'ALLOW') allow++;
+    }
+    const has = tl.length > 0;
+    let lead; let sub;
+    if (!has) {
+      lead = running ? 'Your agents are starting work…' : 'Your five AI agents ask Chaperone before they act.';
+      sub = running
+        ? 'The demo is replaying ten real situations from the studio’s own files. Decisions appear here the moment they are made.'
+        : 'Nothing has happened yet today. Run the demo to replay ten real situations from the studio’s own files. Every decision quotes the line in your file that decided it.';
+    } else if (pend.length > 0) {
+      lead = `${ssrPlural(pend.length, 'thing needs', 'things need')} your yes${pendingMoney ? `: <span class="money">${ssrEsc(ssrMoney(pendingMoney))}</span> in total` : ''}.`;
+      sub = `Chaperone also stopped ${ssrPlural(stopped, 'risky action')} and ${ssrPlural(reads, 'file read')} before anything left the studio. ${ssrPlural(allow, 'routine action')} went ahead without bothering you.`;
+    } else {
+      lead = running ? 'Your agents are at work…' : 'Nothing needs you right now.';
+      sub = `Chaperone stopped ${ssrPlural(stopped, 'risky action')} and ${ssrPlural(reads, 'file read')}, and let ${ssrPlural(allow, 'routine action')} through.${running ? ' Your agents are still working.' : ''}`;
+    }
+    const showN = (n) => (running && n === 0 ? '—' : n);
+    const ic = (id) => `<svg class="ic" aria-hidden="true" focusable="false"><use href="#${id}"/></svg>`;
+    const stats = [
+      ['waiting', 'i-wait', showN(pend.length), pend.length ? `waiting for your yes · <span class="money">${ssrEsc(ssrMoney(pendingMoney))}</span>` : 'waiting for your yes'],
+      ['blocked', 'i-stop', showN(stopped), 'stopped before anything went out'],
+      ['held', 'i-eye', showN(reads), 'file reads stopped (not needed or unsafe)'],
+      ['done', 'i-done', showN(allow), 'done without asking'],
+    ].map(([k, i, n, l]) => `<div class="stat stat-${k}"><span class="stat-ic" aria-hidden="true">${ic(i)}</span><span class="stat-n">${n}</span><span class="stat-l">${l}</span></div>`).join('');
+    return { lead, sub, stats, has };
+  }
+  function renderIndex(req, res) {
+    const file = path.join(webDir, 'index.html');
+    let st;
+    try { st = fs.statSync(file); } catch { return json(res, 404, { error: 'not found' }); }
+    const c = textBytes(file, st);
+    const snap = todaySnapshot(contextFor(resolveMode(req)), demoRunning);
+    let html = c.raw.toString('utf8')
+      .replace(/<!--ssr:lead-->[\s\S]*?<!--\/ssr:lead-->/, snap.lead)
+      .replace(/<!--ssr:sub-->[\s\S]*?<!--\/ssr:sub-->/, ssrEsc(snap.sub))
+      .replace(/<!--ssr:stats-->[\s\S]*?<!--\/ssr:stats-->/, snap.stats)
+      .replace(/<!--ssr:introclass-->[\s\S]*?<!--\/ssr:introclass-->/, snap.has ? ' hidden' : '')
+      .replace(/<!--ssr:bodyclass-->[\s\S]*?<!--\/ssr:bodyclass-->/, snap.has ? '' : 'hidden');
+    const raw = Buffer.from(html);
+    const enc = raw.length > 256 ? negotiateEncoding(req) : null;
+    const out = enc ? compressBuffer(raw, enc) : raw;
+    const etag = `W/"${st.size.toString(16)}-${Math.floor(st.mtimeMs).toString(16)}-ssr${enc ? '-' + enc : ''}"`;
+    const headers = {
+      'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache',
+      ETag: etag, 'Last-Modified': st.mtime.toUTCString(), 'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer', Vary: 'Accept-Encoding',
+      'Content-Length': out.length, ...(enc ? { 'Content-Encoding': enc } : {}),
+    };
+    const inm = req.headers['if-none-match'];
+    if (inm && inm.split(',').map((s) => s.trim()).includes(etag)) { res.writeHead(304, headers); return res.end(); }
+    res.writeHead(200, headers);
+    res.end(req.method === 'HEAD' ? undefined : out);
+  }
+
   // ---- routes -------------------------------------------------------------
-  // The gate is the open worker channel: agents call it without any token and
-  // it always runs against the REAL engine. Reads resolve to the owner's real
-  // context or the visitor's demo sandbox. Only /api/hook stays owner-only.
+  // Writes to the REAL engine (/api/gate, /api/hook) require owner auth: a
+  // public URL must not let anonymous visitors append to the owner's audit log,
+  // queue or ledger. Worker agents authenticate with a Bearer token. Reads
+  // resolve to the owner's real context or the visitor's demo sandbox; the
+  // sandbox (/api/demo/run, /api/queue/decide, /api/run) stays open to visitors.
   const GATE_BODY_LIMIT = 64 * 1024;
   const routes = {
     '/api/events': { GET: openEvents },
     '/api/state': {
       GET: (req, res) => {
         const mode = resolveMode(req);
+        const owner = isOwner(req);
         const c = contextFor(mode);
+        // Static precomputed classifier report. Evidence quotes can name
+        // regulated files, so they are redacted for non-owner requests.
+        let classifierReport = store.classifierReport;
+        if (!owner && classifierReport && Array.isArray(classifierReport.rows)) {
+          classifierReport = { ...classifierReport, rows: classifierReport.rows.map((r) => ({ ...r, evidence: [] })) };
+        }
         return json(res, 200, {
-          mode, owner: isOwner(req),
+          mode, owner,
           log: c.store.log, queue: c.store.queue, scenarioResults: c.store.scenarioResults,
-          // Static precomputed test report, not live state: same object in both modes.
-          classifierReport: store.classifierReport, briefing: c.store.briefing,
+          classifierReport, briefing: c.store.briefing,
           lineage: lineageSnapshot(c.chaperone), demoRunning,
           log_chain: c.store.verifyChain(),
-        });
+          history: historySummaries(), decided_history: decidedHistory(),
+        }, {}, req);
+      },
+    },
+    // Read-only archive of an earlier demo run (sandbox data, open to visitors).
+    '/api/run': {
+      GET: (req, res) => {
+        const url = new URL(req.url, 'http://localhost');
+        const h = demoHistory.find((x) => x.run_id === url.searchParams.get('run_id'));
+        if (!h) return json(res, 404, { ok: false, error: 'run not found' });
+        return json(res, 200, {
+          run_id: h.run_id, ended_at: h.ended_at, log: h.log, queue: h.queue,
+          scenarioResults: h.scenarioResults, log_chain: h.log_chain,
+        }, {}, req);
       },
     },
     '/api/gate': {
       POST: async (req, res) => {
+        requireOwner(req);
         const body = await readJsonBody(req, GATE_BODY_LIMIT);
         try {
           return json(res, 200, chaperone.gate(body));
@@ -378,11 +561,15 @@ export function createApp({
     },
     '/api/lineage': { GET: (req, res) => json(res, 200, lineageSnapshot(contextFor(resolveMode(req)).chaperone)) },
     '/api/health': {
-      GET: (req, res) => json(res, 200, {
-        ok: true, demoRunning, actions: store.log.length, queue: store.queue.length,
-        demo_actions: demoStore.log.length, demo_queue: demoStore.queue.length,
-        sse_clients: sseClients.size, uptime_s: Math.round(process.uptime()),
-      }),
+      GET: (req, res) => {
+        const base = {
+          ok: true, demoRunning,
+          demo_actions: demoStore.log.length, demo_queue: demoStore.queue.length,
+          sse_clients: sseClients.size, uptime_s: Math.round(process.uptime()),
+        };
+        // Real-context counters are owner-only (no reconnaissance for visitors).
+        return json(res, 200, isOwner(req) ? { ...base, actions: store.log.length, queue: store.queue.length } : base);
+      },
     },
   };
 
@@ -415,12 +602,25 @@ export function createApp({
         });
         return res.end();
       }
-      return serveStatic(req, res, webDir, 'index.html');
+      return renderIndex(req, res);
     }
     return serveStatic(req, res, webDir, p);
   }
 
+  // Security headers on every response. The CSP allows the app's own inline
+  // critical CSS and inline style attributes (style-src 'unsafe-inline') while
+  // restricting scripts, frames, objects and connections to this origin.
+  // HSTS is ignored by browsers over plain HTTP and enforced behind the https
+  // proxy, so it is safe to send unconditionally.
+  const SECURITY_HEADERS = {
+    'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Referrer-Policy': 'no-referrer',
+  };
   const server = http.createServer((req, res) => {
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
     Promise.resolve()
       .then(() => handle(req, res))
       .catch((e) => {
