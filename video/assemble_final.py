@@ -699,6 +699,7 @@ def preextract_footage(ren, ft):
     for b in ren.FOOTAGE_ORDER:
         ft.get_frame(b, 0.0)
     ft.get_frame('s7', 0.0)
+    ft.get_frame('hashmeta-site', 0.0)
     qmap = [('qwenwork · build', ren._qwen_file('build')),
             ('qwenwork · hosting', ren._qwen_file('hosting')),
             ('qwenwork · live', ren._qwen_file('live', 'overview')),

@@ -1,211 +1,189 @@
 1
-00:00:00,050 --> 00:00:04,690
-This email hides an order for Mei's AI
-agent. Send her entire client list to
+00:00:00,050 --> 00:00:02,890
+This email hides an order
+for Mei's AI agent.
 
 2
-00:00:04,690 --> 00:00:07,870
-a stranger. Chaperone stopped it.
-Nothing was sent.
+00:00:03,250 --> 00:00:07,870
+Send her entire client list to a stranger.
+Chaperone stopped it. Nothing was sent.
 
 3
 00:00:08,330 --> 00:00:09,950
 Mei runs Lumen Studio alone.
 
 4
-00:00:10,410 --> 00:00:14,710
-Five AI agents email clients,
-pay suppliers, and delete files —
+00:00:10,410 --> 00:00:16,150
+5 AI agents email clients, pay suppliers,
+and delete files — 30 actions today.
 
 5
-00:00:14,990 --> 00:00:19,370
-thirty actions today. She is the whole
-compliance team. Chaperone sits
+00:00:16,470 --> 00:00:18,250
+She is the whole compliance team.
 
 6
-00:00:19,370 --> 00:00:23,550
-between every agent and the outside
-world, and checks each action before
+00:00:18,770 --> 00:00:21,630
+Chaperone sits between every agent
+and the outside world,
 
 7
-00:00:23,550 --> 00:00:24,450
-it happens.
+00:00:21,630 --> 00:00:24,230
+and checks each action before it happens.
 
 8
-00:00:26,050 --> 00:00:30,830
+00:00:26,050 --> 00:00:31,510
 This is the live app. Run the demo:
-ten real situations from Mei's own
+10 real situations from Mei's own files.
 
 9
-00:00:30,830 --> 00:00:31,730
-files.
+00:00:32,570 --> 00:00:37,370
+The morning briefing: 6 risky actions
+stopped, 4 waiting for your yes —
 
 10
-00:00:32,570 --> 00:00:36,950
-The morning briefing: six risky
-actions stopped, four waiting for your
+00:00:37,750 --> 00:00:42,230
+SGD 10,260 — and 15 routine actions done.
 
 11
-00:00:36,950 --> 00:00:41,670
-yes — SGD ten thousand two hundred
-sixty — and fifteen routine actions
+00:00:43,090 --> 00:00:46,170
+Marketing tried to upload the client list
+to an outside tool.
 
 12
-00:00:41,670 --> 00:00:42,450
-done.
+00:00:46,810 --> 00:00:50,750
+Blocked — and here's the exact line
+in Mei's files that decided it.
 
 13
-00:00:43,090 --> 00:00:46,170
-Marketing tried to upload the client
-list to an outside tool.
+00:00:51,330 --> 00:00:56,990
+Finance's client reply had 3 wrong figures.
+25% — the contract says 20.
 
 14
-00:00:46,810 --> 00:00:50,750
-Blocked — and here's the exact line in
-Mei's files that decided it.
+00:00:57,350 --> 00:01:02,850
+5 days — really 2.
+5,250 — the invoice says 5,040.
 
 15
-00:00:51,330 --> 00:00:55,770
-Finance's client reply had three wrong
-figures. Twenty-five percent — the
+00:01:03,750 --> 00:01:04,450
+Stopped.
 
 16
-00:00:55,770 --> 00:00:59,957
-contract says twenty. Five days —
-really two. Five thousand two hundred
+00:01:04,750 --> 00:01:09,470
+Agents only touch what the task needs.
+3 off-limits file reads — stopped.
 
 17
-00:00:59,957 --> 00:01:04,250
-fifty — the invoice says five thousand
-forty. Stopped.
+00:01:10,690 --> 00:01:14,170
+A summary of a confidential proposal
+inherits its secret.
 
 18
-00:01:04,750 --> 00:01:06,830
-Agents only touch what the task needs.
+00:01:14,590 --> 00:01:17,750
+Rewriting it never makes it safe to share.
+Blocked.
 
 19
-00:01:07,230 --> 00:01:09,470
-Three off-limits file reads — stopped.
+00:01:18,550 --> 00:01:24,570
+750 plus 750 is 1,500 —
+over the 1,000 limit.
 
 20
-00:01:10,690 --> 00:01:15,090
-A summary of a confidential proposal
-inherits its secret. Rewriting it
+00:01:25,090 --> 00:01:27,630
+Chaperone adds them up,
+and holds both payments.
 
 21
-00:01:15,090 --> 00:01:17,750
-never makes it safe to share.
-Blocked.
+00:01:29,130 --> 00:01:34,850
+An email, supposedly from Mei,
+approved 5,800. Her written floor is 6,500.
 
 22
-00:01:18,550 --> 00:01:23,270
-Seven hundred fifty plus seven hundred
-fifty is fifteen hundred — over the
+00:01:35,230 --> 00:01:38,170
+An email is not an approval. Blocked.
 
 23
-00:01:23,270 --> 00:01:27,630
-one-thousand limit. Chaperone adds
-them up, and holds both payments.
+00:01:38,950 --> 00:01:43,690
+Ops wants to delete an unpaid invoice. Held.
+Mei says no.
 
 24
-00:01:29,130 --> 00:01:32,350
-An email, supposedly from Mei,
-approved fifty-eight hundred.
+00:01:44,150 --> 00:01:48,370
+And when the contract says delete,
+Chaperone allows it — and sends the notices.
 
 25
-00:01:32,890 --> 00:01:36,930
-Her written floor is sixty-five
-hundred. An email is not an approval.
+00:01:50,050 --> 00:01:52,210
+10 scenarios, 3 checks each:
 
 26
-00:01:37,750 --> 00:01:38,450
-Blocked.
+00:01:52,590 --> 00:01:55,310
+the right decision, the right rule,
+the right evidence.
 
 27
-00:01:38,950 --> 00:01:41,070
-Ops wants to delete an unpaid invoice.
+00:01:55,630 --> 00:01:59,930
+30 out of 30.
+The classifier got 30 of 30 files right.
 
 28
-00:01:41,990 --> 00:01:43,690
-Held. Mei says no.
+00:01:59,930 --> 00:02:02,210
+And 173 unit tests pass.
 
 29
-00:01:44,150 --> 00:01:47,790
-And when the contract says delete,
-Chaperone allows it — and sends the
+00:02:04,190 --> 00:02:08,470
+Who pays? One-person companies —
+the owner IS the whole company.
 
 30
-00:01:47,790 --> 00:01:48,690
-notices.
+00:02:08,970 --> 00:02:13,370
+Planned open-core:
+free self-host, Solo 19 monthly, Studio 49.
 
 31
-00:01:50,050 --> 00:01:54,330
-Ten scenarios, three checks each:
-the right decision, the right rule,
+00:02:13,870 --> 00:02:15,850
+The payment it stops buys years of Solo.
 
 32
-00:01:54,330 --> 00:01:58,550
-the right evidence. Thirty out of
-thirty. The classifier got thirty of
+00:02:15,850 --> 00:02:19,730
+Planned channels
+and a design-partner offer — not traction.
 
 33
-00:01:58,550 --> 00:02:02,190
-thirty files right. And one hundred
-seventy-three unit tests pass.
+00:02:20,370 --> 00:02:21,810
+QwenWork built this project:
 
 34
-00:02:04,050 --> 00:02:09,010
-Who pays? One-person studios,
-agencies, and fractional ops teams —
-
-35
-00:02:09,410 --> 00:02:13,330
-people who let agents email clients
-and move money, but can't hire a
-
-36
-00:02:13,330 --> 00:02:17,670
-compliance team. One person can safely
-run a whole team of agents.
-
-37
-00:02:18,370 --> 00:02:22,430
-QwenWork built this project:
+00:02:22,230 --> 00:02:26,150
 the video, the music, the title art,
-
-38
-00:02:22,430 --> 00:02:24,150
 the integration, and the deploy.
 
-39
-00:02:24,570 --> 00:02:26,530
+35
+00:02:26,530 --> 00:02:28,530
 The app runs on QwenWork Pages.
 
-40
-00:02:26,870 --> 00:02:31,030
-And live QwenWork agents run through
-the gate right now. Watch:
+36
+00:02:28,870 --> 00:02:32,170
+And live QwenWork agents run
+through the gate right now.
 
-41
-00:02:31,030 --> 00:02:34,410
-an agent tries to read bank details it
-doesn't need — blocked.
+37
+00:02:32,590 --> 00:02:36,410
+Watch: an agent tries to read bank details
+it doesn't need — blocked.
 
-42
-00:02:34,870 --> 00:02:37,970
+38
+00:02:36,850 --> 00:02:39,970
 It tries to delete an unpaid invoice —
 held for Mei.
 
-43
-00:02:42,050 --> 00:02:45,670
-See it live — the links are in the
-description. Chaperone.
+39
+00:02:44,050 --> 00:02:47,670
+See it live —
+the links are in the description. Chaperone.
 
-44
-00:02:45,950 --> 00:02:48,250
+40
+00:02:47,950 --> 00:02:52,210
 Built with QwenWork, live on Hashmeta.
-
-45
-00:02:48,710 --> 00:02:50,210
 Give your agents a chaperone.
 

@@ -401,7 +401,7 @@ def status_pill(base, xy, status, label=None, height=52, alpha=1.0, center=False
     return pill(base, xy, label, fg, bg, bd, icon=icon, f=f, height=height, alpha=alpha, center=center)
 
 # ---- caption pill (single source of truth for burned-in caption pixels) ------------
-CAP_FONT_SIZE = 54
+CAP_FONT_SIZE = 40
 CAP_BOTTOM = 1032          # pill bottom edge (bottom-third safe area at 1080p)
 CAP_MAXW = 1560
 CAP_BG = INK               # #0F172A

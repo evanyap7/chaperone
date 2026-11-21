@@ -17,12 +17,17 @@ Method:  transcribe narration.wav with faster-whisper small.en (int8, CPU),
 
 Outputs: video/captions/captions.json    word-level times/colours + cue grouping
          video/captions/captions.ass     word-by-word highlight ASS (V5 reference)
-         video/captions/captions.srt     SRT twin (<=38 chars/line, <=2 lines)
+         video/captions/captions.srt     SRT twin (<=44 chars/line, <=2 lines)
          assets/demo-video.srt           uploadable SRT (same content)
          <work>/caption_pngs/wNNN.png    per-word-state 1920x1080 RGBA overlays
                                          (this ffmpeg build has no libass; V5
                                          burns these with enable windows)
          <work>/timing.json              updated: per-word timestamps per segment
+
+Display: spoken number-words render as digits in one token ("SGD 10,260",
+         "5,800", "173", "30 out of 30"); cue lines block at phrase boundaries
+         and never split a number run. Word windows stay per spoken word, so
+         the karaoke underline tracks the digit token across the whole run.
 """
 import difflib, glob, json, os, re, subprocess, sys
 import numpy as np
@@ -39,12 +44,13 @@ SCRIPT = os.path.join(VIDEO, 'script', 'demo-script.json')
 FONTS = os.path.join(VIDEO, 'motion', 'fonts')
 PNG_DIR = os.path.join(WORK, 'caption_pngs')
 
-MAX_CHARS = 38
+MAX_CHARS = 44
 MAX_LINES = 2
-FONT_SIZE = 58
-PILL_BOTTOM = 950
-PAD_X, PAD_Y = 40, 18
-PILL_FILL = (15, 23, 42, 235)
+FONT_SIZE = 40
+PILL_BOTTOM = 965
+PAD_X, PAD_Y = 30, 12
+PILL_RADIUS = 14
+PILL_FILL = (15, 23, 42, 224)
 PILL_STROKE = (30, 41, 59, 255)
 WHITE = '#FFFFFF'
 UPCOMING = '#94A3B8'
@@ -378,49 +384,196 @@ def word_color(text):
 
 # ---------------------------------------------------------------- cue chunking
 CONJ = {'and', 'but', 'or', 'so', 'because', 'when', 'then', 'that', 'which', 'while'}
+DANGLE = {'a', 'an', 'the', 'to', 'of', 'for', 'in', 'on', 'at', 'with', 'by', 'from',
+          'and', 'or', 'but', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+          'has', 'have', 'had', 'will', 'would', 'can', 'could', 'should', 'may',
+          'might', 'must', 'do', 'does', 'did', 'not', 'no', 'her', 'his', 'its',
+          'their', 'your', 'my', 'our', 'this', 'that', 'these', 'those', 'as',
+          'than', 'into', 'over', 'under', 'between', 'each', 'through'}
+VERB_OBJ = {'buys', 'makes', 'sends', 'holds', 'stops', 'needs', 'says', 'got',
+            'is', 'are', 'was', 'were', 'inherits', 'hides'}
+CURRENCY = {'sgd', 'usd', 's$'}
+PUNCT_HARD = ('.', '!', '?')
+PUNCT_SOFT = (',', ';', ':', '—', '–', '-')
+MAX_MERGE_SPAN = 6.0   # merged sentences must stay within ~one breath of speech
+LINE_PENALTY = 3.0     # per-line cost: fewer lines wins unless a break is ugly
+
+def _core(t):
+    return re.sub(r'[^a-z]', '', t.lower())
+
+def display_map(words):
+    """Render spoken number-words as digits in ONE visual token (red-team P2-6).
+    Kokoro spells numbers as words; captions show '10,260' instead of 'ten
+    thousand two hundred sixty'. Times/windows stay per spoken word: the digit
+    token underlines from the run's first word to its last, so karaoke sync is
+    preserved. Non-first run words get display='' (zero-width, no own token).
+    Currency prefixes (SGD) and 'percent' suffixes ride along with the run."""
+    def edge(t):
+        m = re.match(r'^([^a-z0-9]*)(.*?)([^a-z0-9]*)$', t, re.I | re.S)
+        return m.group(1), m.group(3)
+    def numsubs(w):
+        ss = norm_subs(tts.say_as(w['text']))
+        return ss if ss and all(s in NUM for s in ss) else None
+    rid, i, n = 0, 0, len(words)
+    while i < n:
+        if numsubs(words[i]) is None:
+            words[i]['display'] = words[i]['text']
+            i += 1
+            continue
+        j, run = i, []
+        while j < n:
+            ss = numsubs(words[j])
+            if ss is None:
+                break
+            run += ss
+            j += 1
+            if ends_sentence(words[j - 1]['text']):
+                break
+        k, pct = j, ''
+        if k < n and _core(words[k]['text']) == 'percent':
+            pct = '%'
+            k += 1
+        lead, _ = edge(words[i]['text'])
+        _, trail = edge(words[k - 1]['text'])
+        rid += 1
+        for x in range(i, k):
+            words[x]['numrun'] = rid
+            words[x]['display'] = ''
+        words[i]['display'] = lead + f'{parse_num(run):,}' + pct + trail
+        if i > 0 and re.sub(r'[^a-z$]', '', words[i - 1]['text'].lower()) in CURRENCY:
+            words[i - 1]['numrun'] = rid
+        i = k
+
+def disp_len(ws):
+    toks = [w['display'] for w in ws if w['display']]
+    return sum(len(t) for t in toks) + max(0, len(toks) - 1)
+
+def ulen(units):
+    return disp_len([w for u in units for w in u])
+
+def _utext(u):
+    return (u[-1]['display'] or u[-1]['text']).rstrip()
+
+def break_cost(units, j):
+    """Cost of a line break BEFORE unit j. Sentence ends are free; commas,
+    colons, dashes and pre-conjunction breaks are cheap; arbitrary mid-phrase
+    breaks cost more; dangling line-ends, verb/object splits, number/noun
+    splits and tiny remainder lines are penalised."""
+    prev = _utext(units[j - 1])
+    nxt = units[j][0]['display'] or units[j][0]['text']
+    if prev.endswith(PUNCT_HARD):
+        return 0.0
+    c = 0.4 if prev.endswith(':') else (0.5 if prev.endswith(PUNCT_SOFT)
+                                        else (1.0 if _core(nxt) in CONJ else 2.5))
+    if not prev.endswith(PUNCT_SOFT):
+        # clause punctuation already closes the phrase — only bare words dangle
+        if _core(prev) in DANGLE:
+            c += 6.0
+        if _core(prev) in VERB_OBJ:
+            c += 5.0
+        if prev.endswith(("'s", '’s')):
+            c += 5.0   # keep possessives with their noun ("Mei's files")
+        if units[j - 1][-1].get('numrun') is not None:
+            c += 5.0   # keep a spoken number with its noun ("30 actions")
+    if ulen(units[j:]) < 12:
+        c += 3.0   # don't strand a tiny remainder ("…AI / agent.")
+    return c
+
+def dp_pack(units):
+    """Pack units into <=44-char lines at the cheapest phrase boundaries.
+    Objective: break costs + LINE_PENALTY per line; ties prefer later breaks
+    (fuller lines). Returns a list of lines (each a list of units)."""
+    n = len(units)
+    bc = [0.0] * (n + 1)
+    for j in range(1, n):
+        bc[j] = break_cost(units, j)
+    best = [(float('inf'), float('inf'), 0)] * (n + 1)
+    best[0] = (0.0, 0, 0)
+    for j in range(1, n + 1):
+        for i in range(j):
+            if best[i][0] == float('inf'):
+                continue
+            L = ulen(units[i:j])
+            if L > MAX_CHARS:
+                continue
+            extra = 0.0
+            if j < n and bc[j] > 0 and j - i == 1 and L < 12 \
+               and not _utext(units[j - 1]).endswith(('—', '–', '-')):
+                extra = 4.0   # tiny single-word line ("Watch:") — fold into content
+            cand = (best[i][0] + LINE_PENALTY + bc[j] + extra, best[i][1] + 1, -i)
+            if cand < best[j]:
+                best[j] = cand
+    lines, j = [], n
+    while j > 0:
+        i = -best[j][2]
+        lines.append(units[i:j])
+        j = i
+    return lines[::-1]
 
 def chunk_cues(words):
-    """Greedy line packing <=38 chars, clause-preferring breaks, <=2 lines/cue."""
-    lines, cur, cur_len = [], [], 0
-    def flush():
-        nonlocal cur, cur_len
-        if cur:
-            lines.append(cur)
-            cur, cur_len = [], 0
-    for i, w in enumerate(words):
-        wt = w['text']
-        add = len(wt) + (1 if cur else 0)
-        if cur and cur_len + add > MAX_CHARS:
-            flush()
-            add = len(wt)
-        # prefer to end a line at a clause boundary once it is long enough
-        if cur and cur_len >= 22:
-            prev = cur[-1]['text']
-            if prev.rstrip().endswith((',', ';', ':')) or (prev.rstrip().endswith('.') and i < len(words)):
-                flush()
-                add = len(wt)
-        cur.append(w)
-        cur_len += add
-        w['line'] = len(lines)
-    flush()
-    cues, buf = [], []
-    for ln in lines:
-        buf.append(ln)
-        ends_sentence = ln[-1]['text'].rstrip().endswith(('.', '!', '?'))
-        if len(buf) == MAX_LINES or (ends_sentence and sum(len(l) for l in buf) >= 4):
-            cues.append(buf)
-            buf = []
-    if buf:
-        if cues and len(cues[-1]) == 1 and len(buf) == 1 and \
-           sum(len(l) for l in cues[-1]) + sum(len(l) for l in buf) <= 10:
-            cues[-1] += buf
+    """Phrase-boundary cue blocking (editor P1-4): each sentence stays whole on
+    one card when it fits (<=44 display chars/line, <=2 lines); short adjacent
+    sentences merge only while the card stays <=2 lines and <=~6 s of speech.
+    Oversized sentences split at clause boundaries (comma/colon/dash/conjunction)
+    — never mid-phrase ("buys / years of Solo"), never mid-number. Number runs
+    (with currency/percent) are atomic units throughout."""
+    units, i = [], 0
+    while i < len(words):
+        j, rid = i + 1, words[i].get('numrun')
+        if rid is not None:
+            while j < len(words) and words[j].get('numrun') == rid:
+                j += 1
+        units.append(words[i:j])
+        i = j
+    sentences, cur = [], []
+    for u in units:
+        cur.append(u)
+        if _utext(u).endswith(PUNCT_HARD):
+            sentences.append(cur)
+            cur = []
+    if cur:
+        sentences.append(cur)
+
+    def span(us):
+        ws = [w for u in us for w in u]
+        return ws[-1]['end'] - ws[0]['start']
+
+    groups = []
+    for s in sentences:
+        if groups:
+            comb = groups[-1] + s
+            if ulen(comb) <= 2 * MAX_CHARS + 1 and span(comb) <= MAX_MERGE_SPAN \
+               and len(dp_pack(comb)) <= 2:
+                groups[-1] = comb
+                continue
+        groups.append(s)
+    cues = []
+    for g in groups:
+        lines = dp_pack(g)
+        if len(lines) == 3 and _utext(lines[0][-1]).endswith((':', '—', '–', '-')):
+            cues.append(lines[:1])     # intro line ("Watch:", "Blocked —") alone…
+            cues.append(lines[1:])     # …then the full clause pair on one card
         else:
-            cues.append(buf)
-    for cue in cues:
+            for k in range(0, len(lines), 2):
+                cues.append(lines[k:k + 2])
+    merged = []
+    for c in cues:
+        if merged and len(merged[-1]) == 1 and len(c) == 1:
+            comb = merged[-1][0] + c[0]
+            if ulen(comb) <= MAX_CHARS and span(comb) <= MAX_MERGE_SPAN:
+                merged[-1] = [comb]
+                continue
+        merged.append(c)
+    out = []
+    for cue in merged:
+        lines = []
         for li, ln in enumerate(cue):
-            for w in ln:
+            ws = [w for u in ln for w in u]
+            for w in ws:
                 w['line'] = li
-    return cues
+            lines.append(ws)
+        out.append(lines)
+    return out
 
 # ---------------------------------------------------------------- build all
 all_words, cues_out = [], []
@@ -428,6 +581,7 @@ drifts, bounds, n_matched, n_total = [], [], 0, 0
 for seg in script['segments']:
     words, subs = script_words(seg)
     aw = align_segment(seg, words, subs)
+    display_map(words)
     for i, w in enumerate(words):
         w['seg'] = seg['id']
         w['color'] = word_color(w['text'])
@@ -464,7 +618,7 @@ for seg in script['segments']:
         raw[k][1] = min(shi, max(en, st + 0.4))
     for (st, en, flat), cue in zip(raw, cues):
         cid = len(cues_out) + 1
-        lines_txt = [' '.join(w['text'] for w in ln) for ln in cue]
+        lines_txt = [' '.join(w['display'] for w in ln if w['display']) for ln in cue]
         assert all(len(t) <= MAX_CHARS for t in lines_txt), (cid, lines_txt)
         co = {'id': cid, 'seg': seg['id'], 'start': round(st, 3), 'end': round(en, 3),
               'lines': lines_txt, 'words': []}
@@ -505,10 +659,10 @@ for i, w in enumerate(all_words):
 max_drift = max(drifts + bounds) if (drifts or bounds) else 0.0
 style = {'font': 'Source Sans 3', 'weight': 600, 'size': FONT_SIZE,
          'decision_font': 'Lexend', 'decision_weight': 600,
-         'pill': 'rgba(15,23,42,0.92)', 'pill_stroke': '#1E293B', 'radius': 16,
+         'pill': 'rgba(15,23,42,0.88)', 'pill_stroke': '#1E293B', 'radius': PILL_RADIUS,
          'padding': [PAD_X, PAD_Y], 'bottom_y': PILL_BOTTOM, 'align': 'bottom-centre',
          'max_lines': MAX_LINES, 'max_chars': MAX_CHARS,
-         'spoken': WHITE, 'upcoming': UPCOMING, 'active_underline_px': 4,
+         'spoken': WHITE, 'upcoming': UPCOMING, 'active_underline_px': 3,
          'decision_colors': {'BLOCK': '#EDA69C', 'HOLD': '#E8C988', 'ALLOW': '#A9D9B8'}}
 os.makedirs(PNG_DIR, exist_ok=True)
 json.dump({'style': style,
@@ -516,13 +670,27 @@ json.dump({'style': style,
                          'words_total': n_total, 'words_matched': n_matched,
                          'match_rate': round(n_matched / n_total, 4),
                          'max_drift_s': round(max_drift, 4),
-                         'drift_note': 'word starts snapped verbatim to fresh whisper timestamps; merged-number words spread 1:1 across ASR fragments (or proportionally within the merged span); unmatched words interpolated between matched anchors'},
+                         'drift_note': 'word starts snapped verbatim to fresh whisper timestamps; merged-number words spread 1:1 across ASR fragments (or proportionally within the merged span); unmatched words interpolated between matched anchors',
+                         'display_note': 'spoken number-words rendered as digits in one token per run (display field); windows/times unchanged per spoken word; phrase-boundary cue blocking'},
            'png_dir': os.path.relpath(PNG_DIR, VIDEO),
            'cues': cues_out, 'words': all_words},
           open(os.path.join(HERE, 'captions.json'), 'w'), indent=1)
 json.dump(timing, open(os.path.join(WORK, 'timing.json'), 'w'), indent=2)
 
 # ---------------------------------------------------------------- ASS
+def cue_tokens(co):
+    """Visual tokens for a cue: one per non-empty display word; a number run's
+    digit token spans all member words (first..last) so the underline tracks
+    the spoken run while windows stay per word."""
+    toks = []
+    for j, w in enumerate(co['words']):
+        if w['display']:
+            toks.append({'text': w['display'], 'color': w['color'],
+                         'first': j, 'last': j, 'line': w['line']})
+        elif toks:
+            toks[-1]['last'] = j
+    return toks
+
 def ass_t(x):
     h = int(x // 3600); m = int(x % 3600 // 60); s = x % 60
     return f'{h}:{m:02d}:{s:05.2f}'
@@ -545,24 +713,25 @@ with open(os.path.join(HERE, 'captions.ass'), 'w') as f:
             'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, '
             'BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, '
             'BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n'
-            'Style: Cap,Source Sans 3,58,&H00FFFFFF,&H00FFFFFF,&H003B291E,'
-            '&HEB2A170F,-1,0,0,0,100,100,0,0,3,18,0,2,160,160,130,1\n\n[Events]\n'
+            'Style: Cap,Source Sans 3,40,&H00FFFFFF,&H00FFFFFF,&H003B291E,'
+            '&HE02A170F,-1,0,0,0,100,100,0,0,3,12,0,2,160,160,115,1\n\n[Events]\n'
             'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n')
     for co in cues_out:
         ws = co['words']
-        nlines = len(co['lines'])
+        toks = cue_tokens(co)
         for i in range(len(ws)):
             a, b = ws[i]['window']
             parts, li, first_in_line = [], 0, True
-            for j, w in enumerate(ws):
-                if w['line'] != li:
+            for t in toks:
+                if t['line'] != li:
                     parts.append('\\N')
-                    li = w['line']
+                    li = t['line']
                     first_in_line = True
                 elif not first_in_line:
                     parts.append(' ')   # literal space: libass must render word gaps
-                state = 'active' if j == i else ('spoken' if j < i else 'upcoming')
-                parts.append(ass_word(w, state))
+                state = 'active' if t['first'] <= i <= t['last'] else (
+                    'spoken' if i > t['last'] else 'upcoming')
+                parts.append(ass_word(t, state))
                 first_in_line = False
             f.write(f'Dialogue: 0,{ass_t(a)},{ass_t(b)},Cap,,0,0,0,,{{\\r}}' + ''.join(parts) + '\n')
 
@@ -586,17 +755,18 @@ body.set_variation_by_axes([600])
 dec = ImageFont.truetype(os.path.join(FONTS, 'Lexend.ttf'), FONT_SIZE)
 dec.set_variation_by_axes([600])
 ASC, DESC = body.getmetrics()
-LINE_H = ASC + DESC + 6
+LINE_H = ASC + DESC - 5
 
 def hex_rgb(h):
     h = h.lstrip('#')
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 def layout(co):
+    toks = cue_tokens(co)
     lines = []
-    for ln in co['lines']:
-        ws = [w for w in co['words'] if w['line'] == len(lines)]
-        widths = [(dec if w['color'] else body).getlength(w['text']) for w in ws]
+    for li in range(len(co['lines'])):
+        ws = [t for t in toks if t['line'] == li]
+        widths = [(dec if t['color'] else body).getlength(t['text']) for t in ws]
         sp = body.getlength(' ')
         total = sum(widths) + sp * (len(ws) - 1)
         lines.append((ws, widths, sp, total))
@@ -610,22 +780,20 @@ def render_state(co, active_i, path):
     lines, pill_w, pill_h, x0, y0 = layout(co)
     img = Image.new('RGBA', (1920, 1080), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([x0, y0, x0 + pill_w, y0 + pill_h], radius=16,
+    d.rounded_rectangle([x0, y0, x0 + pill_w, y0 + pill_h], radius=PILL_RADIUS,
                         fill=PILL_FILL, outline=PILL_STROKE, width=1)
-    idx = 0
     for li, (ws, widths, sp, total) in enumerate(lines):
         tx = x0 + (pill_w - total) / 2
         ty = y0 + PAD_Y + li * LINE_H
-        for w, wd in zip(ws, widths):
-            fnt = dec if w['color'] else body
-            spoken = idx <= active_i
-            col = w['color'] or (WHITE if spoken else UPCOMING)
-            d.text((tx, ty), w['text'], font=fnt, fill=hex_rgb(col))
-            if idx == active_i:
-                uc = w['color'] or WHITE
-                d.rectangle([tx, ty + ASC + 3, tx + wd, ty + ASC + 7], fill=hex_rgb(uc))
+        for t, wd in zip(ws, widths):
+            fnt = dec if t['color'] else body
+            spoken = t['first'] <= active_i
+            col = t['color'] or (WHITE if spoken else UPCOMING)
+            d.text((tx, ty), t['text'], font=fnt, fill=hex_rgb(col))
+            if t['first'] <= active_i <= t['last']:
+                uc = t['color'] or WHITE
+                d.rectangle([tx, ty + ASC + 3, tx + wd, ty + ASC + 6], fill=hex_rgb(uc))
             tx += wd + sp
-            idx += 1
     img.save(path)
 
 for co in cues_out:

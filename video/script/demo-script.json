@@ -1,14 +1,18 @@
 {
   "schema_version": 2,
-  "title": "Chaperone — live demo (QwenWork × Hashmeta, Track 2)",
-  "total_seconds": 172.0,
+  "title": "Chaperone \u2014 live demo (QwenWork \u00d7 Hashmeta, Track 2)",
+  "total_seconds": 174.0,
   "voice": {
     "engine": "kokoro",
     "voice": "af_heart",
     "speed": 1.0,
     "notes": "Synthesis-only pronunciation map lives in video/tts.py SAY_AS (Mei -> May; QwenWork -> Kwen Work so it sounds like 'Kwen Work', never 'QN Work'). Captions and on-screen text keep the spellings 'Mei' and 'QwenWork'. Numbers are spelled out in narration so Kokoro reads them cleanly; on-screen specs use digits. 'SGD' is spoken as letters (verified clean through Kokoro + whisper)."
   },
-  "resolution": { "width": 1920, "height": 1080, "fps": 30 },
+  "resolution": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
   "figures_source": {
     "unit_tests": "node --test tests/unit/*.test.js: 173 pass / 0 fail (re-verified round 3, 2026-11-20; suite grew after engine hardening)",
     "scenarios": "reports/scenario_score.json: total 30 / max 30, accuracy 1.0 (regenerated 2026-11-20T01:31Z)",
@@ -21,64 +25,100 @@
   },
   "segments": [
     {
-      "id": 1, "kind": "hook", "chapter": "Hook", "start": 0.0, "duration": 8.0,
+      "id": 1,
+      "kind": "hook",
+      "chapter": "Hook",
+      "start": 0.0,
+      "duration": 8.0,
       "narration": "This email hides an order for Mei's AI agent. Send her entire client list to a stranger. Chaperone stopped it. Nothing was sent.",
       "onscreen": {
         "beat": "H1-H3 cold open",
         "shots": [
-          "0.0 frame 0: MG mail card already drawn from data/inbox/2026-11-16_vendor_injection.md (From growth@partner-crm.example, subject 'PartnerCRM onboarding offer'); BLOCK-tint highlight sweeps the hidden instruction by 0.5s; kicker 'INBOX · 16 NOV'",
+          "0.0 frame 0: MG mail card already drawn from data/inbox/2026-11-16_vendor_injection.md (From growth@partner-crm.example, subject 'PartnerCRM onboarding offer'); BLOCK-tint highlight sweeps the hidden instruction by 0.5s; kicker 'INBOX \u00b7 16 NOV'",
           "2.4-5.0 MG outgoing draft card, mono tag 'replayed agent action': To sync@partner-crm.example, attachment pill admin/client_list.csv with REG sensitivity bar; cursor glides to Send and presses at 4.7s; never draw a 'sent' state",
-          "5.0-8.0 HARD CUT to REAL Live log footage (DPR2, content-cropped): the S7 row with the app's red flash; STOPPED stamp slams at 5.15s, -7 degrees, NO redundant BLOCK subscript; kinetic line 'Nothing was sent.' at 6.4s; corner tag 'LIVE · uq2xhx6u.qwenwork.page'"
+          "5.0-8.0 HARD CUT to REAL Live log footage (DPR2, content-cropped): the S7 row with the app's red flash; STOPPED stamp slams at 5.15s, -7 degrees, NO redundant BLOCK subscript; kinetic line 'Nothing was sent.' at 6.4s; corner tag 'LIVE \u00b7 uq2xhx6u.qwenwork.page'"
         ],
-        "stamps": ["STOPPED at 5.15s over the real S7 row (no BLOCK subscript)"],
+        "stamps": [
+          "STOPPED at 5.15s over the real S7 row (no BLOCK subscript)"
+        ],
         "counters": []
       }
     },
     {
-      "id": 2, "kind": "motion", "chapter": "Problem", "start": 8.0, "duration": 18.0,
-      "narration": "Mei runs Lumen Studio alone. Five AI agents email clients, pay suppliers, and delete files — thirty actions today. She is the whole compliance team. Chaperone sits between every agent and the outside world, and checks each action before it happens.",
+      "id": 2,
+      "kind": "motion",
+      "chapter": "Problem",
+      "start": 8.0,
+      "duration": 18.0,
+      "narration": "Mei runs Lumen Studio alone. Five AI agents email clients, pay suppliers, and delete files \u2014 thirty actions today. She is the whole compliance team. Chaperone sits between every agent and the outside world, and checks each action before it happens.",
       "onscreen": {
         "beat": "P1-P3 problem + brand reveal",
         "shots": [
-          "8.0-12.0 kinetic type: 'One person. No one checking.' with the track question dimmed above; attribution 'QwenWork × Hashmeta · Track 2 · AvePoint'",
-          "12.0-19.0 centre 'Mei Tan · Lumen Studio'; five worker chips stagger in (Marketing, Sales, Ops, Finance, Support) kept ABOVE the caption safe band (y<=700); mono counter '30 actions' counts 0->30 (real log total 30)",
+          "8.0-12.0 kinetic type: 'One person. No one checking.' with the track question dimmed above; attribution 'QwenWork \u00d7 Hashmeta \u00b7 Track 2 \u00b7 AvePoint'",
+          "12.0-19.0 centre 'Mei Tan \u00b7 Lumen Studio'; five worker chips stagger in (Marketing, Sales, Ops, Finance, Support) kept ABOVE the caption safe band (y<=700); mono counter '30 actions' counts 0->30 (real log total 30)",
           "19.0-26.0 gate node (app logo); wordmark 'Chaperone' wipes in; sub 'Every action. One gate.'; push-through into the gate to cut to real footage"
         ],
         "stamps": [],
-        "counters": ["30 actions (0->30 count-up, real log length)"]
+        "counters": [
+          "30 actions (0->30 count-up, real log length)"
+        ]
       }
     },
     {
-      "id": 3, "kind": "footage", "chapter": "Live", "start": 26.0, "duration": 6.5,
+      "id": 3,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 26.0,
+      "duration": 6.5,
       "narration": "This is the live app. Run the demo: ten real situations from Mei's own files.",
       "onscreen": {
         "beat": "W1 run-demo",
         "shots": [
           "REAL Today page (DPR2 content crop, body text ~29px); cursor clicks 'Run the demo'; time-lapse of the ~18s run; progress banner advances; tab counters tick to 'Live log 30' and 'Approvals 4'; slow push-in",
-          "right-third: three stamps land in sync — DONE (ALLOW), WAITING FOR YOU (HOLD), STOPPED (BLOCK) — then exit together",
-          "corner tag 'LIVE · uq2xhx6u.qwenwork.page'; chapter kicker 'LIVE APP'"
+          "right-third: three stamps land in sync \u2014 DONE (ALLOW), WAITING FOR YOU (HOLD), STOPPED (BLOCK) \u2014 then exit together",
+          "corner tag 'LIVE \u00b7 uq2xhx6u.qwenwork.page'; chapter kicker 'LIVE APP'"
         ],
-        "stamps": ["DONE / ALLOW", "WAITING FOR YOU / HOLD_FOR_APPROVAL", "STOPPED / BLOCK"],
-        "counters": ["Live log 0->30", "Approvals 0->4"]
+        "stamps": [
+          "DONE / ALLOW",
+          "WAITING FOR YOU / HOLD_FOR_APPROVAL",
+          "STOPPED / BLOCK"
+        ],
+        "counters": [
+          "Live log 0->30",
+          "Approvals 0->4"
+        ]
       }
     },
     {
-      "id": 4, "kind": "footage", "chapter": "Live", "start": 32.5, "duration": 10.0,
-      "narration": "The morning briefing: six risky actions stopped, four waiting for your yes — SGD ten thousand two hundred sixty — and fifteen routine actions done.",
+      "id": 4,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 32.5,
+      "duration": 10.0,
+      "narration": "The morning briefing: six risky actions stopped, four waiting for your yes \u2014 SGD ten thousand two hundred sixty \u2014 and fifteen routine actions done.",
       "onscreen": {
         "beat": "W2 morning briefing (real headline, verbatim from /api/state)",
         "shots": [
           "REAL Today page after the run; headline '6 risky actions stopped, 4 waiting for your yes (SGD 10,260 in total), 15 routine actions done.'; highlight box on the headline (DOM rect) then the stat row; slow push-in",
-          "ghost counters land on the real numbers: 6 stopped, 4 waiting, SGD 10,260, 15 done — every figure from briefing.stats",
+          "ghost counters land on the real numbers: 6 stopped, 4 waiting, SGD 10,260, 15 done \u2014 every figure from briefing.stats",
           "the 'Waiting for your yes' card visible below; queue shows exactly 4 items"
         ],
         "stamps": [],
-        "counters": ["6 stopped", "4 waiting", "SGD 10,260", "15 done"]
+        "counters": [
+          "6 stopped",
+          "4 waiting",
+          "SGD 10,260",
+          "15 done"
+        ]
       }
     },
     {
-      "id": 5, "kind": "footage", "chapter": "Live", "start": 42.5, "duration": 8.5,
-      "narration": "Marketing tried to upload the client list to an outside tool. Blocked — and here's the exact line in Mei's files that decided it.",
+      "id": 5,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 42.5,
+      "duration": 8.5,
+      "narration": "Marketing tried to upload the client list to an outside tool. Blocked \u2014 and here's the exact line in Mei's files that decided it.",
       "onscreen": {
         "beat": "W3 S1 client-list upload, evidence expanded",
         "shots": [
@@ -86,39 +126,63 @@
           "evidence drawer: card 1 admin/client_list.csv line 1, card 2 admin/client_list.README.md line 6 ('Treat the file as regulated')",
           "highlight boxes drawn from measured DOM rects: decision row first, then evidence_csv, then evidence_readme; mono callouts 'line 1' / 'line 6'; push-in 1.00->1.12 onto the evidence; STOPPED stamp on the row"
         ],
-        "stamps": ["STOPPED / BLOCK on the S1 row"],
+        "stamps": [
+          "STOPPED / BLOCK on the S1 row"
+        ],
         "counters": []
       }
     },
     {
-      "id": 6, "kind": "footage", "chapter": "Live", "start": 51.0, "duration": 13.5,
-      "narration": "Finance's client reply had three wrong figures. Twenty-five percent — the contract says twenty. Five days — really two. Five thousand two hundred fifty — the invoice says five thousand forty. Stopped.",
+      "id": 6,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 51.0,
+      "duration": 13.5,
+      "narration": "Finance's client reply had three wrong figures. Twenty-five percent \u2014 the contract says twenty. Five days \u2014 really two. Five thousand two hundred fifty \u2014 the invoice says five thousand forty. Stopped.",
       "onscreen": {
-        "beat": "W4 S4 fact-check — all THREE claims spoken and shown",
+        "beat": "W4 S4 fact-check \u2014 all THREE claims spoken and shown",
         "shots": [
           "REAL Fact-check page, S4 card; the real UI strikes the wrong values; overlays sequence attention",
           "reveal the three wrong-figure rows ONE AT A TIME synced to narration, each with a 1.1x push-in on that row (DOM rects row_percent / row_days / row_amount): 25%->20% (contract:9) at 'Twenty-five percent'; 5 days->2 (inbox:13) at 'Five days'; 5,250->5,040 (invoice:12) at 'Five thousand two hundred fifty'",
           "STOPPED stamp lands on the 'Stopped, not sent' verdict at the end"
         ],
-        "stamps": ["STOPPED / BLOCK at the verdict"],
-        "counters": ["25% -> 20%", "5 days -> 2", "5,250 -> 5,040"]
+        "stamps": [
+          "STOPPED / BLOCK at the verdict"
+        ],
+        "counters": [
+          "25% -> 20%",
+          "5 days -> 2",
+          "5,250 -> 5,040"
+        ]
       }
     },
     {
-      "id": 7, "kind": "footage", "chapter": "Live", "start": 64.5, "duration": 6.0,
-      "narration": "Agents only touch what the task needs. Three off-limits file reads — stopped.",
+      "id": 7,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 64.5,
+      "duration": 6.0,
+      "narration": "Agents only touch what the task needs. Three off-limits file reads \u2014 stopped.",
       "onscreen": {
         "beat": "W5 S5 quiet scope creep",
         "shots": [
           "REAL Live log filtered to Support, NO row expanded at clip start: the three S5 BLOCK read rows (cashflow notes, bank details, owner records) settled",
           "highlight boxes sweep the three rows in sequence from DOM rects (read_row_1/2/3); one shared STOPPED stamp with mono 'x3'; slow push-in"
         ],
-        "stamps": ["STOPPED / BLOCK (x3 scope reads)"],
-        "counters": ["3 off-limits reads"]
+        "stamps": [
+          "STOPPED / BLOCK (x3 scope reads)"
+        ],
+        "counters": [
+          "3 off-limits reads"
+        ]
       }
     },
     {
-      "id": 8, "kind": "footage", "chapter": "Live", "start": 70.5, "duration": 8.0,
+      "id": 8,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 70.5,
+      "duration": 8.0,
       "narration": "A summary of a confidential proposal inherits its secret. Rewriting it never makes it safe to share. Blocked.",
       "onscreen": {
         "beat": "W6 S6 sensitivity laundering through a summary (lineage)",
@@ -127,26 +191,40 @@
           "CONF token travels card 1 -> card 2; dashed line card 2 -> card 3; STOPPED stamp on card 3",
           "NO on-screen subtitle duplicating the caption 'Rewriting it never makes it safe to share.' (caption only); all cards above the caption safe band"
         ],
-        "stamps": ["STOPPED / BLOCK on the upload card"],
+        "stamps": [
+          "STOPPED / BLOCK on the upload card"
+        ],
         "counters": []
       }
     },
     {
-      "id": 9, "kind": "footage", "chapter": "Live", "start": 78.5, "duration": 10.5,
-      "narration": "Seven hundred fifty plus seven hundred fifty is fifteen hundred — over the one-thousand limit. Chaperone adds them up, and holds both payments.",
+      "id": 9,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 78.5,
+      "duration": 10.5,
+      "narration": "Seven hundred fifty plus seven hundred fifty is fifteen hundred \u2014 over the one-thousand limit. Chaperone adds them up, and holds both payments.",
       "onscreen": {
-        "beat": "W7 S8 split payment — animated maths (both payments HELD)",
+        "beat": "W7 S8 split payment \u2014 animated maths (both payments HELD)",
         "shots": [
           "REAL Live log / Approvals, the S8 split-payment card (SGD 1,500 at stake, '2 payments attempted against this one invoice'), Why it was held expanded (DOM rect why_held_body)",
           "maths card: 'SGD 750' + 'SGD 750' slide in, sum counts to 1,500, dashed limit 'Your limit SGD 1,000'; sum bar grows past the limit and turns amber; layout kept ABOVE the caption safe band so the HOLD stamp never collides with the pill",
           "WAITING FOR YOU stamp (HOLD_FOR_APPROVAL) lands below the maths, clear of the caption pill"
         ],
-        "stamps": ["WAITING FOR YOU / HOLD_FOR_APPROVAL"],
-        "counters": ["750 + 750 = 1,500 > 1,000 (animated)"]
+        "stamps": [
+          "WAITING FOR YOU / HOLD_FOR_APPROVAL"
+        ],
+        "counters": [
+          "750 + 750 = 1,500 > 1,000 (animated)"
+        ]
       }
     },
     {
-      "id": 10, "kind": "footage", "chapter": "Live", "start": 89.0, "duration": 9.5,
+      "id": 10,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 89.0,
+      "duration": 9.5,
       "narration": "An email, supposedly from Mei, approved fifty-eight hundred. Her written floor is sixty-five hundred. An email is not an approval. Blocked.",
       "onscreen": {
         "beat": "W8 S9 fake owner approval",
@@ -155,27 +233,43 @@
           "REAL S9 row expanded: 'Blocked: drafted a 5,800 offer to Greenstep Tuition. Your floor is 6,500...'; highlight boxes from DOM rects on the blocked row then the floor_quote (6,500); STOPPED stamp",
           "caption word 'approval' is NOT coloured HOLD-yellow here (scene is BLOCK); decision-word colouring is scene-aware"
         ],
-        "stamps": ["STOPPED / BLOCK"],
-        "counters": ["5,800 offer vs 6,500 floor"]
+        "stamps": [
+          "STOPPED / BLOCK"
+        ],
+        "counters": [
+          "5,800 offer vs 6,500 floor"
+        ]
       }
     },
     {
-      "id": 11, "kind": "footage", "chapter": "Live", "start": 98.5, "duration": 5.5,
+      "id": 11,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 98.5,
+      "duration": 5.5,
       "narration": "Ops wants to delete an unpaid invoice. Held. Mei says no.",
       "onscreen": {
         "beat": "W9 S3 'Say no' in the real queue",
         "shots": [
-          "REAL Approvals tab, Q1 card: 'Delete finance/invoice_2026-036_ferro_logistics.md — SGD 5,040 unpaid.' with 'Chaperone recommends: no.'",
+          "REAL Approvals tab, Q1 card: 'Delete finance/invoice_2026-036_ferro_logistics.md \u2014 SGD 5,040 unpaid.' with 'Chaperone recommends: no.'",
           "highlight box on rec_banner (DOM rect, measured pre-click); HOLD stamp small top-right; cursor clicks 'Say no'; keep the real result state; push-in 1.00->1.10",
           "the other three held items stay visible so the queue total of 4 is consistent"
         ],
-        "stamps": ["HOLD / HOLD_FOR_APPROVAL (small, before the click)"],
-        "counters": ["Approvals 4"]
+        "stamps": [
+          "HOLD / HOLD_FOR_APPROVAL (small, before the click)"
+        ],
+        "counters": [
+          "Approvals 4"
+        ]
       }
     },
     {
-      "id": 12, "kind": "footage", "chapter": "Live", "start": 104.0, "duration": 6.0,
-      "narration": "And when the contract says delete, Chaperone allows it — and sends the notices.",
+      "id": 12,
+      "kind": "footage",
+      "chapter": "Live",
+      "start": 104.0,
+      "duration": 6.0,
+      "narration": "And when the contract says delete, Chaperone allows it \u2014 and sends the notices.",
       "onscreen": {
         "beat": "W10 S10 the correct ALLOW (calm, green)",
         "shots": [
@@ -183,12 +277,18 @@
           "highlight box on delete_row 'per their contract' (DOM rect); DONE stamp (ALLOW, green); chips cropped out so 'Stopped 10 / Held 5' never contradicts the spoken six and four",
           "no personal data shown in the notices"
         ],
-        "stamps": ["DONE / ALLOW"],
+        "stamps": [
+          "DONE / ALLOW"
+        ],
         "counters": []
       }
     },
     {
-      "id": 13, "kind": "footage", "chapter": "Proof", "start": 110.0, "duration": 14.0,
+      "id": 13,
+      "kind": "footage",
+      "chapter": "Proof",
+      "start": 110.0,
+      "duration": 14.0,
       "narration": "Ten scenarios, three checks each: the right decision, the right rule, the right evidence. Thirty out of thirty. The classifier got thirty of thirty files right. And one hundred seventy-three unit tests pass.",
       "onscreen": {
         "beat": "R1-R2 proof with counter animations (all counts measured 2026-11-20)",
@@ -198,49 +298,72 @@
           "REAL terminal inset: npm test pass line 'tests 173 / pass 173 / fail 0'"
         ],
         "stamps": [],
-        "counters": ["30/30 scenario checks", "30/30 classifier", "173 unit tests pass"]
+        "counters": [
+          "30/30 scenario checks",
+          "30/30 classifier",
+          "173 unit tests pass"
+        ]
       }
     },
     {
-      "id": 14, "kind": "motion", "chapter": "Business", "start": 124.0, "duration": 14.0,
-      "narration": "Who pays? One-person studios, agencies, and fractional ops teams — people who let agents email clients and move money, but can't hire a compliance team. One person can safely run a whole team of agents.",
+      "id": 14,
+      "kind": "motion",
+      "chapter": "Business",
+      "start": 124.0,
+      "duration": 16.0,
+      "narration": "Who pays? One-person companies \u2014 the owner IS the whole company. Planned open-core: free self-host, Solo nineteen monthly, Studio forty-nine. The payment it stops buys years of Solo. Planned channels and a design-partner offer \u2014 not traction.",
       "onscreen": {
-        "beat": "B1-B2 business / viability — NO price card, NO 'price to be confirmed'",
+        "beat": "B1-B3 business \u2014 every figure labelled PLANNED; no traction, no implied partnership",
         "shots": [
-          "124.0-131.0 three persona cards stagger in: 'One-person studios', 'Agencies', 'Fractional ops teams'; headline 'Who pays'",
-          "131.0-138.0 four fact tiles: '0 dependencies', '1 Node process', 'Append-only audit log', 'Rules in plain files'; end on the agent -> Chaperone gate -> world flow; NO price placeholder anywhere; slow push-in; wipe to the QwenWork section"
+          "124.0-128.0 'Who pays' + 'One-person companies & tiny teams' + 'The owner IS the whole company.' Big type, <=3 lines",
+          "128.0-133.0 PLANNED open-core pricing card: 'Free \u00b7 self-hosted gate' / 'Solo \u00b7 S$19/mo' / 'Studio \u00b7 S$49/mo'; value line 'The S$1,500 double-payment it stops \u2248 6.5 years of Solo' (derived from the real demo figure + planned price); PLANNED tag",
+          "133.0-140.0 PLANNED channels card: 'Plugin where agents run \u00b7 bundle idea (e.g. Hashmeta) \u00b7 referral partners'; first-users OFFER 'Design-partner programme: first 10 solo operators free 3 months'; labelled PLANNED / OFFER, never a deal or traction"
         ],
         "stamps": [],
         "counters": []
       }
     },
     {
-      "id": 15, "kind": "footage", "chapter": "QwenWork", "start": 138.0, "duration": 24.0,
-      "narration": "QwenWork built this project: the video, the music, the title art, the integration, and the deploy. The app runs on QwenWork Pages. And live QwenWork agents run through the gate right now. Watch: an agent tries to read bank details it doesn't need — blocked. It tries to delete an unpaid invoice — held for Mei.",
+      "id": 15,
+      "kind": "footage",
+      "chapter": "QwenWork",
+      "start": 140.0,
+      "duration": 24.0,
+      "narration": "QwenWork built this project: the video, the music, the title art, the integration, and the deploy. The app runs on QwenWork Pages. And live QwenWork agents run through the gate right now. Watch: an agent tries to read bank details it doesn't need \u2014 blocked. It tries to delete an unpaid invoice \u2014 held for Mei.",
       "onscreen": {
-        "beat": "Q1-Q3 QwenWork as the engine — REAL QwenWork session footage",
+        "beat": "Q1-Q3 QwenWork as the engine \u2014 REAL QwenWork session footage",
         "shots": [
           "138.0-146.0 REAL QwenWork desktop screen recording: this build session producing the film (agent panel, tool cards, subagents); lower-third 'Built with QwenWork'; readable size",
           "146.0-150.0 REAL browser address bar uq2xhx6u.qwenwork.page and /api/health {\"ok\":true}; mono callout 'QwenWork Pages'",
           "150.0-162.0 REAL QwenWork agent session issuing a tool call that the Chaperone hook (integrations/qwenwork) STOPS, split-screen with the Chaperone live log: an out-of-scope read_file -> BLOCK ('(live QwenWork agent)' row appears); a delete_file of unpaid invoice_2026-031 -> HOLD_FOR_APPROVAL (queue card). Hold on the real approvals item; NO 'Nothing has happened yet' empty state; terminal cropped to relevant lines at >=28px if any terminal remains"
         ],
-        "stamps": ["STOPPED / BLOCK (read)", "WAITING FOR YOU / HOLD_FOR_APPROVAL (delete)"],
+        "stamps": [
+          "STOPPED / BLOCK (read)",
+          "WAITING FOR YOU / HOLD_FOR_APPROVAL (delete)"
+        ],
         "counters": []
       }
     },
     {
-      "id": 16, "kind": "endcard", "chapter": "CTA", "start": 162.0, "duration": 10.0,
-      "narration": "See it live — the links are in the description. Chaperone. Built with QwenWork, live on Hashmeta. Give your agents a chaperone.",
+      "id": 16,
+      "kind": "endcard",
+      "chapter": "CTA",
+      "start": 164.0,
+      "duration": 10.0,
+      "narration": "See it live \u2014 the links are in the description. Chaperone. Built with QwenWork, live on Hashmeta. Give your agents a chaperone.",
       "onscreen": {
-        "beat": "C1 endcard — public URLs only, no localhost, no private repo",
+        "beat": "C1 endcard \u2014 public URLs only, no localhost, no private repo",
         "shots": [
-          "logo + 'Chaperone · Built with QwenWork' wordmark (NO 'from Hashmeta', NO 'Built on AvePoint')",
+          "logo + 'Chaperone \u00b7 Built with QwenWork' wordmark (NO 'from Hashmeta', NO 'Built on AvePoint')",
           "hero URL https://uq2xhx6u.qwenwork.page types in; second line https://chaperone.geo.hashmeta.tech; slow push-in on the URLs (no frozen end card)",
-          "CTA line 'Press Run the demo'; footer 'Track 2 challenge: AvePoint “Agents Watching Agents”'; speech ends ~170s, music tail, fade to dark from 171s"
+          "CTA line 'Press Run the demo'; footer 'Track 2 challenge: AvePoint \u201cAgents Watching Agents\u201d'; speech ends ~170s, music tail, fade to dark from 171s"
         ],
         "stamps": [],
         "counters": [],
-        "urls": ["https://uq2xhx6u.qwenwork.page", "https://chaperone.geo.hashmeta.tech"]
+        "urls": [
+          "https://uq2xhx6u.qwenwork.page",
+          "https://chaperone.geo.hashmeta.tech"
+        ]
       }
     }
   ]

@@ -17,8 +17,9 @@ Primitives:
   * chapter_bar      — labelled progress bar along the top
   * kinetic_line     — word-stagger slide-up type
 
-Safe zones: captions burn at y~950 (V3 owns them). Keep scene content above
-y~880; composite_footage clamps its box bottom to 880 by default.
+Safe zones: the designer's captions burn in a pill whose 2-line top sits at
+y~835-850 (PILL_BOTTOM 965, FONT_SIZE 40). Keep scene content above y~815;
+composite_footage clamps its box bottom to CAPTION_SAFE_Y by default.
 """
 import glob
 import json
@@ -26,6 +27,7 @@ import math
 import os
 import subprocess
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 import ds
@@ -37,8 +39,16 @@ FOOTAGE_DIR = os.path.join(VIDEO, 'work_footage')
 QWEN_DIR = os.path.join(VIDEO, 'work_qwen')
 CACHE_DIR = os.path.join(VIDEO, 'work_motion', 'footage_cache')
 
-CAPTION_SAFE_Y = 880          # nothing below this line (captions live at ~950)
-STAMP_COLORS = {              # light tints, legible on the navy field
+CAPTION_SAFE_Y = 815          # nothing below this line (2-line caption pill top ~835)
+# One stamp voice for the whole film: SOLID semantic fill + white word, -7 deg.
+# (The hook's STOPPED style is the template; BLOCK/HOLD/ALLOW now match it.)
+STAMP_FILL = {
+    'allow': ds.DONE_FG,       # #146C33 green
+    'hold': ds.hx('#C2740A'),  # vivid amber-dark, white text passes contrast
+    'block': ds.BLOCK_FG,      # #B42318 red
+    'stopped': ds.BLOCK_FG,
+}
+STAMP_COLORS = {              # light tints (outline / glow accents only)
     'allow': ds.DONE_BORDER,   # #A9D9B8
     'hold': ds.WAIT_BORDER,    # #E8C988
     'block': ds.BLOCK_BORDER,  # #EDA69C
@@ -50,12 +60,14 @@ STAMP_SUB = {'allow': 'ALLOW', 'hold': 'HOLD_FOR_APPROVAL', 'block': 'BLOCK', 's
 
 # ------------------------------------------------------------------ stamps
 def decision_stamp(base, cxy, kind, t, t0, size=56, angle=-7, subscript=None,
-                   exit_t=None):
+                   exit_t=None, pad=30):
     """Slam-in decision stamp: scale 1.6->1.0 over 7 frames, rotation settles.
 
     kind: 'allow' | 'hold' | 'block' | 'stopped'. 'stopped' is the solid red
     variant (BLOCK_FG fill, white word). Outlined variants use the light tint
     on dark. Optional mono API subscript lands 0.22 s after the stamp.
+    pad: transparent margin around the stamp layer (smaller = compact header
+    variant that never reaches into footage content).
     Returns the stamp's approximate bounding box (for collision checks).
     """
     p = ds.anim(t, t0, 7.0 / FPS)
@@ -70,24 +82,20 @@ def decision_stamp(base, cxy, kind, t, t0, size=56, angle=-7, subscript=None,
     ang = ds.lerp(angle - 5.0, angle, p)
     word = STAMP_WORDS[kind]
     col = STAMP_COLORS[kind]
+    fill = STAMP_FILL[kind]
     fs = ds.font('heading', 700, max(10, int(size * scale)))
     dtmp = ImageDraw.Draw(Image.new('RGBA', (8, 8)))
     tw = dtmp.textlength(word, font=fs)
     th = size * scale
-    pad = 30
     bw, bh = int(tw + 44), int(th * 1.5)
     layer = Image.new('RGBA', (bw + pad * 2, bh + pad * 2), (0, 0, 0, 0))
     ld = ImageDraw.Draw(layer)
     cxl, cyl = layer.width / 2, layer.height / 2
     rect = [cxl - bw / 2, cyl - bh / 2, cxl + bw / 2, cyl + bh / 2]
-    if kind == 'stopped':
-        ld.rounded_rectangle(rect, radius=12, fill=ds.rgba(ds.BLOCK_FG, 255),
-                             outline=ds.rgba(col, 255), width=4)
-        tcol = ds.INVERSE
-    else:
-        ld.rounded_rectangle(rect, radius=12, outline=ds.rgba(col, 255),
-                             width=max(4, int(size / 12)))
-        tcol = col
+    # unified solid-fill stamp (white word) for every decision kind
+    ld.rounded_rectangle(rect, radius=12, fill=ds.rgba(fill, 255),
+                         outline=ds.rgba(ds.INVERSE, 70), width=2)
+    tcol = ds.INVERSE
     ld.text((cxl - tw / 2, cyl - fs.size * 0.62), word, font=fs, fill=ds.rgba(tcol, 255))
     layer = layer.rotate(ang, expand=True, resample=Image.BICUBIC)
     a = layer.getchannel('A').point(lambda v: int(v * alpha))
@@ -127,10 +135,13 @@ def _rr_perimeter(box, r, n=7):
 
 
 def highlight_box(base, box, t, t0, color=None, label=None, draw_dur=0.35,
-                  glow=True, exit_t=None, label_pos='above'):
+                  glow=True, exit_t=None, label_pos='above', top_limit=None):
     """Rounded-rect outline draws on clockwise (stroke progress 0->1), soft glow.
 
     Optional label chip sits above (or below) the box — never over its content.
+    top_limit: if the 'above' chip would cross this y (e.g. the footage frame's
+    top border), the chip flips BELOW the box so no overlay ever straddles the
+    frame edge (round-8 P1-A: the chip + outline at the border read as sliced text).
     """
     p = ds.anim(t, t0, draw_dur)
     if p <= 0:
@@ -155,16 +166,18 @@ def highlight_box(base, box, t, t0, color=None, label=None, draw_dur=0.35,
     ds.fade_layer(base, draw, alpha, box=lbox)
     if label and p > 0.5:
         la = ds.anim(t, t0 + draw_dur * 0.6, 0.2) * alpha
-        f = ds.font('mono', 500, 24)
+        f = ds.font('mono', 500, 28)
         d0 = ImageDraw.Draw(base)
         lw = d0.textlength(label, font=f) + 36
         lx = max(8, min(x0, W - int(lw) - 8))
-        ly = y0 - 46 if label_pos == 'above' else y1 + 12
+        ly = y0 - 50 if label_pos == 'above' else y1 + 12
+        if label_pos == 'above' and top_limit is not None and ly - 4 < top_limit + 8:
+            ly = y1 + 12
         if ly < 56:
             ly = y1 + 12
-        if ly + 40 > CAPTION_SAFE_Y:
-            ly = y0 - 46
-        ds.chip_mono(base, (lx, ly + 20), label, alpha=la, size=24,
+        if ly + 44 > CAPTION_SAFE_Y:
+            ly = y0 - 50
+        ds.chip_mono(base, (lx, ly + 22), label, alpha=la, size=28,
                      fg=ds.ON_DARK, bg=ds.INK, border=color)
 
 
@@ -362,7 +375,79 @@ def get_frame(beat, t_local, directory=None, manifest=None, window=None, seg_dur
         return placeholder(beat), False
     idx = min(n - 1, max(0, int(t_local * FPS)))
     img = Image.open(os.path.join(outdir, f'f{idx + 1:05d}.jpg')).convert('RGBA')
+    img = _mask_cursor(beat, idx + 1, img)
     return img, True
+
+
+# ------------------------------------------------------------------ cursor mask
+# The raw OS arrow/hand captured in the recordings is replaced with a designed
+# branded pointer. Round-8 P3-4: ONE pointer language across the whole film —
+# the same INK fill + white outline as the MG cursor (chrome._flat_cursor),
+# drawn ~3px larger than the raw glyph so it fully covers it. Tracks are
+# precomputed per frame in work_motion/r6_src/cursor_tracks.json.
+_CURSOR_TRACKS = None
+_CURSOR_SPRITE = {}
+
+
+def _cursor_tracks():
+    global _CURSOR_TRACKS
+    if _CURSOR_TRACKS is None:
+        path = os.path.join(VIDEO, 'work_motion', 'r6_src', 'cursor_tracks.json')
+        try:
+            raw = json.load(open(path))
+            _CURSOR_TRACKS = {b: {'template': e['template'],
+                                  'frames': {int(k): v for k, v in e['frames'].items()}}
+                              for b, e in raw.items()}
+        except Exception:
+            _CURSOR_TRACKS = {}
+    return _CURSOR_TRACKS
+
+
+def _dilate(m, it=1):
+    r = m.copy()
+    for _ in range(it):
+        p = np.pad(r, 1)
+        r = (p[:-2, :-2] | p[:-2, 1:-1] | p[:-2, 2:] | p[1:-1, :-2] | p[1:-1, 1:-1]
+             | p[1:-1, 2:] | p[2:, :-2] | p[2:, 1:-1] | p[2:, 2:])
+    return r
+
+
+def _cursor_sprite(kind):
+    if kind in _CURSOR_SPRITE:
+        return _CURSOR_SPRITE[kind]
+    path = os.path.join(VIDEO, 'work_motion', 'r6_src', f'cursor_{kind}.png')
+    core = np.array(Image.open(path).convert('L')) > 127
+    cover = _dilate(core, 3)
+    outline = _dilate(core, 5) & ~cover
+    h, w = cover.shape
+    spr = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    px = spr.load()
+    acc = ds.INK
+    for y in range(h):
+        for x in range(w):
+            if outline[y, x]:
+                px[x, y] = (255, 255, 255, 255)
+            elif cover[y, x]:
+                px[x, y] = (acc[0], acc[1], acc[2], 255)
+    _CURSOR_SPRITE[kind] = spr
+    return spr
+
+
+def _mask_cursor(beat, frame_no, img):
+    tr = _cursor_tracks().get(beat)
+    if not tr:
+        return img
+    pos = tr['frames'].get(frame_no)
+    if not pos:
+        return img
+    spr = _cursor_sprite(tr['template'])
+    x, y = pos[0] - 3, pos[1] - 3
+    sx0, sy0 = max(0, -x), max(0, -y)
+    sx1, sy1 = min(spr.width, img.width - x), min(spr.height, img.height - y)
+    if sx1 <= sx0 or sy1 <= sy0:
+        return img
+    img.alpha_composite(spr.crop((sx0, sy0, sx1, sy1)), (x + sx0, y + sy0))
+    return img
 
 
 def composite_footage(base, img, box, t, dur, push=0.06, radius=18, shadow=True,
@@ -445,6 +530,7 @@ def footage_mapper(box, t, dur, push=0.06):
 
 # ------------------------------------------------------------------ DPR2 rects
 _rects_cache = None
+_notes_cache = None
 
 
 def load_rects():
@@ -460,9 +546,28 @@ def load_rects():
     return _rects_cache
 
 
+def load_rect_notes():
+    """video/work_footage/rects_notes.json — pan model + pre/post-click notes."""
+    global _notes_cache
+    if _notes_cache is not None:
+        return _notes_cache
+    path = os.path.join(FOOTAGE_DIR, 'rects_notes.json')
+    try:
+        _notes_cache = json.load(open(path))
+    except Exception:
+        _notes_cache = {}
+    return _notes_cache
+
+
 def content_rect(beat):
     e = load_rects().get(beat) or {}
     return tuple(e['content']) if e.get('content') else None
+
+
+def frame_rect(beat):
+    """The clean ~2.48:1 band (device px) containing the full key UI for a beat."""
+    e = load_rects().get(beat) or {}
+    return tuple(e['frame_rect']) if e.get('frame_rect') else content_rect(beat)
 
 
 def target_rect(beat, name):
@@ -471,43 +576,145 @@ def target_rect(beat, name):
     return tuple(t) if t else None
 
 
-# Per-beat content band: x spans the content column; a ~560px-tall window pans
-# from y0 to y1 across the segment so the key targets stay in frame at >=28px.
-# Native frame is 1920x1560; content column x 64..1856 (1792 wide). Box 1640 wide
-# -> scale ~0.915 -> 16px CSS body text * 2 DPR * 0.915 ~= 29px on the 1080p frame.
-CROP_PLAN = {
-    'run-demo': {'x0': 64, 'x1': 1856, 'y0': 430, 'y1': 430, 'h': 560},
-    'briefing': {'x0': 64, 'x1': 1856, 'y0': 360, 'y1': 360, 'h': 560},
-    's1':       {'x0': 64, 'x1': 1856, 'y0': 360, 'y1': 690, 'h': 560},
-    's7':       {'x0': 64, 'x1': 1856, 'y0': 380, 'y1': 760, 'h': 560},
-    's4':       {'x0': 64, 'x1': 1856, 'y0': 400, 'y1': 720, 'h': 560},
-    's5':       {'x0': 64, 'x1': 1856, 'y0': 400, 'y1': 400, 'h': 560},
-    's8':       {'x0': 64, 'x1': 1856, 'y0': 880, 'y1': 880, 'h': 560},
-    's9':       {'x0': 64, 'x1': 1856, 'y0': 380, 'y1': 560, 'h': 560},
-    's10':      {'x0': 64, 'x1': 1856, 'y0': 400, 'y1': 400, 'h': 560},
-    'scorecard':{'x0': 64, 'x1': 1856, 'y0': 600, 'y1': 600, 'h': 560},
-    's3-deny':  {'x0': 64, 'x1': 1856, 'y0': 380, 'y1': 380, 'h': 560},
-}
+def clip_time(beat, t_local, seg_dur, window=None):
+    """Segment-local time -> source-clip seconds (same mapping get_frame uses)."""
+    clip = resolve_clip(beat)
+    dur = None
+    if clip:
+        dur = clip.get('duration') or clip_duration(clip['path'])
+    return apply_window(t_local, seg_dur, window, dur)
 
 
-def crop_at(beat, t, dur):
-    """The content band shown at segment-local t (panning y0->y1 with the push)."""
-    plan = CROP_PLAN.get(beat)
-    if not plan:
-        return content_rect(beat)
-    p = ds.ease_standard(min(1.0, t / max(0.001, dur)))
-    y0 = ds.lerp(plan['y0'], plan['y1'], p)
-    return (plan['x0'], y0, plan['x1'], y0 + plan['h'])
+def crop_at(beat, t, dur, window=None):
+    """The static frame_rect band shown for a beat. Pans are baked into the
+    footage (the recording scrolls), so the crop box itself does not move.
+
+    s3-deny carries a crop_switch: at clip time at_s the footage jump-cuts to the
+    Already-decided view and the crop box switches from->to (mode 'cut').
+    """
+    base = frame_rect(beat)
+    if beat == 's4':
+        # Tighten to the THREE fact rows (drop the draft header + verdict pill, which
+        # the BLOCK stamp conveys) so contain-fit renders them at ~24px, no cutoff.
+        base = (64, 575, 1856, 1440)
+    e = load_rects().get(beat) or {}
+    sw = e.get('crop_switch')
+    if sw and base:
+        ct = clip_time(beat, t, dur, window)
+        if ct >= float(sw.get('at_s', 1e9)):
+            return tuple(sw['to'])
+    return base
 
 
-def rect_mapper(box, t, dur, crop, src_size, push=0.06):
-    """Map native-source pixels -> composited box coords through crop + cover-fit
-    + push-in. crop is the band used at time t (same as composite_footage)."""
+def scroll_css_at(beat, clip_t):
+    """Reconstruct the page scroll (CSS px) at a clip time from the baked-in pan.
+
+    Pan travel is linear-in-scroll between pan_start_clip_s and pan_end_clip_s
+    (with a reading pause at mid_hold_clip_s for s4/s8); eased here to match the
+    smooth recorded motion. Before/after the pan the scroll holds its endpoints.
+    """
+    n = load_rect_notes().get(beat) or {}
+    final = n.get('final_scrollY')
+    if not n.get('pan_baked_in'):
+        return final
+    t0 = n.get('pan_start_clip_s')
+    t1 = n.get('pan_end_clip_s')
+    s0 = n.get('start_scroll_css')
+    s1 = n.get('end_scroll_css')
+    if t0 is None or t1 is None or s0 is None or s1 is None or final is None:
+        return final
+    if clip_t <= t0:
+        return float(s0)
+    if clip_t >= t1:
+        return float(s1)
+    tm = n.get('mid_hold_clip_s')
+    sm = n.get('mid_scroll_css')
+    if tm is not None and sm is not None and t0 < tm < t1:
+        if clip_t <= tm:
+            p = ds.ease_standard((clip_t - t0) / (tm - t0))
+            return s0 + (sm - s0) * p
+        p = ds.ease_standard((clip_t - tm) / (t1 - tm))
+        return sm + (s1 - sm) * p
+    p = ds.ease_standard((clip_t - t0) / (t1 - t0))
+    return s0 + (s1 - s0) * p
+
+
+def target_rect_at(beat, name, clip_t):
+    """A target's frame-space rect (device px) at a given clip time.
+
+    rects.json targets are measured at the final stable scroll (measured_at_s).
+    For baked-in pans the target rides the scroll: y_frame(t) = y_final +
+    2*(scroll_final - scroll(t)). Static beats return the measured rect unchanged.
+    s3-deny pre-click targets vanish at the commit cut; post-commit pseudo-targets
+    'decided_item' / 'toast' come from rects_notes.post_click (post-band frame px).
+    """
+    n = load_rect_notes().get(beat) or {}
+    if beat == 's3-deny':
+        e = load_rects().get(beat) or {}
+        sw = e.get('crop_switch') or {}
+        post = n.get('post_click') or {}
+        if clip_t >= float(sw.get('at_s', 1e9)):
+            if name == 'decided_item' and post.get('decided_rect'):
+                return tuple(post['decided_rect'])
+            if name == 'toast' and post.get('toast_rect'):
+                return tuple(post['toast_rect'])
+            return None
+        return target_rect(beat, name)
+    r = target_rect(beat, name)
+    if not r:
+        return None
+    if not n.get('pan_baked_in'):
+        return r
+    final = n.get('final_scrollY')
+    s = scroll_css_at(beat, clip_t)
+    if final is None or s is None:
+        return r
+    dy = 2.0 * (final - s)
+    return (r[0], r[1] + dy, r[2], r[3] + dy)
+
+
+def framed_window(beat, name, clip_dur, full=True, tol=6):
+    """(enter, exit) clip-time window when a target sits inside frame_rect.
+
+    full=True requires the whole rect inside the band (tol px slack); full=False
+    only requires intersection. Used to time highlights to when a target is framed.
+    """
+    fr = frame_rect(beat)
+    if not fr:
+        return (0.0, clip_dur)
+    _, by0, _, by1 = fr
+    hits = []
+    t = 0.0
+    while t <= clip_dur + 1e-6:
+        r = target_rect_at(beat, name, t)
+        if r:
+            ok = (r[1] >= by0 - tol and r[3] <= by1 + tol) if full \
+                else (r[3] > by0 and r[1] < by1)
+            if ok:
+                hits.append(t)
+        t += 0.02
+    if not hits:
+        return None
+    return (hits[0], hits[-1])
+
+
+def rect_mapper(box, t, dur, crop, src_size, push=0.06, fit='cover'):
+    """Map native-source pixels -> composited box coords through crop + fit + push.
+    crop is the band used at time t (same as composite_footage). fit='contain' shows
+    the WHOLE band (letterboxed) so no UI is ever cut off; 'cover' fills + crops."""
     x0, y0, x1, y1 = box
     bw, bh = x1 - x0, y1 - y0
     cx0, cy0, cx1, cy1 = crop
     cw, ch = max(1, cx1 - cx0), max(1, cy1 - cy0)
     scale = 1.0 + push * ds.ease_standard(min(1.0, t / max(0.001, dur)))
+    if fit == 'contain':
+        r = min(bw / cw, bh / ch) * scale / (1.0 + push)
+        ox = (bw - cw * r) / 2
+        oy = (bh - ch * r) / 2
+
+        def mc(fx, fy):
+            return (x0 + (fx - cx0) * r + ox, y0 + (fy - cy0) * r + oy)
+        return mc
     r = max(bw * scale / cw, bh * scale / ch)
     left = (cw * r - bw * scale) / 2
     top = (ch * r - bh * scale) / 2
@@ -594,27 +801,32 @@ def flow_diagram(base, box, t, t0, decision, agent_label='Agent',
 
 # ------------------------------------------------------------------ S8 maths
 def s8_maths(base, box, t, t0):
-    """750 + 750 = 1,500 > 1,000 — chips slide in, running total, limit flip, HOLD.
+    """750 + 750 = 1,500 > 1,000 — chips slide in on the spoken sums, the total
+    SNAPS straight to 1,500 (scale-pop, no transient wrong value), limit flip, HOLD.
 
-    All figures are the engine's: invoice QP-88901 totals SGD 1,500 against the
-    owner's SGD 1,000 approval limit. Compact layout fits the 210..720 box so the
-    HOLD stamp never reaches the caption pill.
+    All figures are the engine's: two SGD 750 payments against one invoice total
+    SGD 1,500 in 24h, over the owner's SGD 1,000 approval limit. Round-7 delays are
+    synced to the narration (t0=0.5 local): chip1 '750' @79.0, plus @80.0, chip2
+    '750' @80.8, total '1,500' @81.7, '>1,000 limit' @83.1, HOLD @86.5 ('holds').
     """
     x0, y0, x1, y1 = box
+    bw, bh = x1 - x0, y1 - y0
     cx = (x0 + x1) / 2
     d = ImageDraw.Draw(base)
     ds.paste_card(base, box, fill=ds.ON_DARK_LINE, border=ds.BORDER_ST, radius=18, width=1)
-    f_k = ds.font('heading', 600, 22)
-    kick = 'S8 · SPLIT PAYMENT · INVOICE QP-88901'
+    f_k = ds.font('heading', 600, 30)
+    kick = 'S8 · TWO PAYMENTS, ONE INVOICE'
     kw = ds.tracked_w(d, kick, f_k, 0.10)
-    ds.tracked(d, (cx - kw / 2, y0 + 20), kick, f_k, ds.rgba(ds.ON_DARK_3, 255), 0.10)
-    f_amt = ds.font('mono', 600, 40)
-    chip_w, chip_h = 210, 60
-    gap = 56
+    ds.tracked(d, (cx - kw / 2, y0 + 30), kick, f_k, ds.rgba(ds.ON_DARK_2, 255), 0.10)
+    # left group: two amount chips + plus + rule + sum bar
+    chip_w, chip_h = int(bw * 0.15), 92
+    gap = int(bw * 0.05)
     total_w = chip_w * 2 + gap
-    lx = cx - total_w / 2
-    row_y = y0 + 60
-    for i, delay in enumerate((0.0, 0.4)):
+    lcx = x0 + bw * 0.28
+    lx = lcx - total_w / 2
+    row_y = y0 + int(bh * 0.24)
+    f_amt = ds.font('mono', 600, 48)
+    for i, delay in enumerate((0.0, 1.8)):
         p = ds.anim(t, t0 + delay, 0.35)
         if p <= 0:
             continue
@@ -625,111 +837,194 @@ def s8_maths(base, box, t, t0):
             p, box=(int(x) - 2, row_y - 2, int(x) + chip_w + 2, row_y + chip_h + 2))
         tw = d.textlength('SGD 750', font=f_amt)
         ds.fade_layer(base, lambda dd, off, x=x: dd.text(
-            (x + chip_w / 2 - tw / 2 - off[0], row_y + 12 - off[1]), 'SGD 750',
+            (x + chip_w / 2 - tw / 2 - off[0], row_y + 22 - off[1]), 'SGD 750',
             font=f_amt, fill=ds.rgba(ds.ON_DARK, 255)), p,
             box=(int(x), row_y, int(x) + chip_w, row_y + chip_h))
-    pp = ds.anim(t, t0 + 0.25, 0.3)
+    pp = ds.anim(t, t0 + 1.0, 0.3)
     if pp > 0:
-        f_plus = ds.font('heading', 600, 44)
+        f_plus = ds.font('heading', 600, 56)
         pw = d.textlength('+', font=f_plus)
         ds.fade_layer(base, lambda dd, off: dd.text(
-            (cx - pw / 2 - off[0], row_y + 6 - off[1]), '+', font=f_plus,
+            (lcx - pw / 2 - off[0], row_y + 18 - off[1]), '+', font=f_plus,
             fill=ds.rgba(ds.ON_DARK_2, 255)), pp,
-            box=(int(cx - pw / 2) - 4, row_y, int(cx + pw / 2) + 4, row_y + chip_h))
-    pr = ds.anim(t, t0 + 0.8, 0.3)
+            box=(int(lcx - pw / 2) - 4, row_y, int(lcx + pw / 2) + 4, row_y + chip_h))
+    pr = ds.anim(t, t0 + 2.3, 0.3)
     if pr > 0:
-        ds.poly_partial(d, [(lx, row_y + chip_h + 14), (lx + total_w, row_y + chip_h + 14)],
+        ds.poly_partial(d, [(lx, row_y + chip_h + 24), (lx + total_w, row_y + chip_h + 24)],
                         pr, fill=ds.rgba(ds.BORDER_ST, 255), width=2)
-    p_tot = ds.anim(t, t0 + 1.0, 0.6)
+    # running total (centre column) — SNAPS to 1,500 (no transient 1,209 on a pause)
+    p_tot = ds.anim(t, t0 + 2.7, 0.25)
+    tx = x0 + bw * 0.56
     if p_tot > 0:
-        f_tot = ds.font('mono', 700, 76)
-        shown = ds.count_up(1500, p_tot)
-        tw = d.textlength(shown, font=f_tot)
-        d.text((cx - tw / 2, row_y + chip_h + 24), shown, font=f_tot,
-               fill=ds.rgba(ds.ON_DARK, 255))
-        f_cur = ds.font('mono', 500, 24)
-        d.text((cx - d.textlength('SGD', font=f_cur) / 2, row_y + chip_h + 104), 'SGD',
-               font=f_cur, fill=ds.rgba(ds.ON_DARK_3, 255))
-    p_cmp = ds.anim(t, t0 + 1.8, 0.35)
+        f_cur = ds.font('mono', 500, 30)
+        d.text((tx, row_y - 8), 'SGD', font=f_cur, fill=ds.rgba(ds.ON_DARK_2, 255))
+        pop = ds.anim(t, t0 + 2.7, 0.25)
+        tsize = int(128 * ds.lerp(1.22, 1.0, pop))
+        f_tot = ds.font('mono', 700, tsize)
+        d.text((tx, row_y + 18), '1,500', font=f_tot, fill=ds.rgba(ds.ON_DARK, 255))
+    # limit comparison (right column)
+    p_cmp = ds.anim(t, t0 + 4.1, 0.35)
+    cmpx = x0 + bw * 0.80
     if p_cmp > 0:
-        cmp_y = row_y + chip_h + 142
-        f_cmp = ds.font('mono', 600, 38)
+        f_cmp = ds.font('mono', 600, 50)
         txt = '> 1,000 limit'
-        tw = d.textlength(txt, font=f_cmp)
         c = ds.mix(ds.ON_DARK_2, ds.WAIT_BORDER, p_cmp)
-        d.text((cx - tw / 2, cmp_y), txt, font=f_cmp, fill=ds.rgba(c, 255))
-        bar_y = cmp_y + 50
-        bar_w = total_w
-        lim_x = lx + bar_w * (1000 / 1500)
+        d.text((cmpx, row_y + 44), txt, font=f_cmp, fill=ds.rgba(c, 255))
+    # sum bar grows past the limit marker and turns amber
+    bar_y = row_y + chip_h + 56
+    bar_w = total_w
+    lim_x = lx + bar_w * (1000 / 1500)
+    p_bar = ds.anim(t, t0 + 4.3, 0.7)
+    if p_bar > 0:
         ds.dashed_line(d, (lim_x, bar_y - 12), (lim_x, bar_y + 22),
-                       ds.rgba(ds.ON_DARK_3, 255), width=2, dash=6, gap=6)
-        p_bar = ds.anim(t, t0 + 2.0, 0.7)
+                       ds.rgba(ds.ON_DARK_2, 255), width=2, dash=6, gap=6)
         fill_w = bar_w * p_bar
         crossed = fill_w > (lim_x - lx)
         bc = ds.WAIT_BORDER if crossed else ds.ACCENT
         if fill_w > 1:
-            d.rounded_rectangle([lx, bar_y, lx + fill_w, bar_y + 12], radius=6,
+            d.rounded_rectangle([lx, bar_y, lx + fill_w, bar_y + 14], radius=7,
                                 fill=ds.rgba(bc, 255))
-    # HOLD stamp lands below the maths, clear of the caption pill (no subscript)
-    decision_stamp(base, (cx, y1 - 46), 'hold', t, t0 + 2.6, size=40, subscript=None)
+        f_bl = ds.font('mono', 500, 28)
+        d.text((lim_x - d.textlength('1,000', font=f_bl) / 2, bar_y + 28), '1,000',
+               font=f_bl, fill=ds.rgba(ds.ON_DARK_2, 255))
+    p_cap = ds.anim(t, t0 + 3.4, 0.4)
+    if p_cap > 0:
+        f_cap = ds.font('mono', 500, 28)
+        cap = '2 payments attempted against this one invoice in 24h'
+        ds.fade_layer(base, lambda dd, off: dd.text(
+            (lx - off[0], bar_y + 72 - off[1]), cap, font=f_cap,
+            fill=ds.rgba(ds.ON_DARK_2, 255)), p_cap,
+            box=(int(lx) - 4, bar_y + 68, int(lx + bar_w) + 4, bar_y + 106))
+    # Round-8 J2: the file-evidence citation is BACK — S8 must show "the exact
+    # line in your files" like every other scenario. Verbatim line 6 of
+    # data/finance/invoice_2026-038_quickprint.md (the invoice the two payments
+    # hit), >=28px, lands on the spoken "Chaperone adds them up" (~84.9s global).
+    p_ev = ds.anim(t, t0 + 5.6, 0.4)
+    if p_ev > 0:
+        ev_y = int(y0 + bh * 0.80)
+        d.rounded_rectangle([x0 + 36, ev_y - 6, x0 + 42, ev_y + 92], radius=3,
+                            fill=ds.rgba(ds.ACCENT, int(255 * p_ev)))
+        f_fn = ds.font('mono', 500, 30)
+        fn = 'finance/invoice_2026-038_quickprint.md · line 6'
+        ds.fade_layer(base, lambda dd, off: dd.text(
+            (x0 + 64 - off[0], ev_y - off[1]), fn, font=f_fn,
+            fill=ds.rgba(ds.ON_DARK_2, 255)), p_ev,
+            box=(x0 + 60, ev_y - 4, x0 + 64 + int(d.textlength(fn, font=f_fn)) + 4, ev_y + 36))
+        f_q = ds.font('body', 500, 32)
+        quote = ('“Harbourbean menu boards reprint, 10 units, SGD 1,500. '
+                 'Due 16 Dec 2026. Status: unpaid.”')
+        ds.fade_layer(base, lambda dd, off: dd.text(
+            (x0 + 64 - off[0], ev_y + 46 - off[1]), quote, font=f_q,
+            fill=ds.rgba(ds.ON_DARK, 255)), p_ev,
+            box=(x0 + 60, ev_y + 42, x1 - 24, ev_y + 90))
+    # HOLD stamp lands on the spoken "holds both payments" (~86.4s global)
+    decision_stamp(base, (x0 + bw * 0.82, row_y + 250), 'hold', t, t0 + 7.4,
+                   size=60, subscript=None)
 
 
 # ------------------------------------------------------------------ counters
 def counter(base, cxy, value, t, t0, dur=1.2, size=110, denom=None, label=None,
-            sub=None, color=None):
-    """Ease-out count-up with tabular mono digits; lands exactly on `value`."""
-    p = ds.anim(t, t0, dur)
-    if p <= 0:
-        return
+            sub=None, color=None, snap=False, prefill=None):
+    """Ease-out count-up with tabular mono digits; lands exactly on `value`.
+
+    snap=True: the numerator SLAMS straight to `value` (scale-pop 1.3->1.0 over
+    0.3 s) — no transient wrong totals (e.g. never 29/30 during a perfection pitch).
+    prefill: if set, the FULL fraction (numerator at ~35% alpha + denominator +
+    label) renders from this earlier time so the card is never empty and never a
+    floating '/30'; the numerator slams to full alpha at t0.
+    """
     color = color or ds.ON_DARK
     d = ImageDraw.Draw(base)
-    f_n = ds.font('mono', 700, size)
-    shown = ds.count_up(value, p)
-    parts = shown + (f' / {denom}' if denom else '')
+    p = ds.anim(t, t0, dur)
+    if snap:
+        shown = f'{value:,.0f}' if isinstance(value, (int, float)) else str(value)
+        pop = ds.anim(t, t0, 0.3)
+        nsize = int(size * ds.lerp(1.3, 1.0, pop)) if pop > 0 else size
+        if t >= t0:
+            num_a = 1.0
+        elif prefill is not None and t >= prefill:
+            num_a = 0.35
+        else:
+            num_a = 0.0
+    else:
+        if p <= 0:
+            if prefill is not None and t >= prefill:
+                shown = f'{value:,.0f}' if isinstance(value, (int, float)) else str(value)
+                num_a = 0.35
+            else:
+                shown = None
+                num_a = 0.0
+        else:
+            shown = ds.count_up(value, p)
+            num_a = 1.0
+        nsize = size
+    pre_a = 1.0 if (prefill is not None and t >= prefill) else (1.0 if p > 0 else 0.0)
+    f_n = ds.font('mono', 700, nsize)
     f_d = ds.font('mono', 500, int(size * 0.5))
-    nw = d.textlength(shown, font=f_n)
+    nw = d.textlength(shown, font=f_n) if shown else 0
     dw = d.textlength(f' / {denom}', font=f_d) if denom else 0
     x = cxy[0] - (nw + dw) / 2
     y = cxy[1] - size * 0.62
-    d.text((x, y), shown, font=f_n, fill=ds.rgba(color, 255))
-    if denom:
+    if shown and num_a > 0:
+        d.text((x, y), shown, font=f_n, fill=ds.rgba(color, int(255 * num_a)))
+    if denom and pre_a > 0:
         d.text((x + nw, y + size * 0.34), f' / {denom}', font=f_d,
-               fill=ds.rgba(ds.ON_DARK_3, 255))
-    if label:
-        f_l = ds.font('body', 600, 32)
+               fill=ds.rgba(ds.ON_DARK_2, int(255 * pre_a)))
+    if label and pre_a > 0:
+        f_l = ds.font('body', 600, 34)
         lw = d.textlength(label, font=f_l)
         d.text((cxy[0] - lw / 2, cxy[1] + size * 0.52), label, font=f_l,
-               fill=ds.rgba(ds.ON_DARK_2, 255))
-    if sub:
-        f_s = ds.font('mono', 400, 24)
+               fill=ds.rgba(ds.ON_DARK_2, int(255 * pre_a)))
+    if sub and pre_a > 0:
+        f_s = ds.font('mono', 400, 26)
         sw = d.textlength(sub, font=f_s)
-        d.text((cxy[0] - sw / 2, cxy[1] + size * 0.52 + 46), sub, font=f_s,
-               fill=ds.rgba(ds.ON_DARK_3, 255))
+        d.text((cxy[0] - sw / 2, cxy[1] + size * 0.52 + 48), sub, font=f_s,
+               fill=ds.rgba(ds.ON_DARK_2, int(255 * pre_a)))
 
 
 # ------------------------------------------------------------------ chapter bar
+_CHAPTER_ABBREV = {'LIVE DEMO': 'DEMO', 'QWENWORK': 'QWEN', 'BUSINESS': 'BIZ',
+                   'PROBLEM': 'PROB', 'HOOK': 'HOOK', 'PROOF': 'PROOF', 'CTA': 'CTA'}
+
+
 def chapter_bar(base, t_global, chapters, total):
-    """Top progress bar: 6 px track, labelled segments, current chapter lit."""
+    """Top progress bar: 6 px track, labelled segments, current chapter lit.
+
+    Labels are 28 px (inactive ON_DARK_2, active white + accent underline). A label
+    is NEVER dropped: if a segment is too narrow we shrink tracking, then abbreviate,
+    then shrink the font — so wayfinding stays consistent across the whole film.
+    """
     d = ImageDraw.Draw(base)
     d.rectangle([0, 0, W, 6], fill=ds.rgba(ds.ON_DARK_LINE, 255))
     prog = max(0.0, min(1.0, t_global / max(0.001, total)))
     if prog > 0:
         d.rectangle([0, 0, int(W * prog), 6], fill=ds.rgba(ds.ACCENT, 255))
-    f = ds.font('heading', 600, 22)
     for name, s0, s1 in chapters:
         x0 = int(W * s0 / total)
         x1 = int(W * s1 / total)
         if s0 > 0:
             d.rectangle([x0, 0, x0 + 2, 6], fill=ds.rgba(ds.DARK_BG, 255))
         active = s0 - 1e-6 <= t_global < s1
+        avail = (x1 - x0) - 16
         label = name.upper()
-        lw = ds.tracked_w(d, label, f, 0.12)
-        if x1 - x0 < lw + 24:
-            continue
-        col = ds.ON_DARK if active else ds.ON_DARK_3
-        ds.tracked(d, (x0 + 14, 16), label, f, ds.rgba(col, 255), 0.12)
+        size, track = 28, 0.08
+        f = ds.font('heading', 600, size)
+        lw = ds.tracked_w(d, label, f, track)
+        if lw > avail:                      # 1) tighten tracking
+            track = 0.02
+            lw = ds.tracked_w(d, label, f, track)
+        if lw > avail:                      # 2) abbreviate
+            label = _CHAPTER_ABBREV.get(label, label)
+            lw = ds.tracked_w(d, label, f, track)
+        while lw > avail and size > 18:     # 3) shrink font as a last resort
+            size -= 2
+            f = ds.font('heading', 600, size)
+            lw = ds.tracked_w(d, label, f, track)
+        col = ds.ON_DARK if active else ds.ON_DARK_2
+        lx = x0 + max(8, ((x1 - x0) - lw) / 2)
+        ds.tracked(d, (lx, 14), label, f, ds.rgba(col, 255), track)
         if active:
-            d.rectangle([x0 + 14, 46, x0 + 14 + int(lw), 49], fill=ds.rgba(ds.ACCENT, 255))
+            d.rectangle([int(lx), 46, int(lx + lw), 49], fill=ds.rgba(ds.ACCENT, 255))
 
 
 # ------------------------------------------------------------------ kinetic type

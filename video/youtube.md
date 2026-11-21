@@ -11,7 +11,7 @@ Chaperone is the one AI agent allowed to act: every send, payment, upload and de
 Try it live: https://uq2xhx6u.qwenwork.page
 Hashmeta site: https://chaperone.geo.hashmeta.tech
 
-In this demo: a hidden instruction in a vendor email tries to send the studio's client list to a stranger — stopped, nothing sent. Wrong figures in a client reply are fact-checked against the owner's own files, with file and line evidence. Split payments, a forged approval email and a rewritten confidential summary are held or blocked. Ten scenarios, 30/30 checks passed; 30/30 studio files classified at the right privacy level. This cut uses real app footage (the lineage beat is illustrated with motion graphics).
+In this demo: a hidden instruction in a vendor email tries to send the studio's client list to a stranger — stopped, nothing sent. Wrong figures in a client reply are fact-checked against the owner's own files, with file and line evidence. Split payments, a forged approval email and a rewritten confidential summary are held or blocked. Ten scenarios, 30/30 checks passed; 30/30 studio files classified at the right privacy level. This cut uses real app footage throughout.
 
 Chapters
 0:00 Hook
@@ -19,8 +19,8 @@ Chapters
 0:26 Live demo
 1:50 Proof
 2:04 Who pays
-2:18 Built with QwenWork
-2:42 Try it live
+2:20 Built with QwenWork
+2:41 Try it live
 
 (Note: YouTube requires every chapter to be at least 10 s; merge the first two if chapters do not render.)
 
