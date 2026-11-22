@@ -4,9 +4,9 @@
   "total_seconds": 174.0,
   "voice": {
     "engine": "kokoro",
-    "voice": "af_heart",
+    "voice": "af_sarah",
     "speed": 1.0,
-    "notes": "Synthesis-only pronunciation map lives in video/tts.py SAY_AS (Mei -> May; QwenWork -> Kwen Work so it sounds like 'Kwen Work', never 'QN Work'). Captions and on-screen text keep the spellings 'Mei' and 'QwenWork'. Numbers are spelled out in narration so Kokoro reads them cleanly; on-screen specs use digits. 'SGD' is spoken as letters (verified clean through Kokoro + whisper)."
+    "notes": "Directed af_sarah (owner-approved; Apache-2.0, local). Per-line direction sidecar: video/work_qwen/voice/demo-direction.json, synth video/voice_direct.py (verdict punch +3.5 dB falling tail, register arc, dramatic beats, breaths, room tone). Synthesis-only pronunciation map lives in video/tts.py SAY_AS (Mei -> May; QwenWork -> Kwen Work so it sounds like 'Kwen Work', never 'QN Work'). Captions and on-screen text keep the spellings 'Mei' and 'QwenWork'. Numbers are spelled out in narration so Kokoro reads them cleanly; on-screen specs use digits. 'SGD' is spoken as letters (verified clean through Kokoro + whisper)."
   },
   "resolution": {
     "width": 1920,
@@ -14,7 +14,7 @@
     "fps": 30
   },
   "figures_source": {
-    "unit_tests": "node --test tests/unit/*.test.js: 173 pass / 0 fail (re-verified round 3, 2026-11-20; suite grew after engine hardening)",
+    "unit_tests": "node --test tests/unit/*.test.js: 195 pass / 0 fail (re-verified 2026-11-21; suite grew after the rebuild added tests)",
     "scenarios": "reports/scenario_score.json: total 30 / max 30, accuracy 1.0 (regenerated 2026-11-20T01:31Z)",
     "classifier": "reports/classifier_score.json: total 30 / correct 30, accuracy 1.0 (regenerated 2026-11-20T01:31Z)",
     "briefing": "POST /api/demo/run; GET /api/state -> briefing.stats {blocked:6, held:4, held_money:10260, allowed:15, scope_reads:4}; headline '6 risky actions stopped, 4 waiting for your yes (SGD 10,260 in total), 15 routine actions done.'",
@@ -50,7 +50,7 @@
       "chapter": "Problem",
       "start": 8.0,
       "duration": 18.0,
-      "narration": "Mei runs Lumen Studio alone. Five AI agents email clients, pay suppliers, and delete files \u2014 thirty actions today. She is the whole compliance team. Chaperone sits between every agent and the outside world, and checks each action before it happens.",
+      "narration": "Mei runs Lumen Studio alone. Five AI agents email clients, pay suppliers, and delete files \u2014 thirty actions today. She's the whole compliance team. Chaperone sits between every agent and the outside world, and checks each action before it happens.",
       "onscreen": {
         "beat": "P1-P3 problem + brand reveal",
         "shots": [
@@ -118,7 +118,7 @@
       "chapter": "Live",
       "start": 42.5,
       "duration": 8.5,
-      "narration": "Marketing tried to upload the client list to an outside tool. Blocked \u2014 and here's the exact line in Mei's files that decided it.",
+      "narration": "Marketing tried to upload the client list to an outside tool. Blocked. And here's the exact line in Mei's files that decided it.",
       "onscreen": {
         "beat": "W3 S1 client-list upload, evidence expanded",
         "shots": [
@@ -162,7 +162,7 @@
       "chapter": "Live",
       "start": 64.5,
       "duration": 6.0,
-      "narration": "Agents only touch what the task needs. Three off-limits file reads \u2014 stopped.",
+      "narration": "Agents only touch what the task needs. Three off-limits file reads. Stopped.",
       "onscreen": {
         "beat": "W5 S5 quiet scope creep",
         "shots": [
@@ -289,19 +289,19 @@
       "chapter": "Proof",
       "start": 110.0,
       "duration": 14.0,
-      "narration": "Ten scenarios, three checks each: the right decision, the right rule, the right evidence. Thirty out of thirty. The classifier got thirty of thirty files right. And one hundred seventy-three unit tests pass.",
+      "narration": "Ten scenarios, three checks each: the right decision, the right rule, the right evidence. Thirty out of thirty. The classifier got thirty of thirty files right. And one hundred ninety-five unit tests pass.",
       "onscreen": {
         "beat": "R1-R2 proof with counter animations (all counts measured 2026-11-20)",
         "shots": [
-          "three proof tiles count up ON their narration word: 30/30 scenario checks, 30/30 files classified, 173 unit tests (npm test); tiles and the kinetic line kept ABOVE the caption safe band (no y=760 line behind the pill)",
+          "three proof tiles count up ON their narration word: 30/30 scenario checks, 30/30 files classified, 195 unit tests (npm test); tiles and the kinetic line kept ABOVE the caption safe band (no y=760 line behind the pill)",
           "REAL Scorecard tab inset: '30 / 30 checks passed across 10 scenarios' and '30 / 30 studio files classified'; slow push-in",
-          "REAL terminal inset: npm test pass line 'tests 173 / pass 173 / fail 0'"
+          "REAL terminal inset: npm test pass line 'tests 195 / pass 195 / fail 0'"
         ],
         "stamps": [],
         "counters": [
           "30/30 scenario checks",
           "30/30 classifier",
-          "173 unit tests pass"
+          "195 unit tests pass"
         ]
       }
     },
@@ -329,7 +329,7 @@
       "chapter": "QwenWork",
       "start": 140.0,
       "duration": 24.0,
-      "narration": "QwenWork built this project: the video, the music, the title art, the integration, and the deploy. The app runs on QwenWork Pages. And live QwenWork agents run through the gate right now. Watch: an agent tries to read bank details it doesn't need \u2014 blocked. It tries to delete an unpaid invoice \u2014 held for Mei.",
+      "narration": "QwenWork built this project: the video, the music, the title art, the integration, and the deploy. The app runs on QwenWork Pages. And live QwenWork agents run through the gate right now. Watch: an agent tries to read bank details it doesn't need. Blocked. It tries to delete an unpaid invoice. Held for Mei.",
       "onscreen": {
         "beat": "Q1-Q3 QwenWork as the engine \u2014 REAL QwenWork session footage",
         "shots": [

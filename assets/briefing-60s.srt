@@ -1,54 +1,61 @@
 1
-00:00:00,050 --> 00:00:05,470
-Morning, Mei. While you slept, your 5 agents
-kept working — and Chaperone kept watch.
+00:00:00,440 --> 00:00:01,610
+Morning, Mei.
 
 2
-00:00:07,192 --> 00:00:10,670
+00:00:02,210 --> 00:00:06,930
+While you slept, your 5 agents kept
+working — and Chaperone kept watch.
+
+3
+00:00:07,890 --> 00:00:11,990
 6 risky actions stopped,
 before anything left the studio.
 
-3
-00:00:10,670 --> 00:00:14,930
+4
+00:00:12,430 --> 00:00:16,590
 A client list, a confidential summary —
 none of it went out.
 
-4
-00:00:16,747 --> 00:00:22,390
+5
+00:00:17,270 --> 00:00:18,790
 4 things need your yes.
+
+6
+00:00:19,250 --> 00:00:24,310
 10,260 Singapore dollars, waiting on you.
 
-5
-00:00:22,390 --> 00:00:26,250
+7
+00:00:24,590 --> 00:00:27,850
 Most of it,
 unpaid invoices an agent wanted to delete.
 
-6
-00:00:29,213 --> 00:00:31,810
+8
+00:00:28,786 --> 00:00:31,650
 Every decision quotes the exact line
 in your files.
 
-7
-00:00:31,810 --> 00:00:36,810
+9
+00:00:32,250 --> 00:00:37,410
 1 tap shows you why — what the agent
 claimed, and what's actually on file.
 
-8
-00:00:38,924 --> 00:00:42,730
+10
+00:00:38,330 --> 00:00:42,610
 Approve or deny in 1 click.
 Nothing moves without you.
 
-9
-00:00:43,872 --> 00:00:48,030
+11
+00:00:43,390 --> 00:00:48,250
 15 routine jobs done cleanly.
 30 out of 30 checks passed.
 
-10
-00:00:48,030 --> 00:00:50,750
+12
+00:00:48,770 --> 00:00:51,310
 19 rules, 0 dependencies.
 
-11
-00:00:53,290 --> 00:00:57,420
+13
+00:00:53,170 --> 00:00:58,400
 Chaperone. Every number traces to a file.
 Have a good day, Mei.
 

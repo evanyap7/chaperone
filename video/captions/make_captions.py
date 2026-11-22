@@ -25,7 +25,7 @@ Outputs: video/captions/captions.json    word-level times/colours + cue grouping
          <work>/timing.json              updated: per-word timestamps per segment
 
 Display: spoken number-words render as digits in one token ("SGD 10,260",
-         "5,800", "173", "30 out of 30"); cue lines block at phrase boundaries
+         "5,800", "195", "30 out of 30"); cue lines block at phrase boundaries
          and never split a number run. Word windows stay per spoken word, so
          the karaoke underline tracks the digit token across the whole run.
 """
@@ -119,6 +119,21 @@ def int_words(n):
         return int_words(n // 1000) + ['thousand'] + (int_words(n % 1000) if n % 1000 else [])
     return int_words(n // 1000000) + ['million'] + (int_words(n % 1000000) if n % 1000000 else [])
 
+# Pronunciation canonicalisation (CosyVoice re-voice): whisper spells the spoken
+# names variably ("Mei"/"May" for /meɪ/, "Quenwerk"/"Quinn Work" for "Kwen Work").
+# Map both the script side (post SAY_AS) and the ASR side to one canonical form so
+# alignment is exact. Captions/SRT still display the real spellings (Mei, QwenWork).
+NAME_CANON = {
+    'mei': 'may',
+    'quenwerk': 'kwen work', 'qwenwork': 'kwen work', 'quenwork': 'kwen work',
+    'qwen': 'kwen', 'quinn': 'kwen', 'qn': 'kwen',
+    # punchy isolated verdicts whisper mishears phonetically (low confidence)
+    'docked': 'stopped', 'stocked': 'stopped', 'locked': 'blocked', 'blocked': 'blocked',
+    'held': 'held', 'hell': 'held', 'help': 'held',
+    # stressed "IS" heard as "eyes" (the owner IS the whole company)
+    'eyes': 'is',
+}
+
 def norm_subs(tok):
     """token -> list of comparable subtokens (whisper digits expanded to words)."""
     t = tok.lower().strip()
@@ -139,6 +154,8 @@ def norm_subs(tok):
             digits = re.sub(r'[^0-9]', '', piece)
             if digits and re.fullmatch(r'[0-9,.\']+', piece):
                 out += int_words(int(digits))
+            elif piece in NAME_CANON:
+                out += NAME_CANON[piece].split()
             else:
                 out.append(piece)
     return out
@@ -288,6 +305,15 @@ def align_segment(seg, words, subs):
         if ends_sentence(w['text']):
             asubs.append('\x00')
             aowner.append(i)
+        elif (w['text'].rstrip().endswith(',') and ss and all(s in NUM for s in ss)
+              and parse_num(ss) <= 99 and i + 1 < len(aw)):
+            # A comma-terminated complete small cardinal ("really two,") followed
+            # by another number is a clause boundary, not one big number: keep it
+            # separate so "two, 5,250" aligns as #2 | #5250 (script: "two. Five…").
+            nxt = norm_subs(aw[i + 1]['text'])
+            if nxt and nxt[0] in NUM:
+                asubs.append('\x00')
+                aowner.append(i)
     asubs_raw = asubs
     asubs, amap = canon(asubs)
     owner_runs = [[] for _ in asubs]
@@ -356,6 +382,30 @@ def align_segment(seg, words, subs):
         k = i - prev_idx
         w['start'] = lo_t + (hi_t - lo_t) * (k - 0.5) / max(n_gap, 1)
         w['end'] = lo_t + (hi_t - lo_t) * (k + 0.5) / max(n_gap, 1)
+    # Ground-truth fallback: whisper occasionally drops a short isolated verdict
+    # ("Held.") or a small cardinal ("two.") in the warm CosyVoice take. Snap any
+    # still-unmatched word to its own sentence_mark line window (the measured
+    # narration onset/offset) — more accurate than interpolating across lines.
+    def _wc(t):
+        return len(re.findall(r"[a-z0-9']+", t.lower().replace('’', "'")))
+    line_bounds, acc = [], 0
+    for m in ts['sentence_marks']:
+        n = _wc(m['text'])
+        line_bounds.append((m['start'], m['end'], acc, acc + n))
+        acc += n
+    for i, w in enumerate(words):
+        if w['matched']:
+            continue
+        for ms, me, wl, wh in line_bounds:
+            if wl <= i < wh:
+                span = max(wh - wl, 1)
+                f0 = (i - wl) / span
+                f1 = (i - wl + 1) / span
+                w['start'] = ms + (me - ms) * f0
+                w['end'] = ms + (me - ms) * f1
+                w['matched'] = True
+                w['distributed'] = 'mark-snap'
+                break
     for w in words:  # trust ASR starts verbatim (whisper edge estimates may sit
         # slightly before the placed audio); cap tails, keep order. Cue windows
         # below clamp the visible highlight to the cue/segment bounds.
@@ -747,7 +797,7 @@ srt = ''
 for i, co in enumerate(cues_out, 1):
     srt += f'{i}\n{srt_t(co["start"])} --> {srt_t(co["end"])}\n' + '\n'.join(co['lines']) + '\n\n'
 open(os.path.join(HERE, 'captions.srt'), 'w').write(srt)
-open(os.path.join(VIDEO, '..', 'assets', 'demo-video.srt'), 'w').write(srt)
+open(os.environ.get('CHAP_SRT') or os.path.join(VIDEO, '..', 'assets', 'demo-video.srt'), 'w').write(srt)
 
 # ---------------------------------------------------------------- PNGs
 body = ImageFont.truetype(os.path.join(FONTS, 'SourceSans3.ttf'), FONT_SIZE)

@@ -16,7 +16,7 @@ Try it live: https://uq2xhx6u.qwenwork.page
 Website: https://chaperone.geo.hashmeta.tech
 Code: https://github.com/evanyap7/chaperone
 
-In this demo: a hidden instruction in a vendor email tries to send the studio's client list to a stranger — stopped, nothing sent. Wrong figures in a client reply are fact-checked against the owner's own files, with file and line evidence. Split payments, a forged approval email and a rewritten confidential summary are held or blocked. The morning briefing: 6 risky actions stopped, 4 waiting for the owner's yes (SGD 10,260 in total), 15 routine actions done. Ten scenarios, 30/30 checks passed; 30/30 studio files classified at the right privacy level; 173 unit tests pass. Real footage of the running app throughout the demo, plus motion graphics.
+In this demo: a hidden instruction in a vendor email tries to send the studio's client list to a stranger — stopped, nothing sent. Wrong figures in a client reply are fact-checked against the owner's own files, with file and line evidence. Split payments, a forged approval email and a rewritten confidential summary are held or blocked. The morning briefing: 6 risky actions stopped, 4 waiting for the owner's yes (SGD 10,260 in total), 15 routine actions done. Ten scenarios, 30/30 checks passed; 30/30 studio files classified at the right privacy level; 195 unit tests pass. Real footage of the running app throughout the demo, plus motion graphics.
 
 Chapters
 0:00 Hook + the problem
@@ -28,7 +28,7 @@ Chapters
 
 Business model: 100% PLANNED, no traction. Open-core: free self-hosted gate, Solo S$19/mo, Studio S$49/mo. The S$1,500 double-payment the demo stops ≈ 6.5 years of Solo. Design-partner programme (first 10 solo operators free 3 months) is an offer, not a claim. No partnership with QwenWork or Hashmeta is implied.
 
-Built with QwenWork: this video was produced end-to-end by QwenWork agents — the script, the narration (open-source Kokoro TTS), the motion graphics, the audio mix and the final render. The music and title artwork were generated with QwenWork. The Chaperone app itself is hosted on QwenWork Pages, and the QwenWork integration routes live agent actions through the Chaperone gate (allow / hold for owner approval / block) — the block and hold shown near the end are real PreToolUse hook decisions from live QwenWork agents.
+Built with QwenWork: this video was produced end-to-end by QwenWork agents — the script, the narration (open-source CosyVoice 3 TTS — Fun-CosyVoice3-0.5B, Apache-2.0 — voiced as a warm female presenter via VoiceStudio), the motion graphics, the audio mix and the final render. The music and title artwork were generated with QwenWork. The Chaperone app itself is hosted on QwenWork Pages, and the QwenWork integration routes live agent actions through the Chaperone gate (allow / hold for owner approval / block) — the block and hold shown near the end are real PreToolUse hook decisions from live QwenWork agents.
 
 This video contains AI-generated voice and imagery.
 
@@ -60,7 +60,7 @@ Full segment map of the actual 174 s cut:
 | s9 | 1:29 | Fake owner approval vs 6,500 floor, blocked |
 | s3-deny | 1:38.5 | Queue: delete unpaid invoice, owner says no |
 | s10 | 1:44 | Contract-required delete ALLOWED + notices |
-| proof | 1:50 | 30/30 scenarios, 30/30 classifier, 173 tests |
+| proof | 1:50 | 30/30 scenarios, 30/30 classifier, 195 tests |
 | business | 2:04 | PLANNED pricing, channels, design-partner offer |
 | qwenwork | 2:20 | Build session, Pages hosting, live hook BLOCK + HOLD |
 | cta | 2:44 | Endcard URLs (speech starts 2:44; endcard visuals from ~2:41) |

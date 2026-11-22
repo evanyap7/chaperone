@@ -57,8 +57,8 @@ import ds  # noqa: E402
 import mix  # noqa: E402
 
 WORK = os.path.join(HERE, 'work_final')
-SCRATCH = '/private/tmp/claude-501/-Users-evanyap7-projects-Chaperone/4a222e33-8499-490b-a4c7-a4259f8cc790/scratchpad'
-OUT = os.path.join(ROOT, 'assets', 'demo-video.mp4')
+SCRATCH = os.environ.get('CHAP_SCRATCH') or '/private/tmp/claude-501/-Users-evanyap7-projects-Chaperone/4a222e33-8499-490b-a4c7-a4259f8cc790/scratchpad'
+OUT = os.environ.get('CHAP_OUT') or os.path.join(ROOT, 'assets', 'demo-video.mp4')
 MUSIC = os.path.join(HERE, 'music.mp3')
 FPS, W, H = ds.FPS, ds.W, ds.H
 PLACEHOLDER_TOTAL = 175.0
@@ -923,7 +923,7 @@ def make_thumbnail(d):
             f = ds.font('heading', 700, size)
         d.text((64, 260 + i * 110), txt, font=f, fill=ds.rgba(ds.ON_DARK, 255))
     d.text((64, 520), 'Live guardrails demo', font=ds.font('body', 400, 30), fill=ds.rgba(ds.ON_DARK_2, 255))
-    thumb = os.path.join(ROOT, 'assets', 'thumbnail.png')
+    thumb = os.environ.get('CHAP_THUMB') or os.path.join(ROOT, 'assets', 'thumbnail.png')
     canvas.convert('RGB').save(thumb)
     print(f'  thumbnail -> {thumb} (source: {kind})')
     return thumb
@@ -1011,7 +1011,7 @@ Hashmeta site: https://{HASHMETA_URL}
 
 assets/thumbnail.png (1280x720): red BLOCKED stamp over a real UI frame + "AI AGENTS? CHAPERONE."
 """
-    p = os.path.join(HERE, 'youtube.md')
+    p = os.environ.get('CHAP_YOUTUBE') or os.path.join(HERE, 'youtube.md')
     open(p, 'w').write(md)
     print(f'  youtube kit -> {p}')
     return p
@@ -1171,7 +1171,7 @@ def main():
             print('  NOTE: ffmpeg has no subtitles filter and no caption PNG bank; captions not burned')
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    master = os.path.join(ROOT, 'assets', 'demo-video-master.mp4')
+    master = os.environ.get('CHAP_MASTER') or os.path.join(ROOT, 'assets', 'demo-video-master.mp4')
 
     # MASTER: the CRF18 render + -16 LUFS mix, AAC 320k (quality reference).
     print('muxing MASTER (CRF18 video + mix)…')

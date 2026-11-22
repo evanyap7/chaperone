@@ -18,7 +18,7 @@ merged into its span. Otherwise the brief's chapter table is used as fallback.
 Never hardcodes 180 s. Call reload_timing() after V3 rewrites the script.
 
 ctx (all optional, additive):
-  {"unit_tests": 173,           # real npm-test count for the Proof counters
+  {"unit_tests": 195,           # real npm-test count for the Proof counters
    "footage_window": {beat: {"in": s, "out": s}},
                                 # clip window per footage beat; overrides
                                 # DEFAULT_WINDOWS. Span != segment duration is
@@ -369,7 +369,7 @@ def chapters():
 
 
 def default_ctx():
-    return {'unit_tests': 173}
+    return {'unit_tests': 195}
 
 
 # ------------------------------------------------------------------ shared bits
@@ -1039,7 +1039,7 @@ def _proof(base, t, seg, ctx):
     ft.kinetic_line(base, (W / 2, 130), 'Checked, not claimed.', t, 0.2, size=60)
     ft.kinetic_line(base, (W / 2, 200), 'The same checks run in the test suite.', t,
                     0.8, size=28, color=ds.ON_DARK_2, weight=500)
-    n = int(ctx.get('unit_tests', 173))
+    n = int(ctx.get('unit_tests', 195))
     # Cards fade in EARLY (0.9-1.7s) pre-filled with the FULL ghosted fraction
     # ("30 / 30" at 35% alpha — never a floating "/30", never an empty card), then
     # the numerator SLAMS to full on the narration word. No 5s frozen intro.
