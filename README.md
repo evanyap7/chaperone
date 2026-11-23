@@ -2,6 +2,10 @@
 
 **Website:** https://chaperone.geo.hashmeta.tech · **Live app:** https://uq2xhx6u.qwenwork.page
 
+**[▶ Watch the demo on YouTube](https://youtu.be/qWG_s49Qczc)**
+
+[![Chaperone Demo — watch the film on YouTube](assets/thumbnail.webp)](https://youtu.be/qWG_s49Qczc)
+
 **An oversight agent that sits between a one-person company's AI agents and the
 outside world.** Every action a worker agent wants to take (send, pay, delete,
 upload, quote, sign) is meant to go through a single logged gate first. The gate
@@ -298,6 +302,7 @@ and the demo sandbox. It has six tabs:
 
 ## Videos
 
+- **Watch on YouTube:** https://youtu.be/qWG_s49Qczc
 - **`assets/demo-video.mp4`** — the 174-second product demo: a hook built on the
   real S7 injection attack, kinetic type, **real Playwright footage of the
   running app** (not redraws), animated proof counters (classifier 30/30,
